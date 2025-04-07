@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/fzf-labs/godb/orm/example/pb;pb";
+
+//
+service AdminToRoleDemo {
+  //-创建一条数据
+  rpc CreateAdminToRoleDemo(CreateAdminToRoleDemoReq) returns (CreateAdminToRoleDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_to_role_demo/v1/admin_to_role_demo/create"
+      body: "*"
+    };
+  }
+  //-更新一条数据
+  rpc UpdateAdminToRoleDemo(UpdateAdminToRoleDemoReq) returns (UpdateAdminToRoleDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_to_role_demo/v1/admin_to_role_demo/update"
+      body: "*"
+    };
+  }
+  //-删除多条数据
+  rpc DeleteAdminToRoleDemo(DeleteAdminToRoleDemoReq) returns (DeleteAdminToRoleDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_to_role_demo/v1/admin_to_role_demo/delete"
+      body: "*"
+    };
+  }
+  //-单条数据查询
+  rpc GetAdminToRoleDemoInfo(GetAdminToRoleDemoInfoReq) returns (GetAdminToRoleDemoInfoReply) {
+    option (google.api.http) = {get: "/admin_to_role_demo/v1/admin_to_role_demo/info"};
+  }
+  //-列表数据查询
+  rpc GetAdminToRoleDemoList(GetAdminToRoleDemoListReq) returns (GetAdminToRoleDemoListReply) {
+    option (google.api.http) = {
+      post: "/admin_to_role_demo/v1/admin_to_role_demo/list",
+      body: "*"
+    };
+  }
+}
+//信息
+message AdminToRoleDemoInfo {
+  string adminId = 1; // 
+	string roleId = 2; //
+}
+
+//请求--创建一条数据
+message CreateAdminToRoleDemoReq {
+  string adminId = 1; // 
+	string roleId = 2; //
+}
+
+//响应--创建一条数据
+message CreateAdminToRoleDemoReply {
+  
+}
+
+//请求--更新一条数据
+message UpdateAdminToRoleDemoReq {
+  string adminId = 1; // 
+	string roleId = 2; //
+}
+
+//响应--更新一条数据
+message UpdateAdminToRoleDemoReply {}
+
+//请求--删除多条数据
+message DeleteAdminToRoleDemoReq {
+  
+}
+
+//响应--删除多条数据
+message DeleteAdminToRoleDemoReply {}
+
+//请求--单条数据查询
+message GetAdminToRoleDemoInfoReq {
+  
+}
+
+//响应--单条数据查询
+message GetAdminToRoleDemoInfoReply {
+  AdminToRoleDemoInfo info = 1;
+}
+
+//请求--列表数据查询
+message GetAdminToRoleDemoListReq {
+  int32 page = 1; //页码
+  int32 pageSize = 2; //页数
+}
+
+//响应--列表数据查询
+message GetAdminToRoleDemoListReply {
+  int32 total = 1; //总数
+  repeated AdminToRoleDemoInfo list = 2; // 列表数据
+}
+

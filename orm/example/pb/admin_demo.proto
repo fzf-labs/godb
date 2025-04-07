@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/fzf-labs/godb/orm/example/pb;pb";
+
+//
+service AdminDemo {
+  //-创建一条数据
+  rpc CreateAdminDemo(CreateAdminDemoReq) returns (CreateAdminDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_demo/v1/admin_demo/create"
+      body: "*"
+    };
+  }
+  //-更新一条数据
+  rpc UpdateAdminDemo(UpdateAdminDemoReq) returns (UpdateAdminDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_demo/v1/admin_demo/update"
+      body: "*"
+    };
+  }
+  //-删除多条数据
+  rpc DeleteAdminDemo(DeleteAdminDemoReq) returns (DeleteAdminDemoReply) {
+    option (google.api.http) = {
+      post: "/admin_demo/v1/admin_demo/delete"
+      body: "*"
+    };
+  }
+  //-单条数据查询
+  rpc GetAdminDemoInfo(GetAdminDemoInfoReq) returns (GetAdminDemoInfoReply) {
+    option (google.api.http) = {get: "/admin_demo/v1/admin_demo/info"};
+  }
+  //-列表数据查询
+  rpc GetAdminDemoList(GetAdminDemoListReq) returns (GetAdminDemoListReply) {
+    option (google.api.http) = {
+      post: "/admin_demo/v1/admin_demo/list",
+      body: "*"
+    };
+  }
+}
+//信息
+message AdminDemoInfo {
+  string id = 1; // 编号
+	string username = 2; // 用户名
+	string password = 3; // 密码
+	string nickname = 4; // 昵称
+	string avatar = 5; // 头像
+	int32 gender = 6; // 0=保密 1=女 2=男
+	string email = 7; // 邮件
+	string mobile = 8; // 手机号
+	string jobId = 9; // 岗位
+	string deptId = 10; // 部门
+	string roleIds = 11; // 角色集
+	string salt = 12; // 盐值
+	int32 status = 13; // 0=禁用 1=开启
+	string motto = 14; // 个性签名
+	google.protobuf.Timestamp createdAt = 15; // 创建时间
+	google.protobuf.Timestamp updatedAt = 16; // 更新时间
+}
+
+//请求--创建一条数据
+message CreateAdminDemoReq {
+  string id = 1; // 编号
+	string username = 2; // 用户名
+	string password = 3; // 密码
+	string nickname = 4; // 昵称
+	string avatar = 5; // 头像
+	int32 gender = 6; // 0=保密 1=女 2=男
+	string email = 7; // 邮件
+	string mobile = 8; // 手机号
+	string jobId = 9; // 岗位
+	string deptId = 10; // 部门
+	string roleIds = 11; // 角色集
+	string salt = 12; // 盐值
+	int32 status = 13; // 0=禁用 1=开启
+	string motto = 14; // 个性签名
+}
+
+//响应--创建一条数据
+message CreateAdminDemoReply {
+  
+}
+
+//请求--更新一条数据
+message UpdateAdminDemoReq {
+  string id = 1; // 编号
+	string username = 2; // 用户名
+	string password = 3; // 密码
+	string nickname = 4; // 昵称
+	string avatar = 5; // 头像
+	int32 gender = 6; // 0=保密 1=女 2=男
+	string email = 7; // 邮件
+	string mobile = 8; // 手机号
+	string jobId = 9; // 岗位
+	string deptId = 10; // 部门
+	string roleIds = 11; // 角色集
+	string salt = 12; // 盐值
+	int32 status = 13; // 0=禁用 1=开启
+	string motto = 14; // 个性签名
+}
+
+//响应--更新一条数据
+message UpdateAdminDemoReply {}
+
+//请求--删除多条数据
+message DeleteAdminDemoReq {
+  
+}
+
+//响应--删除多条数据
+message DeleteAdminDemoReply {}
+
+//请求--单条数据查询
+message GetAdminDemoInfoReq {
+  
+}
+
+//响应--单条数据查询
+message GetAdminDemoInfoReply {
+  AdminDemoInfo info = 1;
+}
+
+//请求--列表数据查询
+message GetAdminDemoListReq {
+  int32 page = 1; //页码
+  int32 pageSize = 2; //页数
+}
+
+//响应--列表数据查询
+message GetAdminDemoListReply {
+  int32 total = 1; //总数
+  repeated AdminDemoInfo list = 2; // 列表数据
+}
+

@@ -1,0 +1,2 @@
+// UpdateBatchBy{{.upperSinglePrimaryKeyPlural}}Tx 根据主键{{.upperSinglePrimaryKeyPlural}}批量更新(事务)
+UpdateBatchBy{{.upperSinglePrimaryKeyPlural}}Tx(ctx context.Context, tx *{{.dbName}}_dao.Query, {{.lowerSinglePrimaryKeyPlural}} []{{.dataTypeSinglePrimaryKey}}, data map[string]interface{}) error
