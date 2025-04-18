@@ -399,8 +399,8 @@ var InterfaceFindMultiByCondition string
 //go:embed tpl/find-multi-by-condition.tpl
 var FindMultiByCondition string
 
-//go:embed tpl/interface-find-multi-by-cache-condition.tpl
+//go:embed tpl/interface-find-multi-cache-by-condition.tpl
 var InterfaceFindMultiByCacheCondition string
 
-//go:embed tpl/find-multi-by-cache-condition.tpl
+//go:embed tpl/find-multi-cache-by-condition.tpl
 var FindMultiByCacheCondition string

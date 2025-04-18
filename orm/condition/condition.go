@@ -107,11 +107,17 @@ func OrderValidate(s Order) bool {
 
 // ToInterfaceSlice 将任意类型的切片转换为 []interface{}
 func (p *Req) ToInterfaceSlice(val interface{}) ([]interface{}, error) {
+	// 检查 val 是否为切片类型
 	rv := reflect.ValueOf(val)
+	// 如果是[]interface{}，直接返回
+	if rv.Type().Elem().Kind() == reflect.Interface {
+		return val.([]interface{}), nil
+	}
+	// 如果不是切片类型，返回错误
 	if rv.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("value is not a slice")
 	}
-
+	// 遍历切片中的每个元素，将其转换为 interface{} 类型
 	values := make([]interface{}, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		values[i] = rv.Index(i).Interface()
@@ -121,13 +127,13 @@ func (p *Req) ToInterfaceSlice(val interface{}) ([]interface{}, error) {
 
 // ConvertToCacheField 将 req 转换为缓存 hash 中的 field
 func (p *Req) ConvertToCacheField() string {
-	json, err := json.Marshal(p)
+	marshal, err := json.Marshal(p)
 	if err != nil {
 		return ""
 	}
 	// 使用 sha256 加密
 	hash := sha256.New()
-	hash.Write(json)
+	hash.Write(marshal)
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 

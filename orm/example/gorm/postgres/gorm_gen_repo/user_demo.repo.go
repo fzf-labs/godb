@@ -23,7 +23,7 @@ import (
 var _ IUserDemoRepo = (*UserDemoRepo)(nil)
 
 var (
-	CacheUserDemoByConditionPrefix      = "DBCache:<no value>:UserDemoByCondition"
+	CacheUserDemoByConditionPrefix      = "DBCache:gorm_gen:UserDemoByCondition"
 	CacheUserDemoByIDPrefix             = "DBCache:gorm_gen:UserDemoByID"
 	CacheUserDemoByUIDPrefix            = "DBCache:gorm_gen:UserDemoByUID"
 	CacheUserDemoByUIDStatusPrefix      = "DBCache:gorm_gen:UserDemoByUIDStatus"
@@ -1179,7 +1179,7 @@ func (u *UserDemoRepo) FindMultiCacheByCondition(ctx context.Context, conditionR
 		Result:         make([]*gorm_gen_model.UserDemo, 0),
 		ConditionReply: &condition.Reply{},
 	}
-	cacheKey := u.cache.Key(CacheAdminDemoByConditionPrefix)
+	cacheKey := u.cache.Key(CacheUserDemoByConditionPrefix)
 	cacheField := conditionReq.ConvertToCacheField()
 	cacheValue, err := u.cache.FetchHash(ctx, cacheKey, cacheField, func() (string, error) {
 		result, conditionReply, err := u.FindMultiByCondition(ctx, conditionReq)

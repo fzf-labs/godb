@@ -23,7 +23,7 @@ import (
 var _ IAdminDemoRepo = (*AdminDemoRepo)(nil)
 
 var (
-	CacheAdminDemoByConditionPrefix = "DBCache:<no value>:AdminDemoByCondition"
+	CacheAdminDemoByConditionPrefix = "DBCache:gorm_gen:AdminDemoByCondition"
 	CacheAdminDemoByIDPrefix        = "DBCache:gorm_gen:AdminDemoByID"
 	CacheAdminDemoByUsernamePrefix  = "DBCache:gorm_gen:AdminDemoByUsername"
 )

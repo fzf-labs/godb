@@ -23,7 +23,7 @@ import (
 var _ IAdminLogDemoRepo = (*AdminLogDemoRepo)(nil)
 
 var (
-	CacheAdminLogDemoByConditionPrefix = "DBCache:<no value>:AdminLogDemoByCondition"
+	CacheAdminLogDemoByConditionPrefix = "DBCache:gorm_gen:AdminLogDemoByCondition"
 	CacheAdminLogDemoByIDPrefix        = "DBCache:gorm_gen:AdminLogDemoByID"
 )
 
@@ -697,7 +697,7 @@ func (a *AdminLogDemoRepo) FindMultiCacheByCondition(ctx context.Context, condit
 		Result:         make([]*gorm_gen_model.AdminLogDemo, 0),
 		ConditionReply: &condition.Reply{},
 	}
-	cacheKey := a.cache.Key(CacheAdminDemoByConditionPrefix)
+	cacheKey := a.cache.Key(CacheAdminLogDemoByConditionPrefix)
 	cacheField := conditionReq.ConvertToCacheField()
 	cacheValue, err := a.cache.FetchHash(ctx, cacheKey, cacheField, func() (string, error) {
 		result, conditionReply, err := a.FindMultiByCondition(ctx, conditionReq)

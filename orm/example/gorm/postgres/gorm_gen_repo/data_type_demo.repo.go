@@ -24,7 +24,7 @@ import (
 var _ IDataTypeDemoRepo = (*DataTypeDemoRepo)(nil)
 
 var (
-	CacheDataTypeDemoByConditionPrefix    = "DBCache:<no value>:DataTypeDemoByCondition"
+	CacheDataTypeDemoByConditionPrefix    = "DBCache:gorm_gen:DataTypeDemoByCondition"
 	CacheDataTypeDemoByIDPrefix           = "DBCache:gorm_gen:DataTypeDemoByID"
 	CacheDataTypeDemoByULidPrefix         = "DBCache:gorm_gen:DataTypeDemoByULid"
 	CacheDataTypeDemoByBatchAPIPrefix     = "DBCache:gorm_gen:DataTypeDemoByBatchAPI"
@@ -1251,7 +1251,7 @@ func (d *DataTypeDemoRepo) FindMultiCacheByCondition(ctx context.Context, condit
 		Result:         make([]*gorm_gen_model.DataTypeDemo, 0),
 		ConditionReply: &condition.Reply{},
 	}
-	cacheKey := d.cache.Key(CacheAdminDemoByConditionPrefix)
+	cacheKey := d.cache.Key(CacheDataTypeDemoByConditionPrefix)
 	cacheField := conditionReq.ConvertToCacheField()
 	cacheValue, err := d.cache.FetchHash(ctx, cacheKey, cacheField, func() (string, error) {
 		result, conditionReply, err := d.FindMultiByCondition(ctx, conditionReq)

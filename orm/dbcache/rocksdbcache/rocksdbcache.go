@@ -175,6 +175,7 @@ func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func
 	}
 	return result, nil
 }
+
 func (r *Cache) Del(ctx context.Context, key string) error {
 	err := r.rocksCacheClient.TagAsDeleted2(ctx, key)
 	if err != nil {

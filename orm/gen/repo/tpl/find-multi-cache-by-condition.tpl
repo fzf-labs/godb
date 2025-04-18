@@ -8,7 +8,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiCacheByCondition(ct
 		Result: make([]*{{.dbName}}_model.{{.upperTableName}}, 0),
 		ConditionReply: &condition.Reply{},
 	}
-	cacheKey := {{.firstTableChar}}.cache.Key(CacheAdminDemoByConditionPrefix)
+	cacheKey := {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}ByConditionPrefix)
 	cacheField := conditionReq.ConvertToCacheField()
 	cacheValue, err := {{.firstTableChar}}.cache.FetchHash(ctx, cacheKey,cacheField, func() (string, error) {
 		result, conditionReply, err := {{.firstTableChar}}.FindMultiByCondition(ctx, conditionReq)

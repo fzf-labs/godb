@@ -282,6 +282,7 @@ func (r *Repo) generateVar() (string, error) {
 	var varStr string
 	var cacheKeys string
 	varCacheGlobalTpl, err := template.NewTemplate().Parse(VarCacheGlobal).Execute(map[string]any{
+		"dbName":         r.dbName,
 		"upperTableName": r.upperTableName,
 	})
 	if err != nil {

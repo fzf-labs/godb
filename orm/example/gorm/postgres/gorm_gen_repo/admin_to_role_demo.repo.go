@@ -23,7 +23,7 @@ import (
 var _ IAdminToRoleDemoRepo = (*AdminToRoleDemoRepo)(nil)
 
 var (
-	CacheAdminToRoleDemoByConditionPrefix     = "DBCache:<no value>:AdminToRoleDemoByCondition"
+	CacheAdminToRoleDemoByConditionPrefix     = "DBCache:gorm_gen:AdminToRoleDemoByCondition"
 	CacheAdminToRoleDemoByAdminIDRoleIDPrefix = "DBCache:gorm_gen:AdminToRoleDemoByAdminIDRoleID"
 	CacheAdminToRoleDemoByRoleIDAdminIDPrefix = "DBCache:gorm_gen:AdminToRoleDemoByRoleIDAdminID"
 	CacheAdminToRoleDemoByAdminIDPrefix       = "DBCache:gorm_gen:AdminToRoleDemoByAdminID"
@@ -721,7 +721,7 @@ func (a *AdminToRoleDemoRepo) FindMultiCacheByCondition(ctx context.Context, con
 		Result:         make([]*gorm_gen_model.AdminToRoleDemo, 0),
 		ConditionReply: &condition.Reply{},
 	}
-	cacheKey := a.cache.Key(CacheAdminDemoByConditionPrefix)
+	cacheKey := a.cache.Key(CacheAdminToRoleDemoByConditionPrefix)
 	cacheField := conditionReq.ConvertToCacheField()
 	cacheValue, err := a.cache.FetchHash(ctx, cacheKey, cacheField, func() (string, error) {
 		result, conditionReply, err := a.FindMultiByCondition(ctx, conditionReq)
