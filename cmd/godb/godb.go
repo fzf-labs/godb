@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/fzf-labs/godb/cmd/ormgen"
-	"github.com/fzf-labs/godb/cmd/sqldump"
-	"github.com/fzf-labs/godb/cmd/sqltopb"
+	"github.com/fzf-labs/godb/cmd/godb/ormgen"
+	"github.com/fzf-labs/godb/cmd/godb/sqldump"
+	"github.com/fzf-labs/godb/cmd/godb/sqltopb"
 	"github.com/spf13/cobra"
 )
 
