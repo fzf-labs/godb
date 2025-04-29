@@ -1,10 +1,5 @@
 # godb
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/fzf-labs/godb)](https://goreportcard.com/report/github.com/fzf-labs/godb)
-[![GoDoc](https://godoc.org/github.com/fzf-labs/godb?status.svg)](https://godoc.org/github.com/fzf-labs/godb)
-[![License](https://img.shields.io/github/license/fzf-labs/godb.svg)](https://github.com/fzf-labs/godb/blob/main/LICENSE)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/fzf-labs/godb)](https://github.com/fzf-labs/godb/blob/main/go.mod)
-
 godb 是一个 Go 语言数据库工具集合，提供了对 MySQL、PostgreSQL 等数据库的便捷操作，以及代码生成等功能。
 
 ## ✨ 功能特性
@@ -76,20 +71,21 @@ go install github.com/fzf-labs/godb/orm/cmd/godb
 ```
 ### 代码生成
 
-```go
-fdatabse ormgen -d "user:password@tcp(localhost:3306)/dbname" -o "./doc/gorm"
+```shell
+godb ormgen --db $(DB_TYPE) --dsn $(DB_DSN) --tables $(DB_TABLES)
 ```
 
 ### 数据库导出
 
-```go
-fdatabse sqldump -d "user:password@tcp(localhost:3306)/dbname" -o "./doc/sql"
+```shell
+godb sqldump --db $(DB_TYPE) --dsn $(DB_DSN) --tables $(DB_TABLES) -f true
 ```
 
 ### 数据库表生成proto文件
 
-```go
-fdatabse sqltopb -d "user:password@tcp(localhost:3306)/dbname" -o "./doc/pb"
+```shell
+godb sqltopb --db $(DB_TYPE) --dsn $(DB_DSN) -p '' -g '' -o ''
+
 ```
 
 ## 🤝 贡献
