@@ -27,7 +27,7 @@ const (
 
 // ClientConfig 配置
 type ClientConfig struct {
-	DB              string        `json:"db"`              // 数据库类型 mysql/postgres
+	Driver          string        `json:"driver"`          // 数据库类型 mysql/postgres
 	DataSourceName  string        `json:"dataSourceName"`  // 数据源名称
 	MaxIdleConn     int           `json:"maxIdleConn"`     // 最大空闲连接数 默认10
 	MaxOpenConn     int           `json:"maxOpenConn"`     // 最大打开连接数 默认100
@@ -38,8 +38,8 @@ type ClientConfig struct {
 }
 
 // NewSimpleGormClient 创建数据库连接
-func NewSimpleGormClient(db, dsn string) *gorm.DB {
-	switch db {
+func NewSimpleGormClient(driver, dsn string) *gorm.DB {
+	switch driver {
 	case MySQL:
 		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
@@ -65,13 +65,13 @@ func NewSimpleGormClient(db, dsn string) *gorm.DB {
 // mysql: "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
 // postgres: "host=localhost user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 func NewGormClient(cfg *ClientConfig) (*gorm.DB, error) {
-	switch cfg.DB {
+	switch cfg.Driver {
 	case MySQL:
 		return NewMySQLGormClient(cfg)
 	case Postgres:
 		return NewPostgresGormClient(cfg)
 	default:
-		return nil, fmt.Errorf("unknown database type: %s", cfg.DB)
+		return nil, fmt.Errorf("unknown database driver: %s", cfg.Driver)
 	}
 }
 
