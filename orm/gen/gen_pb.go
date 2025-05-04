@@ -47,8 +47,8 @@ func WithPBOpts(opts ...gen.ModelOpt) OptionPB {
 	}
 }
 
-// WithPBTable 选项函数-指定表
-func WithPBTable(tables []string) OptionPB {
+// WithPBTables 选项函数-指定表
+func WithPBTables(tables []string) OptionPB {
 	return func(r *GenerationPb) {
 		r.tables = tables
 	}
