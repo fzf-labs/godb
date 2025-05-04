@@ -2,6 +2,7 @@ package gen
 
 import (
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/fzf-labs/godb/orm/gen/proto"
@@ -15,6 +16,7 @@ import (
 func NewGenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr string, opts ...OptionPB) *GenerationPb {
 	g := &GenerationPb{
 		gorm:         db,
+		tables:       make([]string, 0),
 		outPutPath:   outPutPath,
 		packageStr:   packageStr,
 		goPackageStr: goPackageStr,
@@ -29,10 +31,11 @@ func NewGenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr string, o
 
 type GenerationPb struct {
 	gorm         *gorm.DB       // 数据库
+	tables       []string       // 指定表
 	outPutPath   string         // 文件生成地址
 	opts         []gen.ModelOpt // 特殊处理逻辑函
-	packageStr   string
-	goPackageStr string
+	packageStr   string         // 包名
+	goPackageStr string         // 包路径
 }
 
 type OptionPB func(gen *GenerationPb)
@@ -41,6 +44,13 @@ type OptionPB func(gen *GenerationPb)
 func WithPBOpts(opts ...gen.ModelOpt) OptionPB {
 	return func(r *GenerationPb) {
 		r.opts = opts
+	}
+}
+
+// WithPBTable 选项函数-指定表
+func WithPBTable(tables []string) OptionPB {
+	return func(r *GenerationPb) {
+		r.tables = tables
 	}
 }
 
@@ -60,6 +70,9 @@ func (g *GenerationPb) Do() {
 	if err != nil {
 		return
 	}
+	if len(g.tables) > 0 {
+		tables = g.tables
+	}
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.gorm)
 	if err != nil {
@@ -77,19 +90,22 @@ func (g *GenerationPb) Do() {
 		table := v
 		// 表字段对应的名称
 		columnNameToName := make(map[string]string)
+		// 表字段对应的类型
+		columnNameToDataType := make(map[string]string)
 		queryStructMeta := generator.GenerateModel(table)
 		for _, vv := range queryStructMeta.Fields {
 			columnNameToName[vv.ColumnName] = vv.Name
+			columnNameToDataType[vv.ColumnName] = strings.TrimLeft(vv.Type, "*")
 		}
-		go func(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string) {
+		go func(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) {
 			defer wg.Done()
 			// 数据表repo代码生成
-			err2 := proto.GenerationPB(db, outPutPath, packageStr, goPackageStr, table, columnNameToName)
-			if err2 != nil {
-				log.Println("repo GenerationTable err:", err2)
+			err := proto.GenerationPB(db, outPutPath, packageStr, goPackageStr, table, columnNameToName, columnNameToDataType)
+			if err != nil {
+				log.Println("repo GenerationTable err:", err)
 				return
 			}
-		}(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName)
+		}(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType)
 	}
 	wg.Wait()
 }

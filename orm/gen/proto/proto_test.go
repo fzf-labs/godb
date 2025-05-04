@@ -18,12 +18,13 @@ func newDB() *gorm.DB {
 func TestGenerationPB(t *testing.T) {
 	db := newDB()
 	type args struct {
-		db               *gorm.DB
-		outPutPath       string
-		packageStr       string
-		goPackageStr     string
-		table            string
-		columnNameToName map[string]string
+		db                   *gorm.DB
+		outPutPath           string
+		packageStr           string
+		goPackageStr         string
+		table                string
+		columnNameToName     map[string]string
+		columnNameToDataType map[string]string
 	}
 	tests := []struct {
 		name    string
@@ -49,13 +50,20 @@ func TestGenerationPB(t *testing.T) {
 					"resp":       "Resp",
 					"created_at": "CreatedAt",
 				},
+				columnNameToDataType: map[string]string{
+					"id":        "int64",
+					"admin_id":  "int64",
+					"ip":        "string",
+					"uri":       "string",
+					"useragent": "string",
+				},
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := GenerationPB(tt.args.db, tt.args.outPutPath, tt.args.packageStr, tt.args.goPackageStr, tt.args.table, tt.args.columnNameToName); (err != nil) != tt.wantErr {
+			if err := GenerationPB(tt.args.db, tt.args.outPutPath, tt.args.packageStr, tt.args.goPackageStr, tt.args.table, tt.args.columnNameToName, tt.args.columnNameToDataType); (err != nil) != tt.wantErr {
 				t.Errorf("GenerationPB() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

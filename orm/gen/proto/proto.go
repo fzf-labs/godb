@@ -19,19 +19,20 @@ import (
 )
 
 // GenerationPB 生成
-func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string) error {
+func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) error {
 	var f string
 	p := &Proto{
-		gorm:                db,
-		outPutPath:          outPutPath,
-		packageStr:          packageStr,
-		goPackageStr:        goPackageStr,
-		tableName:           table,
-		tableNameComment:    "",
-		tableNameUnderScore: strcase.ToSnake(table),
-		lowerTableName:      "",
-		upperTableName:      "",
-		columnNameToName:    columnNameToName,
+		gorm:                 db,
+		outPutPath:           outPutPath,
+		packageStr:           packageStr,
+		goPackageStr:         goPackageStr,
+		tableName:            table,
+		tableNameComment:     "",
+		tableNameUnderScore:  strcase.ToSnake(table),
+		lowerTableName:       "",
+		upperTableName:       "",
+		columnNameToName:     columnNameToName,
+		columnNameToDataType: columnNameToDataType,
 	}
 	p.tableNameComment = p.getTableComment(table)
 	p.lowerTableName = p.lowerName(table)
@@ -47,16 +48,17 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 }
 
 type Proto struct {
-	gorm                *gorm.DB          // 数据库
-	outPutPath          string            // 生成文件路径
-	packageStr          string            // proto中的package名称
-	goPackageStr        string            // proto中的goPackage名称
-	tableName           string            // 表名称
-	tableNameComment    string            // 表注释
-	tableNameUnderScore string            // 表下划线名称
-	lowerTableName      string            // 表名称首字母小写
-	upperTableName      string            // 表名称首字母大写
-	columnNameToName    map[string]string // 字段名称对应的Go名称
+	gorm                 *gorm.DB          // 数据库
+	outPutPath           string            // 生成文件路径
+	packageStr           string            // proto中的package名称
+	goPackageStr         string            // proto中的goPackage名称
+	tableName            string            // 表名称
+	tableNameComment     string            // 表注释
+	tableNameUnderScore  string            // 表下划线名称
+	lowerTableName       string            // 表名称首字母小写
+	upperTableName       string            // 表名称首字母大写
+	columnNameToName     map[string]string // 字段名称对应的Go名称
+	columnNameToDataType map[string]string // 字段名称对应的Go类型
 }
 
 func (p *Proto) output(filePath, content string) error {
@@ -154,9 +156,12 @@ func (p *Proto) genMessage() string {
 	for _, v := range columnTypes {
 		num++
 		columnTypeInfo[v.Name()] = v
-		pbType := columnTypeToPbType(v.DatabaseTypeName())
+		pbType := dataTypeToPbType(p.columnNameToDataType[v.Name()])
 		pbName := lowerFieldName(p.columnNameToName[v.Name()])
 		comment, _ := v.Comment()
+		nullable, _ := v.Nullable()
+		length, _ := v.Length()
+		validate := pbTypeToValidate(pbType, nullable, length)
 		if utils.StrSliFind([]string{"deletedAt", "deleted_at", "deletedTime", "deleted_time"}, v.Name()) {
 			continue
 		}
@@ -166,18 +171,20 @@ func (p *Proto) genMessage() string {
 		}
 		if v.Name() != primaryKeyColumn {
 			createNum++
-			createReq += fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, createNum, comment)
+			createReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, createNum, validate, comment)
 		}
-		updateReq += fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, num, comment)
+		updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, num, validate, comment)
 	}
 	if primaryKeyColumn != "" {
-		primaryKeyColumnType, _ := columnTypeInfo[primaryKeyColumn].ColumnType()
 		primaryKeyComment, _ := columnTypeInfo[primaryKeyColumn].Comment()
-		pbType := columnTypeToPbType(primaryKeyColumnType)
+		pbType := dataTypeToPbType(p.columnNameToDataType[primaryKeyColumn])
+		nullable, _ := columnTypeInfo[primaryKeyColumn].Nullable()
+		length, _ := columnTypeInfo[primaryKeyColumn].Length()
+		validate := pbTypeToValidate(pbType, nullable, length)
 		pbName := lowerFieldName(p.columnNameToName[primaryKeyColumn])
-		createReply = fmt.Sprintf("	%s %s = %d; // %s", pbType, pbName, 1, primaryKeyComment)
-		getReq = fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, 1, primaryKeyComment)
-		deleteReq = fmt.Sprintf("repeated %s %s = %d; // %s\n", pbType, plural(pbName), 1, primaryKeyComment+"集合")
+		createReply = fmt.Sprintf("	%s %s = %d %s; // %s", pbType, pbName, 1, validate, primaryKeyComment)
+		getReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
+		deleteReq = fmt.Sprintf("repeated %s %s = %d %s; // %s\n", pbType, plural(pbName), 1, validate, primaryKeyComment+"集合")
 	}
 	info = strings.TrimSpace(strings.TrimRight(info, "\n"))
 	createReq = strings.TrimSpace(strings.TrimRight(createReq, "\n"))
@@ -200,6 +207,15 @@ func (p *Proto) genMessage() string {
 // upperName 大写
 func (p *Proto) upperName(s string) string {
 	return p.gorm.NamingStrategy.SchemaName(s)
+}
+
+// plural 复数形式
+func plural(s string) string {
+	str := inflection.Plural(s)
+	if str == s {
+		str += "plural"
+	}
+	return str
 }
 
 // lowerName 小写
@@ -245,32 +261,97 @@ func lowerFieldName(str string) string {
 	return str
 }
 
-func columnTypeToPbType(columnType string) string {
+// dataTypeToPbType 根据数据库类型转换为proto类型
+// go 语言类型转换为proto类型
+func dataTypeToPbType(dataType string) string {
 	var fieldType string
-	switch columnType {
-	case "char", "varchar", "text", "uuid", "json", "jsonb":
-		fieldType = "string"
-	case "date", "timestamp", "timetz", "timestamptz":
-		fieldType = "google.protobuf.Timestamp"
+	switch dataType {
+	case "int", "int8", "int16", "int32", "int64":
+		fieldType = "int32" // 64位存在溢出问题
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		fieldType = "uint32" // 64位存在溢出问题
+	case "float32":
+		fieldType = "float"
+	case "float64":
+		fieldType = "double"
 	case "bool":
 		fieldType = "bool"
-	case "int2", "int4", "int8":
-		fieldType = "int32"
-	case "float4":
-		fieldType = "float"
-	case "float8":
-		fieldType = "double"
+	case "string":
+		fieldType = "string"
+	case "time.Time":
+		fieldType = "google.protobuf.Timestamp"
+	case "[]byte":
+		fieldType = "bytes"
 	default:
 		fieldType = "string"
 	}
 	return fieldType
 }
 
-// plural 复数形式
-func plural(s string) string {
-	str := inflection.Plural(s)
-	if str == s {
-		str += "plural"
+// pbTypeToValidate 根据pb类型转换为validate类型
+func pbTypeToValidate(pbType string, isNull bool, length int64) string {
+	switch pbType {
+	case "string":
+		if isNull {
+			if length == 0 {
+				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]"
+			}
+			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: %d}]", length)
+		}
+		if length == 0 {
+			return "[(buf.validate.field).string={min_len: 1}]"
+		}
+		return fmt.Sprintf("[(buf.validate.field).string={min_len: 1, max_len: %d}]", length)
+	case "int32":
+		if isNull {
+			if length == 0 {
+				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0}]"
+			}
+			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: %d}]", length)
+		}
+		if length == 0 {
+			return "[(buf.validate.field).int32={gt: 0}]"
+		}
+		return fmt.Sprintf("[(buf.validate.field).int32={gt: 0, lte: %d}]", length)
+	case "int64":
+		if isNull {
+			if length == 0 {
+				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int64={gt: 0}]"
+			}
+			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int64={gt: 0, lte: %d}]", length)
+		}
+		if length == 0 {
+			return "[(buf.validate.field).int64={gt: 0}]"
+		}
+		return fmt.Sprintf("[(buf.validate.field).int64={gt: 0, lte: %d}]", length)
+	case "float":
+		if isNull {
+			if length == 0 {
+				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0}]"
+			}
+			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0, lte: %d}]", length)
+		}
+		if length == 0 {
+			return "[(buf.validate.field).float={gt: 0}]"
+		}
+		return fmt.Sprintf("[(buf.validate.field).float={gt: 0, lte: %d}]", length)
+	case "double":
+		if isNull {
+			if length == 0 {
+				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0}]"
+			}
+			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0, lte: %d}]", length)
+		}
+		if length == 0 {
+			return "[(buf.validate.field).double={gt: 0}]"
+		}
+		return fmt.Sprintf("[(buf.validate.field).double={gt: 0, lte: %d}]", length)
+	case "google.protobuf.Timestamp":
+		if isNull {
+			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
+		}
+		return "[(buf.validate.field).required=true]"
+	default:
+		return ""
 	}
-	return str
 }
