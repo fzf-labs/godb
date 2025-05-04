@@ -35,5 +35,19 @@ func init() {
 }
 
 func Run(_ *cobra.Command, _ []string) {
-	gen.NewGenerationPB(gormx.NewSimpleGormClient(db, dsn), outPutPath, pbPackage, pbGoPackage, gen.WithPBOpts(gen.ModelOptionRemoveDefault(), gen.ModelOptionUnderline("UL")), gen.WithPBTables(strings.Split(targetTables, ","))).Do()
+	var tables []string
+	if targetTables != "" {
+		tables = strings.Split(targetTables, ",")
+	}
+	gen.NewGenerationPB(
+		gormx.NewSimpleGormClient(db, dsn),
+		outPutPath,
+		pbPackage,
+		pbGoPackage,
+		gen.WithPBOpts(
+			gen.ModelOptionRemoveDefault(),
+			gen.ModelOptionUnderline("UL"),
+		),
+		gen.WithPBTables(tables),
+	).Do()
 }

@@ -138,15 +138,15 @@ func (p *Proto) genMessage() string {
 	if err != nil {
 		return ""
 	}
-	indexes, err := p.gorm.Migrator().GetIndexes(p.tableName)
+	// 获取索引
+	indexes, err := gormx.GetIndexes(p.gorm, p.tableName)
 	if err != nil {
 		return ""
 	}
 	var primaryKeyColumn string
 	for _, index := range indexes {
-		b, _ := index.PrimaryKey()
-		if b {
-			primaryKeyColumn = index.Columns()[0]
+		if index.Primary {
+			primaryKeyColumn = index.ColumnName
 			break
 		}
 	}
@@ -182,7 +182,7 @@ func (p *Proto) genMessage() string {
 		length, _ := columnTypeInfo[primaryKeyColumn].Length()
 		validate := pbTypeToValidate(pbType, nullable, length)
 		pbName := lowerFieldName(p.columnNameToName[primaryKeyColumn])
-		createReply = fmt.Sprintf("	%s %s = %d %s; // %s", pbType, pbName, 1, validate, primaryKeyComment)
+		createReply = fmt.Sprintf("	%s %s = %d; // %s", pbType, pbName, 1, primaryKeyComment)
 		getReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
 		deleteReq = fmt.Sprintf("repeated %s %s = %d %s; // %s\n", pbType, plural(pbName), 1, validate, primaryKeyComment+"集合")
 	}

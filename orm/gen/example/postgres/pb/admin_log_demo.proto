@@ -56,19 +56,18 @@ message AdminLogDemoInfo {
 
 //请求-系统-日志-创建一条数据
 message CreateAdminLogDemoReq {
-  int32 id = 1 [(buf.validate.field).int32={gt: 0, lte: 128}]; // 编号
-	int32 adminId = 2 [(buf.validate.field).int32={gt: 0, lte: 128}]; // 管理员ID
-	string IP = 3 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // ip
-	string URI = 4 [(buf.validate.field).string={min_len: 1, max_len: 200}]; // 请求路径
-	string useragent = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 浏览器标识
-	string header = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
-	string req = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
-	string resp = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
+  int32 adminId = 1 [(buf.validate.field).int32={gt: 0, lte: 128}]; // 管理员ID
+	string IP = 2 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // ip
+	string URI = 3 [(buf.validate.field).string={min_len: 1, max_len: 200}]; // 请求路径
+	string useragent = 4 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 浏览器标识
+	string header = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
+	string req = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
+	string resp = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
 }
 
 //响应-系统-日志-创建一条数据
 message CreateAdminLogDemoReply {
-  
+  	int32 id = 1; // 编号
 }
 
 //请求-系统-日志-更新一条数据
@@ -88,7 +87,7 @@ message UpdateAdminLogDemoReply {}
 
 //请求-系统-日志-删除多条数据
 message DeleteAdminLogDemoReq {
-  
+  repeated int32 ids = 1 [(buf.validate.field).int32={gt: 0, lte: 128}]; // 编号集合
 }
 
 //响应-系统-日志-删除多条数据
@@ -96,7 +95,7 @@ message DeleteAdminLogDemoReply {}
 
 //请求-系统-日志-单条数据查询
 message GetAdminLogDemoInfoReq {
-  
+  int32 id = 1 [(buf.validate.field).int32={gt: 0, lte: 128}]; // 编号
 }
 
 //响应-系统-日志-单条数据查询
