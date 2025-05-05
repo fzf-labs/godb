@@ -13,7 +13,7 @@ func TestNewGenerationPb(t *testing.T) {
 	}
 	NewGenerationPB(
 		db,
-		"./example/postgres/pb",
+		"../example/pb",
 		"api.gorm_gen.v1",
 		"api/gorm_gen/v1;v1",
 		WithPBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("ul_")),

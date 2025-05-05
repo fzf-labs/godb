@@ -30,6 +30,8 @@ var (
 
 type (
 	IAdminDemoRepo interface {
+		// NewData 实例化
+		NewData() *gorm_gen_model.AdminDemo
 		// DeepCopy 深拷贝
 		DeepCopy(data *gorm_gen_model.AdminDemo) *gorm_gen_model.AdminDemo
 		// CreateOne 创建一条数据
@@ -152,6 +154,11 @@ func NewAdminDemoRepo(cfg *config.Repo) *AdminDemoRepo {
 		cache:    cfg.Cache,
 		encoding: cfg.Encoding,
 	}
+}
+
+// NewData 实例化
+func (a *AdminDemoRepo) NewData() *gorm_gen_model.AdminDemo {
+	return &gorm_gen_model.AdminDemo{}
 }
 
 // DeepCopy 深拷贝

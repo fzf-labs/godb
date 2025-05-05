@@ -35,6 +35,8 @@ var (
 
 type (
 	IDataTypeDemoRepo interface {
+		// NewData 实例化
+		NewData() *gorm_gen_model.DataTypeDemo
 		// DeepCopy 深拷贝
 		DeepCopy(data *gorm_gen_model.DataTypeDemo) *gorm_gen_model.DataTypeDemo
 		// CreateOne 创建一条数据
@@ -233,6 +235,11 @@ func NewDataTypeDemoRepo(cfg *config.Repo) *DataTypeDemoRepo {
 		cache:    cfg.Cache,
 		encoding: cfg.Encoding,
 	}
+}
+
+// NewData 实例化
+func (d *DataTypeDemoRepo) NewData() *gorm_gen_model.DataTypeDemo {
+	return &gorm_gen_model.DataTypeDemo{}
 }
 
 // DeepCopy 深拷贝

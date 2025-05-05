@@ -31,6 +31,12 @@ var Types string
 //go:embed tpl/new.tpl
 var New string
 
+//go:embed tpl/new-data.tpl
+var NewData string
+
+//go:embed tpl/interface-new-data.tpl
+var InterfaceNewData string
+
 //go:embed tpl/interface-deep-copy.tpl
 var InterfaceDeepCopy string
 

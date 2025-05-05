@@ -329,6 +329,11 @@ func (r *Repo) generateCommonMethods() (string, error) {
 		"dbName":         r.dbName,
 		"upperTableName": r.upperTableName,
 	}
+	interfaceNewData, err := template.NewTemplate().Parse(InterfaceNewData).Execute(tplParams)
+	if err != nil {
+		return "", err
+	}
+	commonMethods += fmt.Sprintln(interfaceNewData.String())
 	interfaceDeepCopy, err := template.NewTemplate().Parse(InterfaceDeepCopy).Execute(tplParams)
 	if err != nil {
 		return "", err
@@ -946,6 +951,11 @@ func (r *Repo) generateCommonFunc() (string, error) {
 		"upperTableName": r.upperTableName,
 		"lowerTableName": r.lowerTableName,
 	}
+	newData, err := template.NewTemplate().Parse(NewData).Execute(tplParams)
+	if err != nil {
+		return "", err
+	}
+	commonFunc += fmt.Sprintln(newData.String())
 	deepCopy, err := template.NewTemplate().Parse(DeepCopy).Execute(tplParams)
 	if err != nil {
 		return "", err
