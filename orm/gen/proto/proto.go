@@ -119,10 +119,22 @@ func (p *Proto) genOption() string {
 }
 
 func (p *Proto) genService() string {
+	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
+	if err != nil {
+		return ""
+	}
+	status := false
+	for _, v := range columnTypes {
+		if v.Name() == "status" {
+			status = true
+			break
+		}
+	}
 	str, _ := template.NewTemplate().Parse(Service).Execute(map[string]any{
 		"upperTableName":      p.upperTableName,
 		"tableNameComment":    p.tableNameComment,
 		"tableNameUnderScore": p.tableNameUnderScore,
+		"status":              status,
 	})
 	return fmt.Sprintln(str.String())
 }
@@ -132,8 +144,10 @@ func (p *Proto) genMessage() string {
 	var createReq string
 	var createReply string
 	var updateReq string
+	var updateStatusReq string
 	var deleteReq string
 	var getReq string
+	var status bool
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
 		return ""
@@ -151,10 +165,11 @@ func (p *Proto) genMessage() string {
 		}
 	}
 	columnTypeInfo := make(map[string]gorm.ColumnType)
-	num := 0
+	infoNum := 0
+	updateNum := 0
 	createNum := 0
+	updateStatusNum := 0
 	for _, v := range columnTypes {
-		num++
 		columnTypeInfo[v.Name()] = v
 		pbType := dataTypeToPbType(p.columnNameToDataType[v.Name()])
 		pbName := lowerFieldName(p.columnNameToName[v.Name()])
@@ -165,15 +180,26 @@ func (p *Proto) genMessage() string {
 		if utils.StrSliFind([]string{"deletedAt", "deleted_at", "deletedTime", "deleted_time"}, v.Name()) {
 			continue
 		}
-		info += fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, num, comment)
+		infoNum++
+		info += fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, infoNum, comment)
 		if utils.StrSliFind([]string{"createdAt", "created_at", "createdTime", "created_time", "updatedAt", "updated_at", "updatedTime", "updated_time"}, v.Name()) {
 			continue
 		}
-		if v.Name() != primaryKeyColumn {
+		if v.Name() != primaryKeyColumn && v.Name() != "status" {
 			createNum++
 			createReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, createNum, validate, comment)
 		}
-		updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, num, validate, comment)
+		if v.Name() != "status" {
+			updateNum++
+			updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateNum, validate, comment)
+		}
+		if v.Name() == "status" {
+			status = true
+		}
+		if v.Name() == primaryKeyColumn || v.Name() == "status" {
+			updateStatusNum++
+			updateStatusReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateStatusNum, validate, comment)
+		}
 	}
 	if primaryKeyColumn != "" {
 		primaryKeyComment, _ := columnTypeInfo[primaryKeyColumn].Comment()
@@ -189,6 +215,7 @@ func (p *Proto) genMessage() string {
 	info = strings.TrimSpace(strings.TrimRight(info, "\n"))
 	createReq = strings.TrimSpace(strings.TrimRight(createReq, "\n"))
 	updateReq = strings.TrimSpace(strings.TrimRight(updateReq, "\n"))
+	updateStatusReq = strings.TrimSpace(strings.TrimRight(updateStatusReq, "\n"))
 	deleteReq = strings.TrimSpace(strings.TrimRight(deleteReq, "\n"))
 	getReq = strings.TrimSpace(strings.TrimRight(getReq, "\n"))
 	str, _ := template.NewTemplate().Parse(Message).Execute(map[string]any{
@@ -198,8 +225,10 @@ func (p *Proto) genMessage() string {
 		"createReq":        createReq,
 		"createReply":      createReply,
 		"updateReq":        updateReq,
+		"updateStatusReq":  updateStatusReq,
 		"deleteReq":        deleteReq,
 		"getReq":           getReq,
+		"status":           status,
 	})
 	return fmt.Sprintln(str.String())
 }

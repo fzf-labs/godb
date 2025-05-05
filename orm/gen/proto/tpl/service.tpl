@@ -14,6 +14,15 @@ service {{.upperTableName}} {
       body: "*"
     };
   }
+  {{- if .status }}
+  //{{.tableNameComment}}-更新状态
+  rpc Update{{.upperTableName}}Status(Update{{.upperTableName}}StatusReq) returns (Update{{.upperTableName}}StatusReply) {
+    option (google.api.http) = {
+      post: "/{{.tableNameUnderScore}}/v1/{{.tableNameUnderScore}}/update/status"
+      body: "*"
+    };
+  }
+	{{- end }}
   //{{.tableNameComment}}-删除多条数据
   rpc Delete{{.upperTableName}}(Delete{{.upperTableName}}Req) returns (Delete{{.upperTableName}}Reply) {
     option (google.api.http) = {

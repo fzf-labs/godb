@@ -1,39 +1,48 @@
 syntax = "proto3";
 
-package pb;
+package api.gorm_gen.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-option go_package = "github.com/fzf-labs/godb/orm/example/pb;pb";
+//import "validate/validate.proto"; use buf first
+option go_package = "api/gorm_gen/v1;v1";
 
-//
+//用户
 service UserDemo {
-  //-创建一条数据
+  //用户-创建一条数据
   rpc CreateUserDemo(CreateUserDemoReq) returns (CreateUserDemoReply) {
     option (google.api.http) = {
       post: "/user_demo/v1/user_demo/create"
       body: "*"
     };
   }
-  //-更新一条数据
+  //用户-更新一条数据
   rpc UpdateUserDemo(UpdateUserDemoReq) returns (UpdateUserDemoReply) {
     option (google.api.http) = {
       post: "/user_demo/v1/user_demo/update"
       body: "*"
     };
   }
-  //-删除多条数据
+  //用户-更新状态
+  rpc UpdateUserDemoStatus(UpdateUserDemoStatusReq) returns (UpdateUserDemoStatusReply) {
+    option (google.api.http) = {
+      post: "/user_demo/v1/user_demo/update/status"
+      body: "*"
+    };
+  }
+  //用户-删除多条数据
   rpc DeleteUserDemo(DeleteUserDemoReq) returns (DeleteUserDemoReply) {
     option (google.api.http) = {
       post: "/user_demo/v1/user_demo/delete"
       body: "*"
     };
   }
-  //-单条数据查询
+  //用户-单条数据查询
   rpc GetUserDemoInfo(GetUserDemoInfoReq) returns (GetUserDemoInfoReply) {
     option (google.api.http) = {get: "/user_demo/v1/user_demo/info"};
   }
-  //-列表数据查询
+  //用户-列表数据查询
   rpc GetUserDemoList(GetUserDemoListReq) returns (GetUserDemoListReply) {
     option (google.api.http) = {
       post: "/user_demo/v1/user_demo/list",
@@ -41,7 +50,7 @@ service UserDemo {
     };
   }
 }
-//信息
+//用户信息
 message UserDemoInfo {
   string id = 1; // ID
 	string UID = 2; // uid
@@ -63,79 +72,85 @@ message UserDemoInfo {
 	google.protobuf.Timestamp updatedAt = 18; // 更新时间
 }
 
-//请求--创建一条数据
+//请求-用户-创建一条数据
 message CreateUserDemoReq {
-  string id = 1; // ID
-	string UID = 2; // uid
-	string username = 3; // 用户账号
-	string password = 4; // 密码
-	string nickname = 5; // 用户昵称
-	string remark = 6; // 备注
-	int32 deptId = 7; // 部门ID
-	string postIds = 8; // 岗位编号数组
-	string email = 9; // 用户邮箱
-	string mobile = 10; // 手机号码
-	int32 sex = 11; // 用户性别
-	string avatar = 12; // 头像地址
-	int32 status = 13; // 帐号状态（0正常 -1停用）
-	string loginIP = 14; // 最后登录IP
-	google.protobuf.Timestamp loginDate = 15; // 最后登录时间
-	int32 tenantId = 16; // 租户编号
+  string UID = 1 [(buf.validate.field).string={min_len: 1, max_len: 64}]; // uid
+	string username = 2 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户账号
+	string password = 3 [(buf.validate.field).string={min_len: 1, max_len: 100}]; // 密码
+	string nickname = 4 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户昵称
+	string remark = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 500}]; // 备注
+	int32 deptId = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 部门ID
+	string postIds = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 岗位编号数组
+	string email = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户邮箱
+	string mobile = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 11}]; // 手机号码
+	int32 sex = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 用户性别
+	string avatar = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 100}]; // 头像地址
+	string loginIP = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 最后登录IP
+	google.protobuf.Timestamp loginDate = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 最后登录时间
+	int32 tenantId = 14 [(buf.validate.field).int32={gt: 0, lte: 64}]; // 租户编号
 }
 
-//响应--创建一条数据
+//响应-用户-创建一条数据
 message CreateUserDemoReply {
-  
+  	string id = 1; // ID
 }
 
-//请求--更新一条数据
+//请求-用户-更新一条数据
 message UpdateUserDemoReq {
-  string id = 1; // ID
-	string UID = 2; // uid
-	string username = 3; // 用户账号
-	string password = 4; // 密码
-	string nickname = 5; // 用户昵称
-	string remark = 6; // 备注
-	int32 deptId = 7; // 部门ID
-	string postIds = 8; // 岗位编号数组
-	string email = 9; // 用户邮箱
-	string mobile = 10; // 手机号码
-	int32 sex = 11; // 用户性别
-	string avatar = 12; // 头像地址
-	int32 status = 13; // 帐号状态（0正常 -1停用）
-	string loginIP = 14; // 最后登录IP
-	google.protobuf.Timestamp loginDate = 15; // 最后登录时间
-	int32 tenantId = 16; // 租户编号
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
+	string UID = 2 [(buf.validate.field).string={min_len: 1, max_len: 64}]; // uid
+	string username = 3 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户账号
+	string password = 4 [(buf.validate.field).string={min_len: 1, max_len: 100}]; // 密码
+	string nickname = 5 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户昵称
+	string remark = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 500}]; // 备注
+	int32 deptId = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 部门ID
+	string postIds = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 岗位编号数组
+	string email = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户邮箱
+	string mobile = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 11}]; // 手机号码
+	int32 sex = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 用户性别
+	string avatar = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 100}]; // 头像地址
+	string loginIP = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 最后登录IP
+	google.protobuf.Timestamp loginDate = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 最后登录时间
+	int32 tenantId = 15 [(buf.validate.field).int32={gt: 0, lte: 64}]; // 租户编号
 }
 
-//响应--更新一条数据
+//响应-用户-更新一条数据
 message UpdateUserDemoReply {}
 
-//请求--删除多条数据
-message DeleteUserDemoReq {
-  
+//请求-用户-更新状态
+message UpdateUserDemoStatusReq {
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
+	int32 status = 2 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 帐号状态（0正常 -1停用）
 }
 
-//响应--删除多条数据
+//响应-用户-更新状态
+message UpdateUserDemoStatusReply {}
+
+//请求-用户-删除多条数据
+message DeleteUserDemoReq {
+  repeated string ids = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID集合
+}
+
+//响应-用户-删除多条数据
 message DeleteUserDemoReply {}
 
-//请求--单条数据查询
+//请求-用户-单条数据查询
 message GetUserDemoInfoReq {
-  
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
-//响应--单条数据查询
+//响应-用户-单条数据查询
 message GetUserDemoInfoReply {
   UserDemoInfo info = 1;
 }
 
-//请求--列表数据查询
+//请求-用户-列表数据查询
 message GetUserDemoListReq {
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }
 
-//响应--列表数据查询
+//响应-用户-列表数据查询
 message GetUserDemoListReply {
   int32 total = 1; //总数
   repeated UserDemoInfo list = 2; // 列表数据

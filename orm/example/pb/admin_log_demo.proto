@@ -1,39 +1,41 @@
 syntax = "proto3";
 
-package pb;
+package api.gorm_gen.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-option go_package = "github.com/fzf-labs/godb/orm/example/pb;pb";
+//import "validate/validate.proto"; use buf first
+option go_package = "api/gorm_gen/v1;v1";
 
-//
+//系统-日志
 service AdminLogDemo {
-  //-创建一条数据
+  //系统-日志-创建一条数据
   rpc CreateAdminLogDemo(CreateAdminLogDemoReq) returns (CreateAdminLogDemoReply) {
     option (google.api.http) = {
       post: "/admin_log_demo/v1/admin_log_demo/create"
       body: "*"
     };
   }
-  //-更新一条数据
+  //系统-日志-更新一条数据
   rpc UpdateAdminLogDemo(UpdateAdminLogDemoReq) returns (UpdateAdminLogDemoReply) {
     option (google.api.http) = {
       post: "/admin_log_demo/v1/admin_log_demo/update"
       body: "*"
     };
   }
-  //-删除多条数据
+  //系统-日志-删除多条数据
   rpc DeleteAdminLogDemo(DeleteAdminLogDemoReq) returns (DeleteAdminLogDemoReply) {
     option (google.api.http) = {
       post: "/admin_log_demo/v1/admin_log_demo/delete"
       body: "*"
     };
   }
-  //-单条数据查询
+  //系统-日志-单条数据查询
   rpc GetAdminLogDemoInfo(GetAdminLogDemoInfoReq) returns (GetAdminLogDemoInfoReply) {
     option (google.api.http) = {get: "/admin_log_demo/v1/admin_log_demo/info"};
   }
-  //-列表数据查询
+  //系统-日志-列表数据查询
   rpc GetAdminLogDemoList(GetAdminLogDemoListReq) returns (GetAdminLogDemoListReply) {
     option (google.api.http) = {
       post: "/admin_log_demo/v1/admin_log_demo/list",
@@ -41,7 +43,7 @@ service AdminLogDemo {
     };
   }
 }
-//信息
+//系统-日志信息
 message AdminLogDemoInfo {
   string id = 1; // 编号
 	string adminId = 2; // 管理员ID
@@ -54,63 +56,62 @@ message AdminLogDemoInfo {
 	google.protobuf.Timestamp createdAt = 9; // 创建时间
 }
 
-//请求--创建一条数据
+//请求-系统-日志-创建一条数据
 message CreateAdminLogDemoReq {
-  string id = 1; // 编号
-	string adminId = 2; // 管理员ID
-	string IP = 3; // ip
-	string URI = 4; // 请求路径
-	string useragent = 5; // 浏览器标识
-	string header = 6; // header
-	string req = 7; // 请求数据
-	string resp = 8; // 响应数据
+  string adminId = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 管理员ID
+	string IP = 2 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // ip
+	string URI = 3 [(buf.validate.field).string={min_len: 1, max_len: 200}]; // 请求路径
+	string useragent = 4 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 浏览器标识
+	string header = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
+	string req = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
+	string resp = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
 }
 
-//响应--创建一条数据
+//响应-系统-日志-创建一条数据
 message CreateAdminLogDemoReply {
-  
+  	string id = 1; // 编号
 }
 
-//请求--更新一条数据
+//请求-系统-日志-更新一条数据
 message UpdateAdminLogDemoReq {
-  string id = 1; // 编号
-	string adminId = 2; // 管理员ID
-	string IP = 3; // ip
-	string URI = 4; // 请求路径
-	string useragent = 5; // 浏览器标识
-	string header = 6; // header
-	string req = 7; // 请求数据
-	string resp = 8; // 响应数据
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
+	string adminId = 2 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 管理员ID
+	string IP = 3 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // ip
+	string URI = 4 [(buf.validate.field).string={min_len: 1, max_len: 200}]; // 请求路径
+	string useragent = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 浏览器标识
+	string header = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
+	string req = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
+	string resp = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
 }
 
-//响应--更新一条数据
+//响应-系统-日志-更新一条数据
 message UpdateAdminLogDemoReply {}
 
-//请求--删除多条数据
+//请求-系统-日志-删除多条数据
 message DeleteAdminLogDemoReq {
-  
+  repeated string ids = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号集合
 }
 
-//响应--删除多条数据
+//响应-系统-日志-删除多条数据
 message DeleteAdminLogDemoReply {}
 
-//请求--单条数据查询
+//请求-系统-日志-单条数据查询
 message GetAdminLogDemoInfoReq {
-  
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 }
 
-//响应--单条数据查询
+//响应-系统-日志-单条数据查询
 message GetAdminLogDemoInfoReply {
   AdminLogDemoInfo info = 1;
 }
 
-//请求--列表数据查询
+//请求-系统-日志-列表数据查询
 message GetAdminLogDemoListReq {
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }
 
-//响应--列表数据查询
+//响应-系统-日志-列表数据查询
 message GetAdminLogDemoListReply {
   int32 total = 1; //总数
   repeated AdminLogDemoInfo list = 2; // 列表数据

@@ -1,39 +1,41 @@
 syntax = "proto3";
 
-package pb;
+package api.gorm_gen.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-option go_package = "github.com/fzf-labs/godb/orm/example/pb;pb";
+//import "validate/validate.proto"; use buf first
+option go_package = "api/gorm_gen/v1;v1";
 
-//
+//数据类型示例
 service DataTypeDemo {
-  //-创建一条数据
+  //数据类型示例-创建一条数据
   rpc CreateDataTypeDemo(CreateDataTypeDemoReq) returns (CreateDataTypeDemoReply) {
     option (google.api.http) = {
       post: "/data_type_demo/v1/data_type_demo/create"
       body: "*"
     };
   }
-  //-更新一条数据
+  //数据类型示例-更新一条数据
   rpc UpdateDataTypeDemo(UpdateDataTypeDemoReq) returns (UpdateDataTypeDemoReply) {
     option (google.api.http) = {
       post: "/data_type_demo/v1/data_type_demo/update"
       body: "*"
     };
   }
-  //-删除多条数据
+  //数据类型示例-删除多条数据
   rpc DeleteDataTypeDemo(DeleteDataTypeDemoReq) returns (DeleteDataTypeDemoReply) {
     option (google.api.http) = {
       post: "/data_type_demo/v1/data_type_demo/delete"
       body: "*"
     };
   }
-  //-单条数据查询
+  //数据类型示例-单条数据查询
   rpc GetDataTypeDemoInfo(GetDataTypeDemoInfoReq) returns (GetDataTypeDemoInfoReply) {
     option (google.api.http) = {get: "/data_type_demo/v1/data_type_demo/info"};
   }
-  //-列表数据查询
+  //数据类型示例-列表数据查询
   rpc GetDataTypeDemoList(GetDataTypeDemoListReq) returns (GetDataTypeDemoListReply) {
     option (google.api.http) = {
       post: "/data_type_demo/v1/data_type_demo/list",
@@ -41,110 +43,112 @@ service DataTypeDemo {
     };
   }
 }
-//信息
+//数据类型示例信息
 message DataTypeDemoInfo {
   string id = 1; // ID
-	string uLid = 2; // 验证下划线
-	string cacheKey = 3; // 特殊保留字段名称
-	google.protobuf.Timestamp createdAt = 4; // 创建时间
-	google.protobuf.Timestamp updatedAt = 5; // 更新时间
-	bool dataTypeBool = 7; // 数据类型 bool
-	int32 dataTypeInt2 = 8; // 数据类型 int2
-	int32 dataTypeInt8 = 9; // 数据类型 int8
-	string dataTypeVarchar = 10; // 数据类型 varchar
-	string dataTypeText = 11; // 数据类型 text
-	string dataTypeJSON = 12; // 数据类型 json
-	google.protobuf.Timestamp dataTypeTimeNull = 13; // 数据类型 time null
-	google.protobuf.Timestamp dataTypeTime = 14; // 数据类型 time not null
-	string dataTypeJsonb = 15; // 数据类型 jsonb
-	google.protobuf.Timestamp dataTypeDate = 16; // 数据类型 date
-	float dataTypeFloat4 = 17; // 数据类型 float4
-	double dataTypeFloat8 = 18; // 数据类型 float8
-	google.protobuf.Timestamp dataTypeTimestamp = 19; // 数据类型 timestamp
-	string dataTypeBytea = 20; // 数据类型 bytea
-	string dataTypeNumeric = 21; // 数据类型 numeric
-	string dataTypeInterval = 22; // 数据类型 interval
-}
-
-//请求--创建一条数据
-message CreateDataTypeDemoReq {
-  string id = 1; // ID
-	string uLid = 2; // 验证下划线
-	string cacheKey = 3; // 特殊保留字段名称
-	bool dataTypeBool = 4; // 数据类型 bool
-	int32 dataTypeInt2 = 5; // 数据类型 int2
-	int32 dataTypeInt8 = 6; // 数据类型 int8
-	string dataTypeVarchar = 7; // 数据类型 varchar
-	string dataTypeText = 8; // 数据类型 text
-	string dataTypeJSON = 9; // 数据类型 json
+	bool dataTypeBool = 2; // 数据类型 bool
+	int32 dataTypeInt2 = 3; // 数据类型 int2
+	int32 dataTypeInt8 = 4; // 数据类型 int8
+	string dataTypeVarchar = 5; // 数据类型 varchar
+	string dataTypeText = 6; // 数据类型 text
+	string dataTypeJSON = 7; // 数据类型 json
+	google.protobuf.Timestamp createdAt = 8; // 创建时间
+	google.protobuf.Timestamp updatedAt = 9; // 更新时间
 	google.protobuf.Timestamp dataTypeTimeNull = 10; // 数据类型 time null
 	google.protobuf.Timestamp dataTypeTime = 11; // 数据类型 time not null
 	string dataTypeJsonb = 12; // 数据类型 jsonb
-	google.protobuf.Timestamp dataTypeDate = 13; // 数据类型 date
-	float dataTypeFloat4 = 14; // 数据类型 float4
-	double dataTypeFloat8 = 15; // 数据类型 float8
-	google.protobuf.Timestamp dataTypeTimestamp = 16; // 数据类型 timestamp
-	string dataTypeBytea = 17; // 数据类型 bytea
-	string dataTypeNumeric = 18; // 数据类型 numeric
-	string dataTypeInterval = 19; // 数据类型 interval
+	google.protobuf.Timestamp dataTypeDate = 13; // 
+	float dataTypeFloat4 = 14; // 
+	double dataTypeFloat8 = 15; // 
+	string ulId = 16; // 验证下划线
+	string cacheKey = 17; // 特殊保留字段名称
+	google.protobuf.Timestamp dataTypeTimestamp = 18; // 
+	string dataTypeBytea = 19; // 
+	double dataTypeNumeric = 20; // 
+	string dataTypeInterval = 21; // 
+	string batchAPI = 22; //
 }
 
-//响应--创建一条数据
+//请求-数据类型示例-创建一条数据
+message CreateDataTypeDemoReq {
+  bool dataTypeBool = 1 ; // 数据类型 bool
+	int32 dataTypeInt2 = 2 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 数据类型 int2
+	int32 dataTypeInt8 = 3 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 数据类型 int8
+	string dataTypeVarchar = 4 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 varchar
+	string dataTypeText = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 9223372036854775807}]; // 数据类型 text
+	string dataTypeJSON = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 json
+	google.protobuf.Timestamp dataTypeTimeNull = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 数据类型 time null
+	google.protobuf.Timestamp dataTypeTime = 8 [(buf.validate.field).required=true]; // 数据类型 time not null
+	string dataTypeJsonb = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 jsonb
+	google.protobuf.Timestamp dataTypeDate = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 
+	float dataTypeFloat4 = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0, lte: 32}]; // 
+	double dataTypeFloat8 = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0, lte: 64}]; // 
+	string ulId = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 128}]; // 验证下划线
+	string cacheKey = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 特殊保留字段名称
+	google.protobuf.Timestamp dataTypeTimestamp = 15 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 
+	string dataTypeBytea = 16 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 9223372036854775807}]; // 
+	double dataTypeNumeric = 17 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0}]; // 
+	string dataTypeInterval = 18 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 128}]; // 
+	string batchAPI = 19 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; //
+}
+
+//响应-数据类型示例-创建一条数据
 message CreateDataTypeDemoReply {
-  
+  	string id = 1; // ID
 }
 
-//请求--更新一条数据
+//请求-数据类型示例-更新一条数据
 message UpdateDataTypeDemoReq {
-  string id = 1; // ID
-	string uLid = 2; // 验证下划线
-	string cacheKey = 3; // 特殊保留字段名称
-	bool dataTypeBool = 7; // 数据类型 bool
-	int32 dataTypeInt2 = 8; // 数据类型 int2
-	int32 dataTypeInt8 = 9; // 数据类型 int8
-	string dataTypeVarchar = 10; // 数据类型 varchar
-	string dataTypeText = 11; // 数据类型 text
-	string dataTypeJSON = 12; // 数据类型 json
-	google.protobuf.Timestamp dataTypeTimeNull = 13; // 数据类型 time null
-	google.protobuf.Timestamp dataTypeTime = 14; // 数据类型 time not null
-	string dataTypeJsonb = 15; // 数据类型 jsonb
-	google.protobuf.Timestamp dataTypeDate = 16; // 数据类型 date
-	float dataTypeFloat4 = 17; // 数据类型 float4
-	double dataTypeFloat8 = 18; // 数据类型 float8
-	google.protobuf.Timestamp dataTypeTimestamp = 19; // 数据类型 timestamp
-	string dataTypeBytea = 20; // 数据类型 bytea
-	string dataTypeNumeric = 21; // 数据类型 numeric
-	string dataTypeInterval = 22; // 数据类型 interval
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
+	bool dataTypeBool = 2 ; // 数据类型 bool
+	int32 dataTypeInt2 = 3 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 数据类型 int2
+	int32 dataTypeInt8 = 4 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 数据类型 int8
+	string dataTypeVarchar = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 varchar
+	string dataTypeText = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 9223372036854775807}]; // 数据类型 text
+	string dataTypeJSON = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 json
+	google.protobuf.Timestamp dataTypeTimeNull = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 数据类型 time null
+	google.protobuf.Timestamp dataTypeTime = 9 [(buf.validate.field).required=true]; // 数据类型 time not null
+	string dataTypeJsonb = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 数据类型 jsonb
+	google.protobuf.Timestamp dataTypeDate = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 
+	float dataTypeFloat4 = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0, lte: 32}]; // 
+	double dataTypeFloat8 = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0, lte: 64}]; // 
+	string ulId = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 128}]; // 验证下划线
+	string cacheKey = 15 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 特殊保留字段名称
+	google.protobuf.Timestamp dataTypeTimestamp = 16 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 
+	string dataTypeBytea = 17 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 9223372036854775807}]; // 
+	double dataTypeNumeric = 18 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0}]; // 
+	string dataTypeInterval = 19 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 128}]; // 
+	string batchAPI = 20 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; //
 }
 
-//响应--更新一条数据
+//响应-数据类型示例-更新一条数据
 message UpdateDataTypeDemoReply {}
 
-//请求--删除多条数据
+//请求-数据类型示例-删除多条数据
 message DeleteDataTypeDemoReq {
-  
+  repeated string ids = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID集合
 }
 
-//响应--删除多条数据
+//响应-数据类型示例-删除多条数据
 message DeleteDataTypeDemoReply {}
 
-//请求--单条数据查询
+//请求-数据类型示例-单条数据查询
 message GetDataTypeDemoInfoReq {
-  
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
-//响应--单条数据查询
+//响应-数据类型示例-单条数据查询
 message GetDataTypeDemoInfoReply {
   DataTypeDemoInfo info = 1;
 }
 
-//请求--列表数据查询
+//请求-数据类型示例-列表数据查询
 message GetDataTypeDemoListReq {
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }
 
-//响应--列表数据查询
+//响应-数据类型示例-列表数据查询
 message GetDataTypeDemoListReply {
   int32 total = 1; //总数
   repeated DataTypeDemoInfo list = 2; // 列表数据

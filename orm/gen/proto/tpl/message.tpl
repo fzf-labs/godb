@@ -21,6 +21,17 @@ message Update{{.upperTableName}}Req {
 //响应-{{.tableNameComment}}-更新一条数据
 message Update{{.upperTableName}}Reply {}
 
+{{- if .status }}
+
+//请求-{{.tableNameComment}}-更新状态
+message Update{{.upperTableName}}StatusReq {
+  {{.updateStatusReq}}
+}
+
+//响应-{{.tableNameComment}}-更新状态
+message Update{{.upperTableName}}StatusReply {}
+{{- end }}
+
 //请求-{{.tableNameComment}}-删除多条数据
 message Delete{{.upperTableName}}Req {
   {{.deleteReq}}
