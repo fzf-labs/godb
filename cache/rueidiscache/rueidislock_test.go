@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
@@ -19,9 +20,9 @@ func TestLocker_AutoLock(t *testing.T) {
 	if err != nil {
 		return
 	}
-	locker := NewLocker(client)
+	locker := NewLocker(NewDefaultLockerOption(client))
 	ctx := context.Background()
-	err = locker.AutoLock(ctx, "test_lock", func() error {
+	err = locker.LockOnce(ctx, "test_lock", 10*time.Second, func() error {
 		fmt.Println("test_lock do ")
 		return nil
 	})

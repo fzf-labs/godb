@@ -2,27 +2,48 @@ package rueidiscache
 
 import (
 	"context"
+	"time"
 
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 )
 
-type Locker struct {
-	client rueidis.Client
+func NewLocker(option rueidislock.LockerOption) *Locker {
+	return &Locker{option: option}
 }
 
-func NewLocker(client rueidis.Client) *Locker {
-	return &Locker{client: client}
-}
-
-func (l *Locker) AutoLock(ctx context.Context, key string, do func() error) error {
-	locker, err := rueidislock.NewLocker(rueidislock.LockerOption{
+func NewDefaultLockerOption(client rueidis.Client) rueidislock.LockerOption {
+	return rueidislock.LockerOption{
 		ClientBuilder: func(_ rueidis.ClientOption) (rueidis.Client, error) {
-			return l.client, nil
+			return client, nil
 		},
-		KeyMajority:    1,    // Use KeyMajority=1 if you have only one Redis instance. Also make sure that all your `Locker`s share the same KeyMajority.
-		NoLoopTracking: true, // Enable this to have better performance if all your Redis are >= 7.0.5.
-	})
+	}
+}
+
+type Locker struct {
+	option rueidislock.LockerOption
+}
+
+// LockOnce 自动锁-一次
+// 自动加锁与释放
+func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	locker, err := rueidislock.NewLocker(l.option)
+	if err != nil {
+		return err
+	}
+	defer locker.Close()
+	_, cancel, err := locker.TryWithContext(ctx, key)
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	return fn()
+}
+
+// LockRetry 自动锁-重试
+// 自动加锁与释放，间隔100ms 重试3次
+func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	locker, err := rueidislock.NewLocker(l.option)
 	if err != nil {
 		return err
 	}
@@ -32,5 +53,19 @@ func (l *Locker) AutoLock(ctx context.Context, key string, do func() error) erro
 		return err
 	}
 	defer cancel()
-	return do()
+	return fn()
+}
+
+// LockOnceNotRelease 自动锁-一次-不释放
+func (l *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	locker, err := rueidislock.NewLocker(l.option)
+	if err != nil {
+		return err
+	}
+	defer locker.Close()
+	_, _, err = locker.WithContext(ctx, key)
+	if err != nil {
+		return err
+	}
+	return fn()
 }

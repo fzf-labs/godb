@@ -13,20 +13,20 @@ import (
 // 业务层使用errors.Is(err, NotObtained)判断是否未获取到锁，并抛出业务异常。
 var NotObtained = errors.New("lock not obtained")
 
-func NewRedisLock(rd *redis.Client) *RedisLock {
-	return &RedisLock{
+func NewLocker(rd *redis.Client) *Locker {
+	return &Locker{
 		locker: redislock.New(rd),
 	}
 }
 
-// RedisLock Redis分布式锁
-type RedisLock struct {
+// Locker Redis分布式锁
+type Locker struct {
 	locker *redislock.Client
 }
 
 // LockOnce 自动锁-一次
 // 自动加锁与释放
-func (r *RedisLock) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+func (r *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	lock, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
 		return errors.Wrapf(NotObtained, "origin error is: %v", err)
@@ -39,7 +39,7 @@ func (r *RedisLock) LockOnce(ctx context.Context, key string, ttl time.Duration,
 
 // LockRetry 自动锁-重试
 // 自动加锁与释放，间隔100ms 重试3次
-func (r *RedisLock) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+func (r *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(100*time.Millisecond), 3),
 	})
@@ -54,7 +54,7 @@ func (r *RedisLock) LockRetry(ctx context.Context, key string, ttl time.Duration
 
 // LockWithCustom 自动锁-自定义
 // 自定义时间间隔和重试次数
-func (r *RedisLock) LockWithCustom(ctx context.Context, key string, ttl, retryDuration time.Duration, retryNum int, fn func() error) error {
+func (r *Locker) LockWithCustom(ctx context.Context, key string, ttl, retryDuration time.Duration, retryNum int, fn func() error) error {
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(retryDuration), retryNum),
 	})
@@ -68,7 +68,7 @@ func (r *RedisLock) LockWithCustom(ctx context.Context, key string, ttl, retryDu
 }
 
 // LockOnceNotRelease 自动锁-一次-不释放
-func (r *RedisLock) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+func (r *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	_, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
 		return errors.Wrapf(NotObtained, "origin error is: %v", err)

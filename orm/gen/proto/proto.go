@@ -130,11 +130,13 @@ func (p *Proto) genService() string {
 			break
 		}
 	}
+	urlPrefix := strings.ReplaceAll(p.packageStr, ".", "/")
 	str, _ := template.NewTemplate().Parse(Service).Execute(map[string]any{
 		"upperTableName":      p.upperTableName,
 		"tableNameComment":    p.tableNameComment,
 		"tableNameUnderScore": p.tableNameUnderScore,
 		"status":              status,
+		"urlPrefix":           urlPrefix,
 	})
 	return fmt.Sprintln(str.String())
 }
