@@ -310,7 +310,8 @@ func dataTypeToPbType(dataType string) string {
 	case "string":
 		fieldType = "string"
 	case "time.Time":
-		fieldType = "google.protobuf.Timestamp"
+		//fieldType = "google.protobuf.Timestamp" // UTC时间,不能转成本地时间
+		fieldType = "string"
 	case "[]byte":
 		fieldType = "bytes"
 	default:
