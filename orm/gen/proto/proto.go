@@ -187,14 +187,12 @@ func (p *Proto) genMessage() string {
 		if utils.StrSliFind([]string{"createdAt", "created_at", "createdTime", "created_time", "updatedAt", "updated_at", "updatedTime", "updated_time"}, v.Name()) {
 			continue
 		}
-		if v.Name() != primaryKeyColumn && v.Name() != "status" {
+		if v.Name() != primaryKeyColumn {
 			createNum++
 			createReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, createNum, validate, comment)
 		}
-		if v.Name() != "status" {
-			updateNum++
-			updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateNum, validate, comment)
-		}
+		updateNum++
+		updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateNum, validate, comment)
 		if v.Name() == "status" {
 			status = true
 		}
@@ -212,7 +210,8 @@ func (p *Proto) genMessage() string {
 		pbName := lowerFieldName(p.columnNameToName[primaryKeyColumn])
 		createReply = fmt.Sprintf("	%s %s = %d; // %s", pbType, pbName, 1, primaryKeyComment)
 		getReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
-		deleteReq = fmt.Sprintf("repeated %s %s = %d %s; // %s\n", pbType, plural(pbName), 1, validate, primaryKeyComment+"集合")
+		deleteValidate := "[(buf.validate.field).repeated={min_items: 1}]"
+		deleteReq = fmt.Sprintf("repeated %s %s = %d %s; // %s\n", pbType, plural(pbName), 1, deleteValidate, primaryKeyComment+"集合")
 	}
 	info = strings.TrimSpace(strings.TrimRight(info, "\n"))
 	createReq = strings.TrimSpace(strings.TrimRight(createReq, "\n"))

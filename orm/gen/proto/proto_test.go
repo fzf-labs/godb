@@ -49,6 +49,7 @@ func TestGenerationPB(t *testing.T) {
 					"req":        "Req",
 					"resp":       "Resp",
 					"created_at": "CreatedAt",
+					"status":     "Status",
 				},
 				columnNameToDataType: map[string]string{
 					"id":        "int64",

@@ -36,9 +36,6 @@ service {{.upperTableName}} {
   }
   //{{.tableNameComment}}-列表数据查询
   rpc Get{{.upperTableName}}List(Get{{.upperTableName}}ListReq) returns (Get{{.upperTableName}}ListReply) {
-    option (google.api.http) = {
-      post: "/{{ .urlPrefix }}/{{.tableNameUnderScore}}/list",
-      body: "*"
-    };
+    option (google.api.http) = {get: "/{{ .urlPrefix }}/{{.tableNameUnderScore}}/list"};
   }
 }
