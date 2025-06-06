@@ -4,7 +4,8 @@ package api.gorm_gen.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+//import "google/protobuf/timestamp.proto";
 //import "validate/validate.proto"; use buf first
 option go_package = "api/gorm_gen/v1;v1";
 
@@ -16,12 +17,32 @@ service AdminLogDemo {
       post: "/api/gorm_gen/v1/admin_log_demo/create"
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-日志-更新一条数据
   rpc UpdateAdminLogDemo(UpdateAdminLogDemoReq) returns (UpdateAdminLogDemoReply) {
     option (google.api.http) = {
       post: "/api/gorm_gen/v1/admin_log_demo/update"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-日志-更新状态
@@ -30,6 +51,16 @@ service AdminLogDemo {
       post: "/api/gorm_gen/v1/admin_log_demo/update/status"
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-日志-删除多条数据
   rpc DeleteAdminLogDemo(DeleteAdminLogDemoReq) returns (DeleteAdminLogDemoReply) {
@@ -37,14 +68,44 @@ service AdminLogDemo {
       post: "/api/gorm_gen/v1/admin_log_demo/delete"
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-日志-单条数据查询
   rpc GetAdminLogDemoInfo(GetAdminLogDemoInfoReq) returns (GetAdminLogDemoInfoReply) {
     option (google.api.http) = {get: "/api/gorm_gen/v1/admin_log_demo/info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-日志-列表数据查询
   rpc GetAdminLogDemoList(GetAdminLogDemoListReq) returns (GetAdminLogDemoListReply) {
     option (google.api.http) = {get: "/api/gorm_gen/v1/admin_log_demo/list"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
 }
 //系统-日志信息
