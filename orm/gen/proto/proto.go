@@ -210,8 +210,7 @@ func (p *Proto) genMessage() string {
 		pbName := lowerFieldName(p.columnNameToName[primaryKeyColumn])
 		createReply = fmt.Sprintf("	%s %s = %d; // %s", pbType, pbName, 1, primaryKeyComment)
 		getReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
-		deleteValidate := "[(buf.validate.field).repeated={min_items: 1}]"
-		deleteReq = fmt.Sprintf("repeated %s %s = %d %s; // %s\n", pbType, plural(pbName), 1, deleteValidate, primaryKeyComment+"集合")
+		deleteReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
 	}
 	info = strings.TrimSpace(strings.TrimRight(info, "\n"))
 	createReq = strings.TrimSpace(strings.TrimRight(createReq, "\n"))
