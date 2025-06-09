@@ -4,7 +4,8 @@ package api.gorm_gen.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+//import "google/protobuf/timestamp.proto";
 //import "validate/validate.proto"; use buf first
 option go_package = "api/gorm_gen/v1;v1";
 
@@ -13,33 +14,80 @@ service AdminToRoleDemo {
   //-创建一条数据
   rpc CreateAdminToRoleDemo(CreateAdminToRoleDemoReq) returns (CreateAdminToRoleDemoReply) {
     option (google.api.http) = {
-      post: "/admin_to_role_demo/v1/admin_to_role_demo/create"
+      post: "/api/gorm_gen/v1/admin_to_role_demo/create"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //-更新一条数据
   rpc UpdateAdminToRoleDemo(UpdateAdminToRoleDemoReq) returns (UpdateAdminToRoleDemoReply) {
     option (google.api.http) = {
-      post: "/admin_to_role_demo/v1/admin_to_role_demo/update"
+      post: "/api/gorm_gen/v1/admin_to_role_demo/update"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //-删除多条数据
   rpc DeleteAdminToRoleDemo(DeleteAdminToRoleDemoReq) returns (DeleteAdminToRoleDemoReply) {
     option (google.api.http) = {
-      post: "/admin_to_role_demo/v1/admin_to_role_demo/delete"
+      post: "/api/gorm_gen/v1/admin_to_role_demo/delete"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //-单条数据查询
   rpc GetAdminToRoleDemoInfo(GetAdminToRoleDemoInfoReq) returns (GetAdminToRoleDemoInfoReply) {
-    option (google.api.http) = {get: "/admin_to_role_demo/v1/admin_to_role_demo/info"};
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_to_role_demo/info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //-列表数据查询
   rpc GetAdminToRoleDemoList(GetAdminToRoleDemoListReq) returns (GetAdminToRoleDemoListReply) {
-    option (google.api.http) = {
-      post: "/admin_to_role_demo/v1/admin_to_role_demo/list",
-      body: "*"
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_to_role_demo/list"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
 }

@@ -35,7 +35,7 @@ func TestGenerationPB(t *testing.T) {
 			name: "test",
 			args: args{
 				db:           db,
-				outPutPath:   "../example/postgres/pb",
+				outPutPath:   "../../example/pb",
 				packageStr:   "api.gorm_gen.v1",
 				goPackageStr: "api/gorm_gen/v1;v1",
 				table:        "admin_log_demo",

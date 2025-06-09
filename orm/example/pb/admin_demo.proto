@@ -4,7 +4,8 @@ package api.gorm_gen.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+//import "google/protobuf/timestamp.proto";
 //import "validate/validate.proto"; use buf first
 option go_package = "api/gorm_gen/v1;v1";
 
@@ -13,40 +14,97 @@ service AdminDemo {
   //系统-用户-创建一条数据
   rpc CreateAdminDemo(CreateAdminDemoReq) returns (CreateAdminDemoReply) {
     option (google.api.http) = {
-      post: "/admin_demo/v1/admin_demo/create"
+      post: "/api/gorm_gen/v1/admin_demo/create"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-用户-更新一条数据
   rpc UpdateAdminDemo(UpdateAdminDemoReq) returns (UpdateAdminDemoReply) {
     option (google.api.http) = {
-      post: "/admin_demo/v1/admin_demo/update"
+      post: "/api/gorm_gen/v1/admin_demo/update"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-用户-更新状态
   rpc UpdateAdminDemoStatus(UpdateAdminDemoStatusReq) returns (UpdateAdminDemoStatusReply) {
     option (google.api.http) = {
-      post: "/admin_demo/v1/admin_demo/update/status"
+      post: "/api/gorm_gen/v1/admin_demo/update/status"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-用户-删除多条数据
   rpc DeleteAdminDemo(DeleteAdminDemoReq) returns (DeleteAdminDemoReply) {
     option (google.api.http) = {
-      post: "/admin_demo/v1/admin_demo/delete"
+      post: "/api/gorm_gen/v1/admin_demo/delete"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-用户-单条数据查询
   rpc GetAdminDemoInfo(GetAdminDemoInfoReq) returns (GetAdminDemoInfoReply) {
-    option (google.api.http) = {get: "/admin_demo/v1/admin_demo/info"};
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_demo/info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-用户-列表数据查询
   rpc GetAdminDemoList(GetAdminDemoListReq) returns (GetAdminDemoListReply) {
-    option (google.api.http) = {
-      post: "/admin_demo/v1/admin_demo/list",
-      body: "*"
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_demo/list"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
 }
@@ -66,8 +124,8 @@ message AdminDemoInfo {
 	string salt = 12; // 盐值
 	int32 status = 13; // 0=禁用 1=开启
 	string motto = 14; // 个性签名
-	google.protobuf.Timestamp createdAt = 15; // 创建时间
-	google.protobuf.Timestamp updatedAt = 16; // 更新时间
+	string createdAt = 15; // 创建时间
+	string updatedAt = 16; // 更新时间
 }
 
 //请求-系统-用户-创建一条数据
@@ -83,7 +141,8 @@ message CreateAdminDemoReq {
 	string deptId = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 部门
 	string roleIds = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 角色集
 	string salt = 11 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // 盐值
-	string motto = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 个性签名
+	int32 status = 12 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
+	string motto = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 个性签名
 }
 
 //响应-系统-用户-创建一条数据
@@ -105,7 +164,8 @@ message UpdateAdminDemoReq {
 	string deptId = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 部门
 	string roleIds = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 角色集
 	string salt = 12 [(buf.validate.field).string={min_len: 1, max_len: 32}]; // 盐值
-	string motto = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 个性签名
+	int32 status = 13 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
+	string motto = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 个性签名
 }
 
 //响应-系统-用户-更新一条数据
@@ -122,7 +182,7 @@ message UpdateAdminDemoStatusReply {}
 
 //请求-系统-用户-删除多条数据
 message DeleteAdminDemoReq {
-  repeated string ids = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号集合
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 }
 
 //响应-系统-用户-删除多条数据

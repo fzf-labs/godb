@@ -4,7 +4,8 @@ package api.gorm_gen.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+//import "google/protobuf/timestamp.proto";
 //import "validate/validate.proto"; use buf first
 option go_package = "api/gorm_gen/v1;v1";
 
@@ -13,33 +14,97 @@ service AdminLogDemo {
   //系统-日志-创建一条数据
   rpc CreateAdminLogDemo(CreateAdminLogDemoReq) returns (CreateAdminLogDemoReply) {
     option (google.api.http) = {
-      post: "/admin_log_demo/v1/admin_log_demo/create"
+      post: "/api/gorm_gen/v1/admin_log_demo/create"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-日志-更新一条数据
   rpc UpdateAdminLogDemo(UpdateAdminLogDemoReq) returns (UpdateAdminLogDemoReply) {
     option (google.api.http) = {
-      post: "/admin_log_demo/v1/admin_log_demo/update"
+      post: "/api/gorm_gen/v1/admin_log_demo/update"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
+  }
+  //系统-日志-更新状态
+  rpc UpdateAdminLogDemoStatus(UpdateAdminLogDemoStatusReq) returns (UpdateAdminLogDemoStatusReply) {
+    option (google.api.http) = {
+      post: "/api/gorm_gen/v1/admin_log_demo/update/status"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-日志-删除多条数据
   rpc DeleteAdminLogDemo(DeleteAdminLogDemoReq) returns (DeleteAdminLogDemoReply) {
     option (google.api.http) = {
-      post: "/admin_log_demo/v1/admin_log_demo/delete"
+      post: "/api/gorm_gen/v1/admin_log_demo/delete"
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
   //系统-日志-单条数据查询
   rpc GetAdminLogDemoInfo(GetAdminLogDemoInfoReq) returns (GetAdminLogDemoInfoReply) {
-    option (google.api.http) = {get: "/admin_log_demo/v1/admin_log_demo/info"};
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_log_demo/info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
+    };
   }
   //系统-日志-列表数据查询
   rpc GetAdminLogDemoList(GetAdminLogDemoListReq) returns (GetAdminLogDemoListReply) {
-    option (google.api.http) = {
-      post: "/admin_log_demo/v1/admin_log_demo/list",
-      body: "*"
+    option (google.api.http) = {get: "/api/gorm_gen/v1/admin_log_demo/list"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      parameters: {
+        headers: {
+          name: "Authorization"
+          description: "Bearer Token"
+          type: STRING
+          required: true
+        }
+      }
     };
   }
 }
@@ -53,7 +118,8 @@ message AdminLogDemoInfo {
 	string header = 6; // header
 	string req = 7; // 请求数据
 	string resp = 8; // 响应数据
-	google.protobuf.Timestamp createdAt = 9; // 创建时间
+	string createdAt = 9; // 创建时间
+	int32 status = 10; // 0=禁用 1=开启
 }
 
 //请求-系统-日志-创建一条数据
@@ -65,6 +131,7 @@ message CreateAdminLogDemoReq {
 	string header = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
 	string req = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
 	string resp = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
+	int32 status = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
 }
 
 //响应-系统-日志-创建一条数据
@@ -82,14 +149,24 @@ message UpdateAdminLogDemoReq {
 	string header = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // header
 	string req = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 请求数据
 	string resp = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1}]; // 响应数据
+	int32 status = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
 }
 
 //响应-系统-日志-更新一条数据
 message UpdateAdminLogDemoReply {}
 
+//请求-系统-日志-更新状态
+message UpdateAdminLogDemoStatusReq {
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
+	int32 status = 2 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
+}
+
+//响应-系统-日志-更新状态
+message UpdateAdminLogDemoStatusReply {}
+
 //请求-系统-日志-删除多条数据
 message DeleteAdminLogDemoReq {
-  repeated string ids = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号集合
+  string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 }
 
 //响应-系统-日志-删除多条数据
