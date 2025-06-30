@@ -9,11 +9,10 @@ import (
 	"unicode"
 
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils"
-	"github.com/fzf-labs/godb/orm/utils/file"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/fzf-labs/godb/orm/utils/template"
 	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -62,7 +61,7 @@ type Proto struct {
 }
 
 func (p *Proto) output(filePath, content string) error {
-	if file.Exists(filePath) {
+	if fileutil.Exists(filePath) {
 		return errors.New(fmt.Sprintf("%s exist", filePath))
 	}
 	fileDir := filepath.Dir(filePath)
@@ -144,11 +143,16 @@ func (p *Proto) genService() string {
 func (p *Proto) genMessage() string {
 	var info string
 	var createReq string
+	var createReqRequired []string
 	var createReply string
 	var updateReq string
+	var updateReqRequired []string
 	var updateStatusReq string
+	var updateStatusReqRequired []string
 	var deleteReq string
+	var deleteReqRequired []string
 	var getReq string
+	var getReqRequired []string
 	var status bool
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
@@ -179,26 +183,35 @@ func (p *Proto) genMessage() string {
 		nullable, _ := v.Nullable()
 		length, _ := v.Length()
 		validate := pbTypeToValidate(pbType, nullable, length)
-		if utils.StrSliFind([]string{"deletedAt", "deleted_at", "deletedTime", "deleted_time"}, v.Name()) {
+		if strutil.StrSliFind([]string{"deletedAt", "deleted_at", "deletedTime", "deleted_time"}, v.Name()) {
 			continue
 		}
 		infoNum++
 		info += fmt.Sprintf("	%s %s = %d; // %s\n", pbType, pbName, infoNum, comment)
-		if utils.StrSliFind([]string{"createdAt", "created_at", "createdTime", "created_time", "updatedAt", "updated_at", "updatedTime", "updated_time"}, v.Name()) {
+		if strutil.StrSliFind([]string{"createdAt", "created_at", "createdTime", "created_time", "updatedAt", "updated_at", "updatedTime", "updated_time"}, v.Name()) {
 			continue
 		}
 		if v.Name() != primaryKeyColumn {
 			createNum++
 			createReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, createNum, validate, comment)
+			if !nullable {
+				createReqRequired = append(createReqRequired, pbName)
+			}
 		}
 		updateNum++
 		updateReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateNum, validate, comment)
+		if !nullable {
+			updateReqRequired = append(updateReqRequired, pbName)
+		}
 		if v.Name() == "status" {
 			status = true
 		}
 		if v.Name() == primaryKeyColumn || v.Name() == "status" {
 			updateStatusNum++
 			updateStatusReq += fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, updateStatusNum, validate, comment)
+			if !nullable {
+				updateStatusReqRequired = append(updateStatusReqRequired, pbName)
+			}
 		}
 	}
 	if primaryKeyColumn != "" {
@@ -211,6 +224,8 @@ func (p *Proto) genMessage() string {
 		createReply = fmt.Sprintf("	%s %s = %d; // %s", pbType, pbName, 1, primaryKeyComment)
 		getReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
 		deleteReq = fmt.Sprintf("	%s %s = %d %s; // %s\n", pbType, pbName, 1, validate, primaryKeyComment)
+		deleteReqRequired = append(deleteReqRequired, pbName)
+		getReqRequired = append(getReqRequired, pbName)
 	}
 	info = strings.TrimSpace(strings.TrimRight(info, "\n"))
 	createReq = strings.TrimSpace(strings.TrimRight(createReq, "\n"))
@@ -219,16 +234,21 @@ func (p *Proto) genMessage() string {
 	deleteReq = strings.TrimSpace(strings.TrimRight(deleteReq, "\n"))
 	getReq = strings.TrimSpace(strings.TrimRight(getReq, "\n"))
 	str, _ := template.NewTemplate().Parse(Message).Execute(map[string]any{
-		"tableNameComment": p.tableNameComment,
-		"upperTableName":   p.upperTableName,
-		"info":             info,
-		"createReq":        createReq,
-		"createReply":      createReply,
-		"updateReq":        updateReq,
-		"updateStatusReq":  updateStatusReq,
-		"deleteReq":        deleteReq,
-		"getReq":           getReq,
-		"status":           status,
+		"tableNameComment":        p.tableNameComment,
+		"upperTableName":          p.upperTableName,
+		"info":                    info,
+		"createReq":               createReq,
+		"createReqRequired":       strings.Join(createReqRequired, ","),
+		"createReply":             createReply,
+		"updateReq":               updateReq,
+		"updateReqRequired":       strings.Join(updateReqRequired, ","),
+		"updateStatusReq":         updateStatusReq,
+		"updateStatusReqRequired": strings.Join(updateStatusReqRequired, ","),
+		"deleteReq":               deleteReq,
+		"deleteReqRequired":       strings.Join(deleteReqRequired, ","),
+		"getReq":                  getReq,
+		"getReqRequired":          strings.Join(getReqRequired, ","),
+		"status":                  status,
 	})
 	return fmt.Sprintln(str.String())
 }
@@ -236,15 +256,6 @@ func (p *Proto) genMessage() string {
 // upperName 大写
 func (p *Proto) upperName(s string) string {
 	return p.gorm.NamingStrategy.SchemaName(s)
-}
-
-// plural 复数形式
-func plural(s string) string {
-	str := inflection.Plural(s)
-	if str == s {
-		str += "plural"
-	}
-	return str
 }
 
 // lowerName 小写

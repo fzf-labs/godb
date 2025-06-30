@@ -9,8 +9,8 @@ import (
 
 	"github.com/fzf-labs/godb/orm/gen/repo"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils"
-	"github.com/fzf-labs/godb/orm/utils/file"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/iancoleman/strcase"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
@@ -157,7 +157,7 @@ func (g *GenerationDB) Do() {
 		partitionChildTables = append(partitionChildTables, v...)
 	}
 	// 去掉tables中的分区子表
-	tables = utils.SliRemove(tables, partitionChildTables)
+	tables = strutil.SliRemove(tables, partitionChildTables)
 	models := make(map[string]any, len(tables))
 	for _, tableName := range tables {
 		generateModel := generator.GenerateModel(tableName)
@@ -186,7 +186,7 @@ func (g *GenerationDB) Do() {
 		return
 	}
 	// 生成repo的文件夹目录文件
-	err = file.MkdirPath(repoPath)
+	err = fileutil.MkdirPath(repoPath)
 	if err != nil {
 		log.Println("repo MkdirPath err:", err)
 		return
@@ -291,7 +291,7 @@ func DataTypeMap() map[string]func(columnType gorm.ColumnType) (dataType string)
 		"json":  func(_ gorm.ColumnType) string { return "datatypes.JSON" },
 		"jsonb": func(_ gorm.ColumnType) string { return "datatypes.JSON" },
 		"timestamptz": func(columnType gorm.ColumnType) string {
-			if utils.StrSliFind([]string{"deleted_at", "deletedAt", "deleted_time", "deletedTime"}, columnType.Name()) {
+			if strutil.StrSliFind([]string{"deleted_at", "deletedAt", "deleted_time", "deletedTime"}, columnType.Name()) {
 				return "gorm.DeletedAt"
 			}
 			nullable, _ := columnType.Nullable()

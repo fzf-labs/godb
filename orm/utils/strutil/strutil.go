@@ -1,4 +1,4 @@
-package utils
+package strutil
 
 import (
 	"encoding/json"
@@ -6,24 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"time"
-
-	"golang.org/x/tools/go/packages"
 )
-
-// FillModelPkgPath 返回模型文件的包路径
-func FillModelPkgPath(dir string) string {
-	pkg, err := packages.Load(&packages.Config{
-		Mode: packages.NeedName,
-		Dir:  dir,
-	})
-	if err != nil {
-		return ""
-	}
-	if len(pkg) > 0 {
-		return pkg[0].PkgPath
-	}
-	return ""
-}
 
 // StrSliFind 判断字符串切片中是否存在某个元素
 func StrSliFind(collection []string, element string) bool {

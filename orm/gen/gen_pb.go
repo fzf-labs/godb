@@ -7,7 +7,7 @@ import (
 
 	"github.com/fzf-labs/godb/orm/gen/proto"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -83,7 +83,7 @@ func (g *GenerationPb) Do() {
 		partitionChildTables = append(partitionChildTables, v...)
 	}
 	// 去掉tables中的partitionChildTables
-	tables = utils.SliRemove(tables, partitionChildTables)
+	tables = strutil.SliRemove(tables, partitionChildTables)
 	var wg sync.WaitGroup
 	wg.Add(len(tables))
 	for _, v := range tables {

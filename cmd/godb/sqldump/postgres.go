@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils/file"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
 )
 
 // DumpPostgres 导出创建语句
@@ -60,13 +60,13 @@ func (s *SQLDump) DumpPostgres() {
 			return
 		}
 		if !s.fileOverwrite {
-			if file.Exists(outFile) {
+			if fileutil.Exists(outFile) {
 				continue
 			}
 		}
 		tableContent := s.postgresRemove(string(output))
 		if tableContent != "" {
-			err := file.WriteContentCover(outFile, tableContent)
+			err := fileutil.WriteContentCover(outFile, tableContent)
 			if err != nil {
 				log.Println("DumpPostgres err:", err)
 				return

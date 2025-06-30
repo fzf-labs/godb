@@ -119,6 +119,11 @@ message DataTypeDemoInfo {
 
 //请求-数据类型示例-创建一条数据
 message CreateDataTypeDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [dataTypeTime]
+    }
+  };
   bool dataTypeBool = 1 ; // 数据类型 bool
 	int32 dataTypeInt2 = 2 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 数据类型 int2
 	int32 dataTypeInt8 = 3 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 数据类型 int8
@@ -147,6 +152,11 @@ message CreateDataTypeDemoReply {
 
 //请求-数据类型示例-更新一条数据
 message UpdateDataTypeDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id,dataTypeTime]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 	bool dataTypeBool = 2 ; // 数据类型 bool
 	int32 dataTypeInt2 = 3 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 数据类型 int2
@@ -174,6 +184,11 @@ message UpdateDataTypeDemoReply {}
 
 //请求-数据类型示例-删除多条数据
 message DeleteDataTypeDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
@@ -182,6 +197,11 @@ message DeleteDataTypeDemoReply {}
 
 //请求-数据类型示例-单条数据查询
 message GetDataTypeDemoInfoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
@@ -192,6 +212,14 @@ message GetDataTypeDemoInfoReply {
 
 //请求-数据类型示例-列表数据查询
 message GetDataTypeDemoListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "page",
+        "pageSize"
+      ]
+    }
+  };
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }

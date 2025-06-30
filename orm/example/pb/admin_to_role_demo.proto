@@ -99,6 +99,11 @@ message AdminToRoleDemoInfo {
 
 //请求--创建一条数据
 message CreateAdminToRoleDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [adminId,roleId]
+    }
+  };
   string adminId = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 
 	string roleId = 2 [(buf.validate.field).string={min_len: 1, max_len: 128}]; //
 }
@@ -110,6 +115,11 @@ message CreateAdminToRoleDemoReply {
 
 //请求--更新一条数据
 message UpdateAdminToRoleDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [adminId,roleId]
+    }
+  };
   string adminId = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 
 	string roleId = 2 [(buf.validate.field).string={min_len: 1, max_len: 128}]; //
 }
@@ -119,6 +129,11 @@ message UpdateAdminToRoleDemoReply {}
 
 //请求--删除多条数据
 message DeleteAdminToRoleDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: []
+    }
+  };
   
 }
 
@@ -127,6 +142,11 @@ message DeleteAdminToRoleDemoReply {}
 
 //请求--单条数据查询
 message GetAdminToRoleDemoInfoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: []
+    }
+  };
   
 }
 
@@ -137,6 +157,14 @@ message GetAdminToRoleDemoInfoReply {
 
 //请求--列表数据查询
 message GetAdminToRoleDemoListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "page",
+        "pageSize"
+      ]
+    }
+  };
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }

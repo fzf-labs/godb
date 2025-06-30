@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fzf-labs/godb/orm/utils"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/redis/rueidis"
 	"golang.org/x/sync/singleflight"
 )
@@ -51,7 +51,7 @@ func (r *Cache) Key(keys ...any) string {
 	keyStr := make([]string, 0)
 	keyStr = append(keyStr, r.name)
 	for _, v := range keys {
-		keyStr = append(keyStr, utils.ConvToString(v))
+		keyStr = append(keyStr, strutil.ConvToString(v))
 	}
 	return strings.Join(keyStr, ":")
 }

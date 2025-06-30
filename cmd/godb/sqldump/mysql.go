@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils"
-	"github.com/fzf-labs/godb/orm/utils/file"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // DumpMySQL 导出创建语句
@@ -40,13 +40,13 @@ func (s *SQLDump) DumpMySQL() {
 		}
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
 		if !s.fileOverwrite {
-			if file.Exists(outFile) {
+			if fileutil.Exists(outFile) {
 				continue
 			}
 		}
-		tableContent := utils.ConvToString(result["Create Table"])
+		tableContent := strutil.ConvToString(result["Create Table"])
 		if tableContent != "" {
-			err := file.WriteContentCover(outFile, tableContent)
+			err := fileutil.WriteContentCover(outFile, tableContent)
 			if err != nil {
 				log.Println("DumpMySQL file write err:", err)
 				return

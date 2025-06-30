@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dromara/carbon/v2"
-	"github.com/fzf-labs/godb/orm/utils"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"gorm.io/sharding"
 )
 
@@ -33,7 +33,7 @@ func NewMonthShardingPlugin(table, shardingKey string) *sharding.Sharding {
 				t = *value
 			default:
 				// 时间转换
-				t = carbon.Parse(utils.ConvToString(columnValue)).StdTime()
+				t = carbon.Parse(strutil.ConvToString(columnValue)).StdTime()
 			}
 			return "_" + t.Format("200601"), nil
 		},

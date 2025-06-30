@@ -11,7 +11,8 @@ import (
 	"unicode"
 
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/fzf-labs/godb/orm/utils/template"
 	"github.com/jinzhu/inflection"
 	"golang.org/x/tools/imports"
@@ -46,8 +47,8 @@ func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table st
 		firstTableChar:        "",
 		lowerTableName:        "",
 		upperTableName:        "",
-		daoPkgPath:            utils.FillModelPkgPath(daoPath),
-		modelPkgPath:          utils.FillModelPkgPath(modelPath),
+		daoPkgPath:            fileutil.FillModelPkgPath(daoPath),
+		modelPkgPath:          fileutil.FillModelPkgPath(modelPath),
 		index:                 make([]DBIndex, 0),
 	}
 	// 查询当前db的索引
@@ -1650,7 +1651,7 @@ func (r *Repo) lowerFieldName(s string) string {
 	if 'A' <= f && f <= 'Z' {
 		str = string(unicode.ToLower(f)) + string(rs[1:])
 	}
-	if token.Lookup(str).IsKeyword() || utils.StrSliFind(KeyWords, str) {
+	if token.Lookup(str).IsKeyword() || strutil.StrSliFind(KeyWords, str) {
 		str = "_" + str
 	}
 	return str

@@ -1,9 +1,26 @@
-package file
+package fileutil
 
 import (
 	"os"
 	"path/filepath"
+
+	"golang.org/x/tools/go/packages"
 )
+
+// FillModelPkgPath 返回模型文件的包路径
+func FillModelPkgPath(dir string) string {
+	pkg, err := packages.Load(&packages.Config{
+		Mode: packages.NeedName,
+		Dir:  dir,
+	})
+	if err != nil {
+		return ""
+	}
+	if len(pkg) > 0 {
+		return pkg[0].PkgPath
+	}
+	return ""
+}
 
 // Exists 判断文件是否存在
 func Exists(path string) bool {

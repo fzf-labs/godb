@@ -5,6 +5,11 @@ message {{.upperTableName}}Info {
 
 //请求-{{.tableNameComment}}-创建一条数据
 message Create{{.upperTableName}}Req {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [{{.createReqRequired}}]
+    }
+  };
   {{.createReq}}
 }
 
@@ -15,6 +20,11 @@ message Create{{.upperTableName}}Reply {
 
 //请求-{{.tableNameComment}}-更新一条数据
 message Update{{.upperTableName}}Req {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [{{.updateReqRequired}}]
+    }
+  };
   {{.updateReq}}
 }
 
@@ -25,6 +35,11 @@ message Update{{.upperTableName}}Reply {}
 
 //请求-{{.tableNameComment}}-更新状态
 message Update{{.upperTableName}}StatusReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [{{.updateStatusReqRequired}}]
+    }
+  };
   {{.updateStatusReq}}
 }
 
@@ -34,6 +49,11 @@ message Update{{.upperTableName}}StatusReply {}
 
 //请求-{{.tableNameComment}}-删除多条数据
 message Delete{{.upperTableName}}Req {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [{{.deleteReqRequired}}]
+    }
+  };
   {{.deleteReq}}
 }
 
@@ -42,6 +62,11 @@ message Delete{{.upperTableName}}Reply {}
 
 //请求-{{.tableNameComment}}-单条数据查询
 message Get{{.upperTableName}}InfoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [{{.getReqRequired}}]
+    }
+  };
   {{.getReq}}
 }
 
@@ -52,6 +77,14 @@ message Get{{.upperTableName}}InfoReply {
 
 //请求-{{.tableNameComment}}-列表数据查询
 message Get{{.upperTableName}}ListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "page",
+        "pageSize"
+      ]
+    }
+  };
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }

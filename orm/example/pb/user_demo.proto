@@ -132,6 +132,11 @@ message UserDemoInfo {
 
 //请求-用户-创建一条数据
 message CreateUserDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [UID,username,password,nickname,status,tenantId]
+    }
+  };
   string UID = 1 [(buf.validate.field).string={min_len: 1, max_len: 64}]; // uid
 	string username = 2 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户账号
 	string password = 3 [(buf.validate.field).string={min_len: 1, max_len: 100}]; // 密码
@@ -156,6 +161,11 @@ message CreateUserDemoReply {
 
 //请求-用户-更新一条数据
 message UpdateUserDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id,UID,username,password,nickname,status,tenantId]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 	string UID = 2 [(buf.validate.field).string={min_len: 1, max_len: 64}]; // uid
 	string username = 3 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户账号
@@ -179,6 +189,11 @@ message UpdateUserDemoReply {}
 
 //请求-用户-更新状态
 message UpdateUserDemoStatusReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id,status]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 	int32 status = 2 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 帐号状态（0正常 -1停用）
 }
@@ -188,6 +203,11 @@ message UpdateUserDemoStatusReply {}
 
 //请求-用户-删除多条数据
 message DeleteUserDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
@@ -196,6 +216,11 @@ message DeleteUserDemoReply {}
 
 //请求-用户-单条数据查询
 message GetUserDemoInfoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
@@ -206,6 +231,14 @@ message GetUserDemoInfoReply {
 
 //请求-用户-列表数据查询
 message GetUserDemoListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "page",
+        "pageSize"
+      ]
+    }
+  };
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }

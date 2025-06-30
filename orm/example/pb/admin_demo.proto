@@ -130,6 +130,11 @@ message AdminDemoInfo {
 
 //请求-系统-用户-创建一条数据
 message CreateAdminDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [username,password,nickname,gender,salt,status]
+    }
+  };
   string username = 1 [(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户名
 	string password = 2 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 密码
 	string nickname = 3 [(buf.validate.field).string={min_len: 1, max_len: 50}]; // 昵称
@@ -152,6 +157,11 @@ message CreateAdminDemoReply {
 
 //请求-系统-用户-更新一条数据
 message UpdateAdminDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id,username,password,nickname,gender,salt,status]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 	string username = 2 [(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户名
 	string password = 3 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 密码
@@ -173,6 +183,11 @@ message UpdateAdminDemoReply {}
 
 //请求-系统-用户-更新状态
 message UpdateAdminDemoStatusReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id,status]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 	int32 status = 2 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 0=禁用 1=开启
 }
@@ -182,6 +197,11 @@ message UpdateAdminDemoStatusReply {}
 
 //请求-系统-用户-删除多条数据
 message DeleteAdminDemoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 }
 
@@ -190,6 +210,11 @@ message DeleteAdminDemoReply {}
 
 //请求-系统-用户-单条数据查询
 message GetAdminDemoInfoReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [id]
+    }
+  };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // 编号
 }
 
@@ -200,6 +225,14 @@ message GetAdminDemoInfoReply {
 
 //请求-系统-用户-列表数据查询
 message GetAdminDemoListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "page",
+        "pageSize"
+      ]
+    }
+  };
   int32 page = 1; //页码
   int32 pageSize = 2; //页数
 }
