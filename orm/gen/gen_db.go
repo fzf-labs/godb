@@ -300,17 +300,75 @@ func DataTypeMap() map[string]func(columnType gorm.ColumnType) (dataType string)
 			}
 			return TimeTime
 		},
-		"character varying[]": func(_ gorm.ColumnType) (dataType string) {
+		// Array types - sorted according to data_type_demo.gen.go
+		"interval[]": func(columnType gorm.ColumnType) (dataType string) {
 			return "pq.StringArray"
 		},
-		"smallint[]": func(_ gorm.ColumnType) (dataType string) {
+		"bytea[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.ByteaArray"
+		},
+		"\"char\"[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"character varying[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"text[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"uuid[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"json[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"jsonb[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"xml[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"numeric[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.Float64Array"
+		},
+		"smallint[]": func(columnType gorm.ColumnType) (dataType string) {
 			return "pq.Int32Array"
 		},
-		"integer[]": func(_ gorm.ColumnType) (dataType string) {
+		"integer[]": func(columnType gorm.ColumnType) (dataType string) {
 			return "pq.Int32Array"
 		},
-		"bigint[]": func(_ gorm.ColumnType) (dataType string) {
+		"bigint[]": func(columnType gorm.ColumnType) (dataType string) {
 			return "pq.Int64Array"
+		},
+		"real[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.Float32Array"
+		},
+		"double precision[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.Float64Array"
+		},
+		"boolean[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.BoolArray"
+		},
+		"date[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"time without time zone[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"time with time zone[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"timestamp without time zone[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"timestamp with time zone[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"timestamp[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
+		},
+		"timestamptz[]": func(columnType gorm.ColumnType) (dataType string) {
+			return "pq.StringArray"
 		},
 	}
 }

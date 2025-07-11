@@ -14,6 +14,11 @@ mod:
 fmt:
 	@gofmt -s -w .
 
+.PHONY: gci
+# make gci 格式化代码引入
+gci:
+	@gci write ./...
+
 .PHONY: vet
 # make vet golang官方命令,用于检查代码中的问题.
 vet:
