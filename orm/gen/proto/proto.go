@@ -238,16 +238,16 @@ func (p *Proto) genMessage() string {
 		"upperTableName":          p.upperTableName,
 		"info":                    info,
 		"createReq":               createReq,
-		"createReqRequired":       strings.Join(createReqRequired, ","),
+		"createReqRequired":       joinWithQuotes(createReqRequired),
 		"createReply":             createReply,
 		"updateReq":               updateReq,
-		"updateReqRequired":       strings.Join(updateReqRequired, ","),
+		"updateReqRequired":       joinWithQuotes(updateReqRequired),
 		"updateStatusReq":         updateStatusReq,
-		"updateStatusReqRequired": strings.Join(updateStatusReqRequired, ","),
+		"updateStatusReqRequired": joinWithQuotes(updateStatusReqRequired),
 		"deleteReq":               deleteReq,
-		"deleteReqRequired":       strings.Join(deleteReqRequired, ","),
+		"deleteReqRequired":       joinWithQuotes(deleteReqRequired),
 		"getReq":                  getReq,
-		"getReqRequired":          strings.Join(getReqRequired, ","),
+		"getReqRequired":          joinWithQuotes(getReqRequired),
 		"status":                  status,
 	})
 	return fmt.Sprintln(str.String())
@@ -395,4 +395,12 @@ func pbTypeToValidate(pbType string, isNull bool, length int64) string {
 	default:
 		return ""
 	}
+}
+
+// joinWithQuotes 将字符串切片连接，并为每个元素添加引号
+func joinWithQuotes(fields []string) string {
+	if len(fields) == 0 {
+		return ""
+	}
+	return "\"" + strings.Join(fields, "\",\"") + "\""
 }
