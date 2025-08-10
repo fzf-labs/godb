@@ -345,48 +345,24 @@ func pbTypeToValidate(pbType string, isNull bool, length int64) string {
 		return fmt.Sprintf("[(buf.validate.field).string={min_len: 1, max_len: %d}]", length)
 	case "int32":
 		if isNull {
-			if length <= 0 {
-				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0}]"
-			}
-			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: %d}]", length)
+			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
 		}
-		if length <= 0 {
-			return "[(buf.validate.field).int32={gt: 0}]"
-		}
-		return fmt.Sprintf("[(buf.validate.field).int32={gt: 0, lte: %d}]", length)
+		return ""
 	case "int64":
 		if isNull {
-			if length <= 0 {
-				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int64={gt: 0}]"
-			}
-			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int64={gt: 0, lte: %d}]", length)
+			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
 		}
-		if length <= 0 {
-			return "[(buf.validate.field).int64={gt: 0}]"
-		}
-		return fmt.Sprintf("[(buf.validate.field).int64={gt: 0, lte: %d}]", length)
+		return ""
 	case "float":
 		if isNull {
-			if length <= 0 {
-				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0}]"
-			}
-			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).float={gt: 0, lte: %d}]", length)
+			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
 		}
-		if length <= 0 {
-			return "[(buf.validate.field).float={gt: 0}]"
-		}
-		return fmt.Sprintf("[(buf.validate.field).float={gt: 0, lte: %d}]", length)
+		return ""
 	case "double":
 		if isNull {
-			if length <= 0 {
-				return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0}]"
-			}
-			return fmt.Sprintf("[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).double={gt: 0, lte: %d}]", length)
+			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
 		}
-		if length <= 0 {
-			return "[(buf.validate.field).double={gt: 0}]"
-		}
-		return fmt.Sprintf("[(buf.validate.field).double={gt: 0, lte: %d}]", length)
+		return ""
 	case "google.protobuf.Timestamp":
 		if isNull {
 			return "[(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]"
