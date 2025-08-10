@@ -85,8 +85,8 @@ message Get{{.upperTableName}}ListReq {
       ]
     }
   };
-  int32 page = 1; //页码
-  int32 pageSize = 2; //页数
+  int32 page = 1[(buf.validate.field).int32={gte: 1}]; //页码
+  int32 pageSize = 2[(buf.validate.field).int32={gte: 1, lte: 1000}]; //页数
 }
 
 //响应-{{.tableNameComment}}-列表数据查询
