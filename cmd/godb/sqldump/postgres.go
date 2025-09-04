@@ -115,17 +115,72 @@ func (s *SQLDump) postgresDsnParse() *PostgresDsn {
 	return result
 }
 
+// 预编译正则表达式，避免重复编译
+var alterOwnerRegex = regexp.MustCompile(`ALTER TABLE .*? OWNER TO postgres`)
+
 // remove 移除多余行
 func (s *SQLDump) postgresRemove(str string) string {
-	var result string
+	if str == "" {
+		return ""
+	}
+	var result strings.Builder
+	// 预估结果大小，减少内存重分配
+	result.Grow(len(str))
 	reader := strings.NewReader(str)
 	scanner := bufio.NewScanner(reader)
+	var currentStatement strings.Builder
+	var inAlterStatement bool
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" || strings.HasPrefix(line, "--") || strings.HasPrefix(line, "SELECT") || strings.HasPrefix(line, "SET") || regexp.MustCompile(`(ALTER TABLE .*? OWNER TO postgres)`).MatchString(line) {
+		// 跳过需要过滤的行 - 优化条件判断顺序
+		if s.shouldSkipLine(line) {
 			continue
 		}
-		result += fmt.Sprintln(line)
+		trimmedLine := strings.TrimSpace(line)
+		// 处理 ALTER 语句
+		if strings.HasPrefix(trimmedLine, "ALTER TABLE") {
+			inAlterStatement = true
+			currentStatement.Reset()
+			currentStatement.WriteString(trimmedLine)
+		} else if inAlterStatement {
+			// 在 ALTER 语句中，继续拼接
+			currentStatement.WriteByte(' ')
+			currentStatement.WriteString(trimmedLine)
+		}
+		// 检测语句结束（以分号结尾）
+		if inAlterStatement && strings.HasSuffix(trimmedLine, ";") {
+			result.WriteString(currentStatement.String())
+			result.WriteByte('\n')
+			inAlterStatement = false
+			currentStatement.Reset()
+		} else if !inAlterStatement {
+			// 不是 ALTER 语句，正常处理
+			result.WriteString(line)
+			result.WriteByte('\n')
+		}
 	}
-	return result
+	return result.String()
+}
+
+// shouldSkipLine 判断是否应该跳过该行
+func (s *SQLDump) shouldSkipLine(line string) bool {
+	if line == "" {
+		return true
+	}
+	// 优化：先检查最常见的情况
+	if strings.HasPrefix(line, "--") {
+		return true
+	}
+	// 其他前缀检查
+	if strings.HasPrefix(line, "SELECT") ||
+		strings.HasPrefix(line, "SET") {
+		return true
+	}
+	// 包含特殊字符的检查
+	if strings.Contains(line, "\\restrict") ||
+		strings.Contains(line, "\\unrestrict") {
+		return true
+	}
+	// 最后检查正则表达式（最昂贵的操作）
+	return alterOwnerRegex.MatchString(line)
 }
