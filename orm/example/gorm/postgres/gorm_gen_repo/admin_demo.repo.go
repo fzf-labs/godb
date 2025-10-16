@@ -16,6 +16,7 @@ import (
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_dao"
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_model"
 	"github.com/fzf-labs/godb/orm/gen/config"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -263,7 +264,7 @@ func (a *AdminDemoRepo) NewData() *gorm_gen_model.AdminDemo {
 // DeepCopy 深拷贝
 func (a *AdminDemoRepo) DeepCopy(data *gorm_gen_model.AdminDemo) *gorm_gen_model.AdminDemo {
 	newData := new(gorm_gen_model.AdminDemo)
-	*newData = *data
+	_ = copier.CopyWithOption(newData, data, copier.Option{DeepCopy: true})
 	return newData
 }
 
@@ -623,7 +624,7 @@ func (a *AdminDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Quer
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
@@ -634,7 +635,7 @@ func (a *AdminDemoRepo) UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
@@ -731,7 +732,7 @@ func (a *AdminDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
@@ -742,7 +743,7 @@ func (a *AdminDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *g
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存

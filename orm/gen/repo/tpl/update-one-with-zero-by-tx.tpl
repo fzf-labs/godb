@@ -6,7 +6,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneWithZeroByTx(ctx co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 {{- if .haveDeletedAt }}
 // UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
@@ -17,6 +17,6 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneUnscopedWithZeroByT
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 {{- end }}

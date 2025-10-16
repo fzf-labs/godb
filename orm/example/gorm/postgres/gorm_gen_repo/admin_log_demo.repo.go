@@ -16,6 +16,7 @@ import (
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_dao"
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_model"
 	"github.com/fzf-labs/godb/orm/gen/config"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -143,7 +144,7 @@ func (a *AdminLogDemoRepo) NewData() *gorm_gen_model.AdminLogDemo {
 // DeepCopy 深拷贝
 func (a *AdminLogDemoRepo) DeepCopy(data *gorm_gen_model.AdminLogDemo) *gorm_gen_model.AdminLogDemo {
 	newData := new(gorm_gen_model.AdminLogDemo)
-	*newData = *data
+	_ = copier.CopyWithOption(newData, data, copier.Option{DeepCopy: true})
 	return newData
 }
 
@@ -476,7 +477,7 @@ func (a *AdminLogDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Q
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
@@ -530,7 +531,7 @@ func (a *AdminLogDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_g
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存

@@ -6,7 +6,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneByTx(ctx context.Co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 {{- if .haveDeletedAt }}
 // UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
@@ -17,6 +17,6 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneUnscopedByTx(ctx co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 {{- end }}

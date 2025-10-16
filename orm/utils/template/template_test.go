@@ -51,7 +51,7 @@ func TestDefaultTemplate_Execute(t1 *testing.T) {
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
-			t := NewTemplate().Parse(tt.fields.text).GoFmt(tt.fields.goFmt)
+			t := NewTemplate().Parse(tt.fields.text)
 			got, err := t.Execute(tt.args.data)
 			if (err != nil) != tt.wantErr {
 				t1.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)

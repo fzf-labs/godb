@@ -35,6 +35,32 @@ func newRedis() *redis.Client {
 	return redisClient
 }
 
+func Test_DeepCopy(t *testing.T) {
+	db := newDB()
+	redisClient := newRedis()
+	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
+	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
+	repo := gorm_gen_repo2.NewAdminRoleDemoRepo(cfg)
+	data := repo.NewData()
+	data.ID = "182a65a0-ee20-4fe0-a0e8-ba30edcf402b"
+	data.Name = "admin"
+	data.Admins = []*gorm_gen_model2.AdminDemo{
+		{
+			ID:       "182a65a0-ee20-4fe0-a0e8-ba30edcf402b",
+			Username: "admin",
+			Nickname: "admin",
+			Gender:   0,
+		},
+	}
+	copyData := repo.DeepCopy(data)
+	// 修改值Admins的值
+	data.Name = "admin2"
+	data.Admins[0].Username = "admin2"
+	data.Admins[0].Nickname = "admin2"
+	fmt.Println(copyData)
+	fmt.Println(data)
+}
+
 // Test_FindOneCacheByID 根据ID查询单条数据
 func Test_FindOneCacheByID(t *testing.T) {
 	db := newDB()

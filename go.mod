@@ -10,6 +10,7 @@ require (
 	github.com/dtm-labs/rockscache v0.1.1
 	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/iancoleman/strcase v0.3.0
+	github.com/jinzhu/copier v0.4.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/klauspost/compress v1.18.0
 	github.com/pkg/errors v0.9.1

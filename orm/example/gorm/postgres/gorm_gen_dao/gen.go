@@ -8,8 +8,10 @@ import (
 	"context"
 	"database/sql"
 
-	"gorm.io/gen"
 	"gorm.io/gorm"
+
+	"gorm.io/gen"
+
 	"gorm.io/plugin/dbresolver"
 )
 

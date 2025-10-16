@@ -16,6 +16,7 @@ import (
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_dao"
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_model"
 	"github.com/fzf-labs/godb/orm/gen/config"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -186,7 +187,7 @@ func (a *AdminToRoleDemoRepo) NewData() *gorm_gen_model.AdminToRoleDemo {
 // DeepCopy 深拷贝
 func (a *AdminToRoleDemoRepo) DeepCopy(data *gorm_gen_model.AdminToRoleDemo) *gorm_gen_model.AdminToRoleDemo {
 	newData := new(gorm_gen_model.AdminToRoleDemo)
-	*newData = *data
+	_ = copier.CopyWithOption(newData, data, copier.Option{DeepCopy: true})
 	return newData
 }
 

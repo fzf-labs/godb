@@ -7,6 +7,7 @@ import (
 	"github.com/fzf-labs/godb/orm/gen/config"
     "{{.daoPkgPath}}"
     "{{.modelPkgPath}}"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

@@ -16,6 +16,7 @@ import (
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_dao"
 	"github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_model"
 	"github.com/fzf-labs/godb/orm/gen/config"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -165,7 +166,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) NewData() *gorm_gen_model.MultiFieldPrima
 // DeepCopy 深拷贝
 func (m *MultiFieldPrimaryKeyDemoRepo) DeepCopy(data *gorm_gen_model.MultiFieldPrimaryKeyDemo) *gorm_gen_model.MultiFieldPrimaryKeyDemo {
 	newData := new(gorm_gen_model.MultiFieldPrimaryKeyDemo)
-	*newData = *data
+	_ = copier.CopyWithOption(newData, data, copier.Option{DeepCopy: true})
 	return newData
 }
 
@@ -525,7 +526,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneByTx(ctx context.Context, tx *go
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
@@ -536,7 +537,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedByTx(ctx context.Context
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
@@ -633,7 +634,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneWithZeroByTx(ctx context.Context
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
@@ -644,7 +645,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
