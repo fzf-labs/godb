@@ -11,7 +11,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneCacheByTx(ctx conte
     if err != nil {
         return err
     }
-	return err
+	return nil
 }
 {{- if .haveDeletedAt }}
 // UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
@@ -27,6 +27,6 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneUnscopedCacheByTx(c
     if err != nil {
         return err
     }
-	return err
+	return nil
 }
 {{- end }}
