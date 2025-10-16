@@ -650,7 +650,7 @@ func (a *AdminDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
@@ -666,7 +666,7 @@ func (a *AdminDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneWithZero 更新一条数据,包含零值
@@ -758,7 +758,7 @@ func (a *AdminDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
@@ -774,7 +774,7 @@ func (a *AdminDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
@@ -1517,7 +1517,7 @@ func (a *AdminDemoRepo) DeleteOneUnscopedCacheByID(ctx context.Context, ID strin
 	return nil
 }
 
-// DeleteOneByID 根据ID删除一条数据
+// DeleteOneByIDTx 根据ID删除一条数据
 func (a *AdminDemoRepo) DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error {
 	dao := tx.AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Delete()
@@ -1765,7 +1765,7 @@ func (a *AdminDemoRepo) DeleteOneUnscopedCacheByUsername(ctx context.Context, us
 	return nil
 }
 
-// DeleteOneByUsername 根据username删除一条数据
+// DeleteOneByUsernameTx 根据username删除一条数据
 func (a *AdminDemoRepo) DeleteOneByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string) error {
 	dao := tx.AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.Username.Eq(username)).Delete()

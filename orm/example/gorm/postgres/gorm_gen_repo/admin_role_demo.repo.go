@@ -584,7 +584,7 @@ func (a *AdminRoleDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
@@ -600,7 +600,7 @@ func (a *AdminRoleDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneWithZero 更新一条数据,包含零值
@@ -692,7 +692,7 @@ func (a *AdminRoleDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
@@ -708,7 +708,7 @@ func (a *AdminRoleDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Conte
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
@@ -1181,7 +1181,7 @@ func (a *AdminRoleDemoRepo) DeleteOneUnscopedCacheByID(ctx context.Context, ID s
 	return nil
 }
 
-// DeleteOneByID 根据ID删除一条数据
+// DeleteOneByIDTx 根据ID删除一条数据
 func (a *AdminRoleDemoRepo) DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error {
 	dao := tx.AdminRoleDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Delete()

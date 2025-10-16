@@ -492,7 +492,7 @@ func (a *AdminLogDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneWithZero 更新一条数据,包含零值
@@ -546,7 +546,7 @@ func (a *AdminLogDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *g
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
@@ -784,7 +784,7 @@ func (a *AdminLogDemoRepo) DeleteOneCacheByID(ctx context.Context, ID string) er
 	return nil
 }
 
-// DeleteOneByID 根据ID删除一条数据
+// DeleteOneByIDTx 根据ID删除一条数据
 func (a *AdminLogDemoRepo) DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error {
 	dao := tx.AdminLogDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Delete()

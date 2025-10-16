@@ -552,7 +552,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCacheByTx(ctx context.Context, t
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
@@ -568,7 +568,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneWithZero 更新一条数据,包含零值
@@ -660,7 +660,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
@@ -676,7 +676,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx co
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 // UpdateBatchByPrimaryKey1PrimaryKey2 根据字段PrimaryKey1PrimaryKey2批量更新,零值会被更新
@@ -995,7 +995,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) DeleteOneUnscopedCacheByPrimaryKey1Primar
 	return nil
 }
 
-// DeleteOneByPrimaryKey1PrimaryKey2 根据primaryKey1删除一条数据
+// DeleteOneByPrimaryKey1PrimaryKey2Tx 根据primaryKey1删除一条数据
 func (m *MultiFieldPrimaryKeyDemoRepo) DeleteOneByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string) error {
 	dao := tx.MultiFieldPrimaryKeyDemo
 	_, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(primaryKey1), dao.PrimaryKey2.Eq(primaryKey2)).Delete()
