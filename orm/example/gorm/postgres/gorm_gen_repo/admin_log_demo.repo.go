@@ -81,9 +81,13 @@ type (
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo, oldData *gorm_gen_model.AdminLogDemo) error
-		// UpdateBatchByIDS 根据主键IDS批量更新
+		// UpdateBatchByID 根据字段ID批量更新,零值会被更新
+		UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error
+		// UpdateBatchByIDTx 根据主键ID批量更新(事务),零值会被更新
+		UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
+		// UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 		UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
-		// UpdateBatchByIDSTx 根据主键IDS批量更新(事务)
+		// UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 		UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
 		// FindOneByID 根据ID查询一条数据
 		FindOneByID(ctx context.Context, ID string) (*gorm_gen_model.AdminLogDemo, error)
@@ -545,8 +549,27 @@ func (a *AdminLogDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *g
 	return err
 }
 
-// UpdateBatchByIDS 根据主键IDS批量更新
-// 零值会被更新
+// UpdateBatchByID 根据字段ID批量更新,零值会被更新
+func (a *AdminLogDemoRepo) UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminLogDemo
+	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByIDTx 根据字段ID批量更新(事务),零值会被更新
+func (a *AdminLogDemoRepo) UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error {
+	dao := tx.AdminLogDemo
+	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 func (a *AdminLogDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminLogDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.In(IDS...)).Updates(data)
@@ -556,8 +579,7 @@ func (a *AdminLogDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, d
 	return nil
 }
 
-// UpdateBatchByIDSTx 根据主键IDS批量更新(事务)
-// 零值会被更新
+// UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 func (a *AdminLogDemoRepo) UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error {
 	dao := tx.AdminLogDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.In(IDS...)).Updates(data)

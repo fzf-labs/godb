@@ -23,6 +23,7 @@ type AdminLogDemo struct {
 	Req       datatypes.JSON `gorm:"column:req;type:json;comment:请求数据" json:"req"`                                           // 请求数据
 	Resp      datatypes.JSON `gorm:"column:resp;type:json;comment:响应数据" json:"resp"`                                         // 响应数据
 	CreatedAt time.Time      `gorm:"column:created_at;type:timestamp with time zone;not null;comment:创建时间" json:"createdAt"` // 创建时间
+	Status    int16          `gorm:"column:status;type:smallint;comment:0=禁用 1=开启" json:"status"`                            // 0=禁用 1=开启
 }
 
 // TableName AdminLogDemo's table name

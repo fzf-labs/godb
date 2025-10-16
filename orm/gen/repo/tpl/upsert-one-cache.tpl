@@ -2,7 +2,7 @@
 // Update all columns, except primary keys, to new value on conflict
 func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCache(ctx context.Context, data *{{.dbName}}_model.{{.upperTableName}}) error {
 	dao := {{.dbName}}_dao.Use({{.firstTableChar}}.db).{{.upperTableName}}
-	oldData,err := dao.WithContext(ctx).Where(dao.{{.upperSinglePrimaryKey}}.Eq(data.{{.upperSinglePrimaryKey}})).First()
+	oldData,err := dao.WithContext(ctx).Where({{.primaryKeyWhereFields}}).First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}

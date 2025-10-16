@@ -33,6 +33,7 @@ func newAdminLogDemo(db *gorm.DB, opts ...gen.DOOption) adminLogDemo {
 	_adminLogDemo.Req = field.NewField(tableName, "req")
 	_adminLogDemo.Resp = field.NewField(tableName, "resp")
 	_adminLogDemo.CreatedAt = field.NewTime(tableName, "created_at")
+	_adminLogDemo.Status = field.NewInt16(tableName, "status")
 
 	_adminLogDemo.fillFieldMap()
 
@@ -52,6 +53,7 @@ type adminLogDemo struct {
 	Req       field.Field  // 请求数据
 	Resp      field.Field  // 响应数据
 	CreatedAt field.Time   // 创建时间
+	Status    field.Int16  // 0=禁用 1=开启
 
 	fieldMap map[string]field.Expr
 }
@@ -77,6 +79,7 @@ func (a *adminLogDemo) updateTableName(table string) *adminLogDemo {
 	a.Req = field.NewField(table, "req")
 	a.Resp = field.NewField(table, "resp")
 	a.CreatedAt = field.NewTime(table, "created_at")
+	a.Status = field.NewInt16(table, "status")
 
 	a.fillFieldMap()
 
@@ -105,7 +108,7 @@ func (a *adminLogDemo) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (a *adminLogDemo) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 9)
+	a.fieldMap = make(map[string]field.Expr, 10)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["admin_id"] = a.AdminID
 	a.fieldMap["ip"] = a.IP
@@ -115,6 +118,7 @@ func (a *adminLogDemo) fillFieldMap() {
 	a.fieldMap["req"] = a.Req
 	a.fieldMap["resp"] = a.Resp
 	a.fieldMap["created_at"] = a.CreatedAt
+	a.fieldMap["status"] = a.Status
 }
 
 func (a adminLogDemo) clone(db *gorm.DB) adminLogDemo {

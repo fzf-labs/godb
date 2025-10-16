@@ -60,6 +60,30 @@ type (
 		UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminToRoleDemo, fields []string) error
 		// UpsertOneCacheByFieldsTx 根据fields字段Upsert一条数据(事务), 并删除缓存
 		UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminToRoleDemo, fields []string) error
+		// UpdateBatchByAdminIDRoleID 根据字段AdminIDRoleID批量更新,零值会被更新
+		UpdateBatchByAdminIDRoleID(ctx context.Context, adminID string, roleID string, data map[string]interface{}) error
+		// UpdateBatchByAdminIDRoleIDTx 根据主键AdminIDRoleID批量更新(事务),零值会被更新
+		UpdateBatchByAdminIDRoleIDTx(ctx context.Context, tx *gorm_gen_dao.Query, adminID string, roleID string, data map[string]interface{}) error
+		// UpdateBatchByRoleIDAdminID 根据字段RoleIDAdminID批量更新,零值会被更新
+		UpdateBatchByRoleIDAdminID(ctx context.Context, roleID string, adminID string, data map[string]interface{}) error
+		// UpdateBatchByRoleIDAdminIDTx 根据主键RoleIDAdminID批量更新(事务),零值会被更新
+		UpdateBatchByRoleIDAdminIDTx(ctx context.Context, tx *gorm_gen_dao.Query, roleID string, adminID string, data map[string]interface{}) error
+		// UpdateBatchByAdminID 根据字段AdminID批量更新,零值会被更新
+		UpdateBatchByAdminID(ctx context.Context, adminID string, data map[string]interface{}) error
+		// UpdateBatchByAdminIDTx 根据主键AdminID批量更新(事务),零值会被更新
+		UpdateBatchByAdminIDTx(ctx context.Context, tx *gorm_gen_dao.Query, adminID string, data map[string]interface{}) error
+		// UpdateBatchByAdminIDS 根据字段AdminIDS批量更新,零值会被更新
+		UpdateBatchByAdminIDS(ctx context.Context, adminIDS []string, data map[string]interface{}) error
+		// UpdateBatchByAdminIDSTx 根据字段AdminIDS批量更新(事务),零值会被更新
+		UpdateBatchByAdminIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, adminIDS []string, data map[string]interface{}) error
+		// UpdateBatchByRoleID 根据字段RoleID批量更新,零值会被更新
+		UpdateBatchByRoleID(ctx context.Context, roleID string, data map[string]interface{}) error
+		// UpdateBatchByRoleIDTx 根据主键RoleID批量更新(事务),零值会被更新
+		UpdateBatchByRoleIDTx(ctx context.Context, tx *gorm_gen_dao.Query, roleID string, data map[string]interface{}) error
+		// UpdateBatchByRoleIDS 根据字段RoleIDS批量更新,零值会被更新
+		UpdateBatchByRoleIDS(ctx context.Context, roleIDS []string, data map[string]interface{}) error
+		// UpdateBatchByRoleIDSTx 根据字段RoleIDS批量更新(事务),零值会被更新
+		UpdateBatchByRoleIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, roleIDS []string, data map[string]interface{}) error
 		// FindMultiByAdminIDRoleID 根据AdminIDRoleID查询多条数据，并设置缓存
 		FindMultiByAdminIDRoleID(ctx context.Context, adminID string, roleID string) ([]*gorm_gen_model.AdminToRoleDemo, error)
 		// FindMultiCacheByAdminIDRoleID 根据AdminIDRoleID查询多条数据，并设置缓存
@@ -394,6 +418,126 @@ func (a *AdminToRoleDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *
 		return err
 	}
 	err = a.DeleteIndexCache(ctx, oldData, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminIDRoleID 根据字段AdminIDRoleID批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminIDRoleID(ctx context.Context, adminID string, roleID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.Eq(adminID), dao.RoleID.Eq(roleID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminIDRoleIDTx 根据字段AdminIDRoleID批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminIDRoleIDTx(ctx context.Context, tx *gorm_gen_dao.Query, adminID string, roleID string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.Eq(adminID), dao.RoleID.Eq(roleID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleIDAdminID 根据字段RoleIDAdminID批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleIDAdminID(ctx context.Context, roleID string, adminID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.Eq(roleID), dao.AdminID.Eq(adminID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleIDAdminIDTx 根据字段RoleIDAdminID批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleIDAdminIDTx(ctx context.Context, tx *gorm_gen_dao.Query, roleID string, adminID string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.Eq(roleID), dao.AdminID.Eq(adminID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminID 根据字段AdminID批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminID(ctx context.Context, adminID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.Eq(adminID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminIDTx 根据字段AdminID批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminIDTx(ctx context.Context, tx *gorm_gen_dao.Query, adminID string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.Eq(adminID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminIDS 根据字段AdminIDS批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminIDS(ctx context.Context, adminIDS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.In(adminIDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByAdminIDSTx 根据字段AdminIDS批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByAdminIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, adminIDS []string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.AdminID.In(adminIDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleID 根据字段RoleID批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleID(ctx context.Context, roleID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.Eq(roleID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleIDTx 根据字段RoleID批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleIDTx(ctx context.Context, tx *gorm_gen_dao.Query, roleID string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.Eq(roleID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleIDS 根据字段RoleIDS批量更新,零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleIDS(ctx context.Context, roleIDS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.In(roleIDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchByRoleIDSTx 根据字段RoleIDS批量更新(事务),零值会被更新
+func (a *AdminToRoleDemoRepo) UpdateBatchByRoleIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, roleIDS []string, data map[string]interface{}) error {
+	dao := tx.AdminToRoleDemo
+	_, err := dao.WithContext(ctx).Where(dao.RoleID.In(roleIDS...)).Updates(data)
 	if err != nil {
 		return err
 	}

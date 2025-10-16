@@ -191,17 +191,29 @@ var InterfaceUpdateOneCacheWithZeroByTx string
 //go:embed tpl/update-one-cache-with-zero-by-tx.tpl
 var UpdateOneCacheWithZeroByTx string
 
-//go:embed tpl/interface-update-batch-by-primary-keys.tpl
-var InterfaceUpdateBatchByPrimaryKeys string
+//go:embed tpl/interface-update-batch-by-field-plural.tpl
+var InterfaceUpdateBatchByFieldPlural string
 
-//go:embed tpl/update-batch-by-primary-keys.tpl
-var UpdateBatchByPrimaryKeys string
+//go:embed tpl/update-batch-by-field-plural.tpl
+var UpdateBatchByFieldPlural string
 
-//go:embed tpl/interface-update-batch-by-primary-keys-tx.tpl
-var InterfaceUpdateBatchByPrimaryKeysTx string
+//go:embed tpl/interface-update-batch-by-field-plural-tx.tpl
+var InterfaceUpdateBatchByFieldPluralTx string
 
-//go:embed tpl/update-batch-by-primary-keys-tx.tpl
-var UpdateBatchByPrimaryKeysTx string
+//go:embed tpl/update-batch-by-field-plural-tx.tpl
+var UpdateBatchByFieldPluralTx string
+
+//go:embed tpl/interface-update-batch-by-fields.tpl
+var InterfaceUpdateBatchByFields string
+
+//go:embed tpl/update-batch-by-fields.tpl
+var UpdateBatchByFields string
+
+//go:embed tpl/interface-update-batch-by-fields-tx.tpl
+var InterfaceUpdateBatchByFieldsTx string
+
+//go:embed tpl/update-batch-by-fields-tx.tpl
+var UpdateBatchByFieldsTx string
 
 // 删除
 
