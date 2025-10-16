@@ -132,6 +132,26 @@ func Test_UpsertOneWithZeroCache(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
+	db := newDB()
+	redisClient := newRedis()
+	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
+	ctx := context.Background()
+	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
+	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
+	data := repo.NewData()
+	data.ID = "182a65a0-ee20-4fe0-a0e8-ba30edcf402b"
+	data.Remark = "123"
+	err := gorm_gen_dao.Use(db).Transaction(func(tx *gorm_gen_dao.Query) error {
+		err := repo.UpsertOneCacheByFieldsTx(ctx, tx, data, []string{"id"})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	assert.Equal(t, nil, err)
+}
+
 func Test_UpdateBatchByIDS(t *testing.T) {
 	db := newDB()
 	redisClient := newRedis()

@@ -74,11 +74,11 @@ type (
 		UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo) error
 		// UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo, oldData *gorm_gen_model.AdminLogDemo) error
-		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
+		// UpdateOneWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminLogDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminLogDemo, oldData *gorm_gen_model.AdminLogDemo) error
-		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
+		// UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminLogDemo, oldData *gorm_gen_model.AdminLogDemo) error
@@ -355,7 +355,7 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(a.db).AdminLogDemo
@@ -424,7 +424,7 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.AdminLogDemo

@@ -95,7 +95,7 @@ type (
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
-		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
+		// UpdateOneWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
 		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
@@ -103,7 +103,7 @@ type (
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
-		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
+		// UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
 		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
@@ -692,7 +692,7 @@ func (d *DataTypeDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 	}
 	oldData := &gorm_gen_model.DataTypeDemo{}
 	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
@@ -761,7 +761,7 @@ func (d *DataTypeDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 	}
 	oldData := &gorm_gen_model.DataTypeDemo{}
 	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.DataTypeDemo
@@ -3904,14 +3904,21 @@ func (d *DataTypeDemoRepo) DeleteIndexCache(ctx context.Context, data ...*gorm_g
 	KeyMap := make(map[string]struct{})
 	keys := make([]string, 0)
 	keys = append(keys, d.cache.Key(CacheDataTypeDemoByConditionPrefix))
+	keys = append(keys, d.cache.Key(CacheDataTypeDemoUnscopedByConditionPrefix))
 	for _, v := range data {
 		if v != nil {
 			KeyMap[d.cache.Key(CacheDataTypeDemoByIDPrefix, v.ID)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByIDPrefix, v.ID)] = struct{}{}
 			KeyMap[d.cache.Key(CacheDataTypeDemoByULidPrefix, v.ULid)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByULidPrefix, v.ULid)] = struct{}{}
 			KeyMap[d.cache.Key(CacheDataTypeDemoByBatchAPIPrefix, v.BatchAPI)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByBatchAPIPrefix, v.BatchAPI)] = struct{}{}
 			KeyMap[d.cache.Key(CacheDataTypeDemoByCacheKeyPrefix, v.CacheKey)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByCacheKeyPrefix, v.CacheKey)] = struct{}{}
 			KeyMap[d.cache.Key(CacheDataTypeDemoByDataTypeBoolPrefix, v.DataTypeBool)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByDataTypeBoolPrefix, v.DataTypeBool)] = struct{}{}
 			KeyMap[d.cache.Key(CacheDataTypeDemoByDataTypeTimePrefix, v.DataTypeTime)] = struct{}{}
+			KeyMap[d.cache.Key(CacheDataTypeDemoUnscopedByDataTypeTimePrefix, v.DataTypeTime)] = struct{}{}
 		}
 	}
 	for k := range KeyMap {

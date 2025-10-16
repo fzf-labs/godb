@@ -3,6 +3,9 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) DeleteIndexCache(ctx context
 	KeyMap := make(map[string]struct{})
 	keys := make([]string,0)
 	keys = append(keys, {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}ByConditionPrefix))
+	{{- if .haveDeletedAt }}
+	keys = append(keys, {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}UnscopedByConditionPrefix))
+	{{- end }}
 	for _, v := range data {
 		if v != nil {
 			{{.cacheDelKeys}}

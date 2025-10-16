@@ -86,7 +86,7 @@ type (
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
-		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
+		// UpdateOneWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
 		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
@@ -94,7 +94,7 @@ type (
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
-		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
+		// UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
 		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
@@ -475,7 +475,7 @@ func (a *AdminDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gorm_g
 	}
 	oldData := &gorm_gen_model.AdminDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
@@ -544,7 +544,7 @@ func (a *AdminDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_g
 	}
 	oldData := &gorm_gen_model.AdminDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.AdminDemo
@@ -1957,10 +1957,13 @@ func (a *AdminDemoRepo) DeleteIndexCache(ctx context.Context, data ...*gorm_gen_
 	KeyMap := make(map[string]struct{})
 	keys := make([]string, 0)
 	keys = append(keys, a.cache.Key(CacheAdminDemoByConditionPrefix))
+	keys = append(keys, a.cache.Key(CacheAdminDemoUnscopedByConditionPrefix))
 	for _, v := range data {
 		if v != nil {
 			KeyMap[a.cache.Key(CacheAdminDemoByIDPrefix, v.ID)] = struct{}{}
+			KeyMap[a.cache.Key(CacheAdminDemoUnscopedByIDPrefix, v.ID)] = struct{}{}
 			KeyMap[a.cache.Key(CacheAdminDemoByUsernamePrefix, v.Username)] = struct{}{}
+			KeyMap[a.cache.Key(CacheAdminDemoUnscopedByUsernamePrefix, v.Username)] = struct{}{}
 		}
 	}
 	for k := range KeyMap {

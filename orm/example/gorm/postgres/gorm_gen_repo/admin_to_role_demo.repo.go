@@ -338,7 +338,7 @@ func (a *AdminToRoleDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *
 	}
 	oldData := &gorm_gen_model.AdminToRoleDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminToRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(a.db).AdminToRoleDemo
@@ -407,7 +407,7 @@ func (a *AdminToRoleDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *
 	}
 	oldData := &gorm_gen_model.AdminToRoleDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminToRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.AdminToRoleDemo

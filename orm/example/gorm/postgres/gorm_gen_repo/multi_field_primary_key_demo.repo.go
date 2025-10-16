@@ -84,7 +84,7 @@ type (
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
-		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
+		// UpdateOneWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
 		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
@@ -92,7 +92,7 @@ type (
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
-		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
+		// UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
 		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
@@ -377,7 +377,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFields(ctx context.Contex
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
 	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
@@ -446,7 +446,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Cont
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
 	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.MultiFieldPrimaryKeyDemo
@@ -1063,9 +1063,11 @@ func (m *MultiFieldPrimaryKeyDemoRepo) DeleteIndexCache(ctx context.Context, dat
 	KeyMap := make(map[string]struct{})
 	keys := make([]string, 0)
 	keys = append(keys, m.cache.Key(CacheMultiFieldPrimaryKeyDemoByConditionPrefix))
+	keys = append(keys, m.cache.Key(CacheMultiFieldPrimaryKeyDemoUnscopedByConditionPrefix))
 	for _, v := range data {
 		if v != nil {
 			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2Prefix, v.PrimaryKey1, v.PrimaryKey2)] = struct{}{}
+			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2Prefix, v.PrimaryKey1, v.PrimaryKey2)] = struct{}{}
 		}
 	}
 	for k := range KeyMap {

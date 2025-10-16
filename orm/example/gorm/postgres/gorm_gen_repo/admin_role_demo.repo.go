@@ -84,7 +84,7 @@ type (
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
-		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
+		// UpdateOneWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
 		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
@@ -92,7 +92,7 @@ type (
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
 		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
-		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
+		// UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
 		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
@@ -409,7 +409,7 @@ func (a *AdminRoleDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *go
 	}
 	oldData := &gorm_gen_model.AdminRoleDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
@@ -478,7 +478,7 @@ func (a *AdminRoleDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *go
 	}
 	oldData := &gorm_gen_model.AdminRoleDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.AdminRoleDemo
@@ -1373,9 +1373,11 @@ func (a *AdminRoleDemoRepo) DeleteIndexCache(ctx context.Context, data ...*gorm_
 	KeyMap := make(map[string]struct{})
 	keys := make([]string, 0)
 	keys = append(keys, a.cache.Key(CacheAdminRoleDemoByConditionPrefix))
+	keys = append(keys, a.cache.Key(CacheAdminRoleDemoUnscopedByConditionPrefix))
 	for _, v := range data {
 		if v != nil {
 			KeyMap[a.cache.Key(CacheAdminRoleDemoByIDPrefix, v.ID)] = struct{}{}
+			KeyMap[a.cache.Key(CacheAdminRoleDemoUnscopedByIDPrefix, v.ID)] = struct{}{}
 		}
 	}
 	for k := range KeyMap {

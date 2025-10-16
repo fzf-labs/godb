@@ -29,7 +29,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCacheByFieldsTx(ctx
 	}
 	oldData := &{{.dbName}}_model.{{.upperTableName}}{}
 	err := {{.firstTableChar}}.db.Model(&{{.dbName}}_model.{{.upperTableName}}{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	dao := tx.{{.upperTableName}}

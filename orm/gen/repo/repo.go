@@ -1376,6 +1376,7 @@ func (r *Repo) generateDelFunc() (string, error) {
 			"upperTableName":      r.upperTableName,
 			"cacheFields":         r.cacheFields(v.Columns),
 			"delCacheFieldsParam": strings.Join(cacheFieldsJoinSli, ","),
+			"haveDeletedAt":       r.haveDeletedAt,
 		})
 		if err != nil {
 			return "", err
@@ -1561,6 +1562,7 @@ func (r *Repo) generateDelFunc() (string, error) {
 			"upperTableName": r.upperTableName,
 			"lowerTableName": r.lowerTableName,
 			"cacheDelKeys":   cacheDelKeys,
+			"haveDeletedAt":  r.haveDeletedAt,
 		})
 		if err != nil {
 			return "", err
