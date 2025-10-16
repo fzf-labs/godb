@@ -8,3 +8,15 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneByTx(ctx context.Co
 	}
 	return err
 }
+{{- if .haveDeletedAt }}
+// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpdateOneUnscopedByTx(ctx context.Context, tx *{{.dbName}}_dao.Query, newData *{{.dbName}}_model.{{.upperTableName}}) error {
+	dao := tx.{{.upperTableName}}
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+{{- end }}

@@ -28,7 +28,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCacheByFields(ctx c
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &{{.dbName}}_model.{{.upperTableName}}{}
-	err := {{.firstTableChar}}.db.Model(&{{.dbName}}_model.{{.upperTableName}}{}).Clauses(whereExpressions...).First(oldData).Error
+	err := {{.firstTableChar}}.db.Model(&{{.dbName}}_model.{{.upperTableName}}{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}

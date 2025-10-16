@@ -1,2 +1,6 @@
 // DeleteMultiBy{{.upperFieldPlural}}Tx 根据{{.upperFieldPlural}}删除多条数据(事务)
 DeleteMultiBy{{.upperFieldPlural}}Tx(ctx context.Context,tx *{{.dbName}}_dao.Query, {{.lowerFieldPlural}} []{{.dataType}}) error
+{{- if .haveDeletedAt }}
+// DeleteMultiUnscopedBy{{.upperFieldPlural}}Tx 根据{{.upperFieldPlural}}删除多条数据(事务)
+DeleteMultiUnscopedBy{{.upperFieldPlural}}Tx(ctx context.Context,tx *{{.dbName}}_dao.Query, {{.lowerFieldPlural}} []{{.dataType}}) error
+{{- end }}

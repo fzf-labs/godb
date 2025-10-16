@@ -25,19 +25,19 @@ var _ IDataTypeDemoRepo = (*DataTypeDemoRepo)(nil)
 
 var (
 	CacheDataTypeDemoByConditionPrefix            = "DBCache:gorm_gen:DataTypeDemoByCondition"
-	CacheDataTypeDemoUnscopedByConditionPrefix    = "DBCache:gorm_gen:DataTypeDemoByCondition"
+	CacheDataTypeDemoUnscopedByConditionPrefix    = "DBCache:gorm_gen:DataTypeDemoUnscopedByCondition"
 	CacheDataTypeDemoByIDPrefix                   = "DBCache:gorm_gen:DataTypeDemoByID"
-	CacheDataTypeDemoUnscopedByIDPrefix           = "DBCache:gorm_gen:DataTypeDemoByID"
+	CacheDataTypeDemoUnscopedByIDPrefix           = "DBCache:gorm_gen:DataTypeDemoUnscopedByID"
 	CacheDataTypeDemoByULidPrefix                 = "DBCache:gorm_gen:DataTypeDemoByULid"
-	CacheDataTypeDemoUnscopedByULidPrefix         = "DBCache:gorm_gen:DataTypeDemoByULid"
+	CacheDataTypeDemoUnscopedByULidPrefix         = "DBCache:gorm_gen:DataTypeDemoUnscopedByULid"
 	CacheDataTypeDemoByBatchAPIPrefix             = "DBCache:gorm_gen:DataTypeDemoByBatchAPI"
-	CacheDataTypeDemoUnscopedByBatchAPIPrefix     = "DBCache:gorm_gen:DataTypeDemoByBatchAPI"
+	CacheDataTypeDemoUnscopedByBatchAPIPrefix     = "DBCache:gorm_gen:DataTypeDemoUnscopedByBatchAPI"
 	CacheDataTypeDemoByCacheKeyPrefix             = "DBCache:gorm_gen:DataTypeDemoByCacheKey"
-	CacheDataTypeDemoUnscopedByCacheKeyPrefix     = "DBCache:gorm_gen:DataTypeDemoByCacheKey"
+	CacheDataTypeDemoUnscopedByCacheKeyPrefix     = "DBCache:gorm_gen:DataTypeDemoUnscopedByCacheKey"
 	CacheDataTypeDemoByDataTypeBoolPrefix         = "DBCache:gorm_gen:DataTypeDemoByDataTypeBool"
-	CacheDataTypeDemoUnscopedByDataTypeBoolPrefix = "DBCache:gorm_gen:DataTypeDemoByDataTypeBool"
+	CacheDataTypeDemoUnscopedByDataTypeBoolPrefix = "DBCache:gorm_gen:DataTypeDemoUnscopedByDataTypeBool"
 	CacheDataTypeDemoByDataTypeTimePrefix         = "DBCache:gorm_gen:DataTypeDemoByDataTypeTime"
-	CacheDataTypeDemoUnscopedByDataTypeTimePrefix = "DBCache:gorm_gen:DataTypeDemoByDataTypeTime"
+	CacheDataTypeDemoUnscopedByDataTypeTimePrefix = "DBCache:gorm_gen:DataTypeDemoUnscopedByDataTypeTime"
 )
 
 type (
@@ -80,64 +80,124 @@ type (
 		UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.DataTypeDemo, fields []string) error
 		// UpdateOne 更新一条数据
 		UpdateOne(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscoped 更新一条数据（包括软删除）
+		UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCache 更新一条数据，并删除缓存
 		UpdateOneCache(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+		UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneByTx 更新一条数据(事务)
 		UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+		UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
+		// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error
 		// UpdateBatchByID 根据字段ID批量更新,零值会被更新
 		UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDTx 根据主键ID批量更新(事务),零值会被更新
 		UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDTx 根据主键ID批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 		UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
 		// UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 		UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
 		// UpdateBatchByULid 根据字段ULid批量更新,零值会被更新
 		UpdateBatchByULid(ctx context.Context, uLid string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByULid 根据字段ULid批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByULid(ctx context.Context, uLid string, data map[string]interface{}) error
 		// UpdateBatchByULidTx 根据主键ULid批量更新(事务),零值会被更新
 		UpdateBatchByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByULidTx 根据主键ULid批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string, data map[string]interface{}) error
 		// UpdateBatchByULids 根据字段ULids批量更新,零值会被更新
 		UpdateBatchByULids(ctx context.Context, uLids []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByULids 根据字段ULids批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByULids(ctx context.Context, uLids []string, data map[string]interface{}) error
 		// UpdateBatchByULidsTx 根据字段ULids批量更新(事务),零值会被更新
 		UpdateBatchByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByULidsTx 根据字段ULids批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string, data map[string]interface{}) error
 		// UpdateBatchByBatchAPI 根据字段BatchAPI批量更新,零值会被更新
 		UpdateBatchByBatchAPI(ctx context.Context, batchAPI string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByBatchAPI 根据字段BatchAPI批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByBatchAPI(ctx context.Context, batchAPI string, data map[string]interface{}) error
 		// UpdateBatchByBatchAPITx 根据主键BatchAPI批量更新(事务),零值会被更新
 		UpdateBatchByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByBatchAPITx 根据主键BatchAPI批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string, data map[string]interface{}) error
 		// UpdateBatchByBatchAPIS 根据字段BatchAPIS批量更新,零值会被更新
 		UpdateBatchByBatchAPIS(ctx context.Context, batchAPIS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByBatchAPIS 根据字段BatchAPIS批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByBatchAPIS(ctx context.Context, batchAPIS []string, data map[string]interface{}) error
 		// UpdateBatchByBatchAPISTx 根据字段BatchAPIS批量更新(事务),零值会被更新
 		UpdateBatchByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByBatchAPISTx 根据字段BatchAPIS批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string, data map[string]interface{}) error
 		// UpdateBatchByCacheKey 根据字段CacheKey批量更新,零值会被更新
 		UpdateBatchByCacheKey(ctx context.Context, _cacheKey string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByCacheKey 根据字段CacheKey批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByCacheKey(ctx context.Context, _cacheKey string, data map[string]interface{}) error
 		// UpdateBatchByCacheKeyTx 根据主键CacheKey批量更新(事务),零值会被更新
 		UpdateBatchByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByCacheKeyTx 根据主键CacheKey批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string, data map[string]interface{}) error
 		// UpdateBatchByCacheKeys 根据字段CacheKeys批量更新,零值会被更新
 		UpdateBatchByCacheKeys(ctx context.Context, _cacheKeys []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByCacheKeys 根据字段CacheKeys批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByCacheKeys(ctx context.Context, _cacheKeys []string, data map[string]interface{}) error
 		// UpdateBatchByCacheKeysTx 根据字段CacheKeys批量更新(事务),零值会被更新
 		UpdateBatchByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByCacheKeysTx 根据字段CacheKeys批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string, data map[string]interface{}) error
 		// UpdateBatchByDataTypeBool 根据字段DataTypeBool批量更新,零值会被更新
 		UpdateBatchByDataTypeBool(ctx context.Context, dataTypeBool bool, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeBool 根据字段DataTypeBool批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeBool(ctx context.Context, dataTypeBool bool, data map[string]interface{}) error
 		// UpdateBatchByDataTypeBoolTx 根据主键DataTypeBool批量更新(事务),零值会被更新
 		UpdateBatchByDataTypeBoolTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeBool bool, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeBoolTx 根据主键DataTypeBool批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeBoolTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeBool bool, data map[string]interface{}) error
 		// UpdateBatchByDataTypeTime 根据字段DataTypeTime批量更新,零值会被更新
 		UpdateBatchByDataTypeTime(ctx context.Context, dataTypeTime time.Time, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeTime 根据字段DataTypeTime批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeTime(ctx context.Context, dataTypeTime time.Time, data map[string]interface{}) error
 		// UpdateBatchByDataTypeTimeTx 根据主键DataTypeTime批量更新(事务),零值会被更新
 		UpdateBatchByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeTimeTx 根据主键DataTypeTime批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time, data map[string]interface{}) error
 		// UpdateBatchByDataTypeTimes 根据字段DataTypeTimes批量更新,零值会被更新
 		UpdateBatchByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeTimes 根据字段DataTypeTimes批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time, data map[string]interface{}) error
 		// UpdateBatchByDataTypeTimesTx 根据字段DataTypeTimes批量更新(事务),零值会被更新
 		UpdateBatchByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time, data map[string]interface{}) error
+		// UpdateBatchUnscopedByDataTypeTimesTx 根据字段DataTypeTimes批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time, data map[string]interface{}) error
 		// FindOneByID 根据ID查询一条数据
 		FindOneByID(ctx context.Context, ID string) (*gorm_gen_model.DataTypeDemo, error)
 		// FindOneUnscopedByID 根据ID查询一条数据（包括软删除）
@@ -148,8 +208,12 @@ type (
 		FindOneUnscopedCacheByID(ctx context.Context, ID string) (*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByIDS 根据IDS查询多条数据
 		FindMultiByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedByIDS 根据IDS查询多条数据（包括软删除）
+		FindMultiUnscopedByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByIDS 根据IDS查询多条数据，并设置缓存
 		FindMultiCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByIDS 根据IDS查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindOneByULid 根据uLid查询一条数据
 		FindOneByULid(ctx context.Context, uLid string) (*gorm_gen_model.DataTypeDemo, error)
 		// FindOneUnscopedByULid 根据uLid查询一条数据（包括软删除）
@@ -160,50 +224,76 @@ type (
 		FindOneUnscopedCacheByULid(ctx context.Context, uLid string) (*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByULids 根据uLids查询多条数据
 		FindMultiByULids(ctx context.Context, uLids []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedByULids 根据uLids查询多条数据（包括软删除）
+		FindMultiUnscopedByULids(ctx context.Context, uLids []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByULids 根据uLids查询多条数据，并设置缓存
 		FindMultiCacheByULids(ctx context.Context, uLids []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByULids 根据uLids查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByULids(ctx context.Context, uLids []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByBatchAPI 根据batchAPI查询多条数据
 		FindMultiByBatchAPI(ctx context.Context, batchAPI string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiUnscopedByBatchAPI 根据batchAPI查询多条数据（包括软删除）
 		FindMultiUnscopedByBatchAPI(ctx context.Context, batchAPI string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByBatchAPI 根据batchAPI查询多条数据并设置缓存
 		FindMultiCacheByBatchAPI(ctx context.Context, batchAPI string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByBatchAPI 根据batchAPI查询多条数据（包括软删除）并设置缓存
+		FindMultiUnscopedCacheByBatchAPI(ctx context.Context, batchAPI string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByBatchAPIS 根据batchAPIS查询多条数据
 		FindMultiByBatchAPIS(ctx context.Context, batchAPIS []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedByBatchAPIS 根据batchAPIS查询多条数据（包括软删除）
+		FindMultiUnscopedByBatchAPIS(ctx context.Context, batchAPIS []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByBatchAPIS 根据batchAPIS查询多条数据，并设置缓存
 		FindMultiCacheByBatchAPIS(ctx context.Context, batchAPIS []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByBatchAPIS 根据batchAPIS查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByBatchAPIS(ctx context.Context, batchAPIS []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByCacheKey 根据_cacheKey查询多条数据
 		FindMultiByCacheKey(ctx context.Context, _cacheKey string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiUnscopedByCacheKey 根据_cacheKey查询多条数据（包括软删除）
 		FindMultiUnscopedByCacheKey(ctx context.Context, _cacheKey string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByCacheKey 根据_cacheKey查询多条数据并设置缓存
 		FindMultiCacheByCacheKey(ctx context.Context, _cacheKey string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByCacheKey 根据_cacheKey查询多条数据（包括软删除）并设置缓存
+		FindMultiUnscopedCacheByCacheKey(ctx context.Context, _cacheKey string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByCacheKeys 根据_cacheKeys查询多条数据
 		FindMultiByCacheKeys(ctx context.Context, _cacheKeys []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedByCacheKeys 根据_cacheKeys查询多条数据（包括软删除）
+		FindMultiUnscopedByCacheKeys(ctx context.Context, _cacheKeys []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByCacheKeys 根据_cacheKeys查询多条数据，并设置缓存
 		FindMultiCacheByCacheKeys(ctx context.Context, _cacheKeys []string) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByCacheKeys 根据_cacheKeys查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByCacheKeys(ctx context.Context, _cacheKeys []string) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByDataTypeBool 根据dataTypeBool查询多条数据
 		FindMultiByDataTypeBool(ctx context.Context, dataTypeBool bool) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiUnscopedByDataTypeBool 根据dataTypeBool查询多条数据（包括软删除）
 		FindMultiUnscopedByDataTypeBool(ctx context.Context, dataTypeBool bool) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByDataTypeBool 根据dataTypeBool查询多条数据并设置缓存
 		FindMultiCacheByDataTypeBool(ctx context.Context, dataTypeBool bool) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByDataTypeBool 根据dataTypeBool查询多条数据（包括软删除）并设置缓存
+		FindMultiUnscopedCacheByDataTypeBool(ctx context.Context, dataTypeBool bool) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByDataTypeTime 根据dataTypeTime查询多条数据
 		FindMultiByDataTypeTime(ctx context.Context, dataTypeTime time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiUnscopedByDataTypeTime 根据dataTypeTime查询多条数据（包括软删除）
 		FindMultiUnscopedByDataTypeTime(ctx context.Context, dataTypeTime time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByDataTypeTime 根据dataTypeTime查询多条数据并设置缓存
 		FindMultiCacheByDataTypeTime(ctx context.Context, dataTypeTime time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByDataTypeTime 根据dataTypeTime查询多条数据（包括软删除）并设置缓存
+		FindMultiUnscopedCacheByDataTypeTime(ctx context.Context, dataTypeTime time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByDataTypeTimes 根据dataTypeTimes查询多条数据
 		FindMultiByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedByDataTypeTimes 根据dataTypeTimes查询多条数据（包括软删除）
+		FindMultiUnscopedByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiCacheByDataTypeTimes 根据dataTypeTimes查询多条数据，并设置缓存
 		FindMultiCacheByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
+		// FindMultiUnscopedCacheByDataTypeTimes 根据dataTypeTimes查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) ([]*gorm_gen_model.DataTypeDemo, error)
 		// FindMultiByCondition 自定义查询数据(通用)
 		FindMultiByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.DataTypeDemo, *condition.Reply, error)
 		// FindMultiUnscopedByCondition 自定义查询数据(通用)（包括软删除）
 		FindMultiUnscopedByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.DataTypeDemo, *condition.Reply, error)
 		// FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
 		FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.DataTypeDemo, *condition.Reply, error)
+		// FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+		FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.DataTypeDemo, *condition.Reply, error)
 		// DeleteOneByID 根据ID删除一条数据
 		DeleteOneByID(ctx context.Context, ID string) error
 		// DeleteOneUnscopedByID 根据ID删除一条数据
@@ -214,18 +304,28 @@ type (
 		DeleteOneUnscopedCacheByID(ctx context.Context, ID string) error
 		// DeleteOneByIDTx 根据ID删除一条数据(事务)
 		DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedByIDTx 根据ID删除一条数据(事务)
+		DeleteOneUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteOneCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteMultiByIDS 根据IDS删除多条数据
 		DeleteMultiByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiUnscopedByIDS 根据IDS删除多条数据
 		DeleteMultiUnscopedByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiCacheByIDS 根据IDS删除多条数据，并删除缓存
 		DeleteMultiCacheByIDS(ctx context.Context, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDS 根据IDS删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiByIDSTx 根据IDS删除多条数据(事务)
 		DeleteMultiByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedByIDSTx 根据IDS删除多条数据(事务)
+		DeleteMultiUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteMultiCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteOneByULid 根据uLid删除一条数据
 		DeleteOneByULid(ctx context.Context, uLid string) error
 		// DeleteOneUnscopedByULid 根据uLid删除一条数据
@@ -236,78 +336,124 @@ type (
 		DeleteOneUnscopedCacheByULid(ctx context.Context, uLid string) error
 		// DeleteOneByULidTx 根据uLid删除一条数据(事务)
 		DeleteOneByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string) error
+		// DeleteOneUnscopedByULidTx 根据uLid删除一条数据(事务)
+		DeleteOneUnscopedByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string) error
 		// DeleteOneCacheByULidTx 根据uLid删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string) error
+		// DeleteOneUnscopedCacheByULidTx 根据uLid删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string) error
 		// DeleteMultiByULids 根据ULids删除多条数据
 		DeleteMultiByULids(ctx context.Context, uLids []string) error
 		// DeleteMultiUnscopedByULids 根据ULids删除多条数据
 		DeleteMultiUnscopedByULids(ctx context.Context, uLids []string) error
 		// DeleteMultiCacheByULids 根据ULids删除多条数据，并删除缓存
 		DeleteMultiCacheByULids(ctx context.Context, uLids []string) error
+		// DeleteMultiUnscopedCacheByULids 根据ULids删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByULids(ctx context.Context, uLids []string) error
 		// DeleteMultiByULidsTx 根据ULids删除多条数据(事务)
 		DeleteMultiByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string) error
+		// DeleteMultiUnscopedByULidsTx 根据ULids删除多条数据(事务)
+		DeleteMultiUnscopedByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string) error
 		// DeleteMultiCacheByULidsTx 根据ULids删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string) error
+		// DeleteMultiUnscopedCacheByULidsTx 根据ULids删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string) error
 		// DeleteMultiByBatchAPI 根据BatchAPI删除多条数据
 		DeleteMultiByBatchAPI(ctx context.Context, batchAPI string) error
 		// DeleteMultiUnscopedByBatchAPI 根据BatchAPI删除多条数据
 		DeleteMultiUnscopedByBatchAPI(ctx context.Context, batchAPI string) error
 		// DeleteMultiCacheByBatchAPI 根据batchAPI删除多条数据，并删除缓存
 		DeleteMultiCacheByBatchAPI(ctx context.Context, batchAPI string) error
+		// DeleteMultiUnscopedCacheByBatchAPI 根据batchAPI删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByBatchAPI(ctx context.Context, batchAPI string) error
 		// DeleteMultiByBatchAPITx 根据batchAPI删除多条数据
 		DeleteMultiByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string) error
+		// DeleteMultiUnscopedByBatchAPITx 根据batchAPI删除多条数据
+		DeleteMultiUnscopedByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string) error
 		// DeleteMultiCacheByBatchAPITx 根据batchAPI删除多条数据，并删除缓存
 		DeleteMultiCacheByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string) error
+		// DeleteMultiUnscopedCacheByBatchAPITx 根据batchAPI删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string) error
 		// DeleteMultiByBatchAPIS 根据BatchAPIS删除多条数据
 		DeleteMultiByBatchAPIS(ctx context.Context, batchAPIS []string) error
 		// DeleteMultiUnscopedByBatchAPIS 根据BatchAPIS删除多条数据
 		DeleteMultiUnscopedByBatchAPIS(ctx context.Context, batchAPIS []string) error
 		// DeleteMultiCacheByBatchAPIS 根据BatchAPIS删除多条数据，并删除缓存
 		DeleteMultiCacheByBatchAPIS(ctx context.Context, batchAPIS []string) error
+		// DeleteMultiUnscopedCacheByBatchAPIS 根据BatchAPIS删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByBatchAPIS(ctx context.Context, batchAPIS []string) error
 		// DeleteMultiByBatchAPISTx 根据BatchAPIS删除多条数据(事务)
 		DeleteMultiByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string) error
+		// DeleteMultiUnscopedByBatchAPISTx 根据BatchAPIS删除多条数据(事务)
+		DeleteMultiUnscopedByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string) error
 		// DeleteMultiCacheByBatchAPISTx 根据BatchAPIS删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string) error
+		// DeleteMultiUnscopedCacheByBatchAPISTx 根据BatchAPIS删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string) error
 		// DeleteMultiByCacheKey 根据CacheKey删除多条数据
 		DeleteMultiByCacheKey(ctx context.Context, _cacheKey string) error
 		// DeleteMultiUnscopedByCacheKey 根据CacheKey删除多条数据
 		DeleteMultiUnscopedByCacheKey(ctx context.Context, _cacheKey string) error
 		// DeleteMultiCacheByCacheKey 根据_cacheKey删除多条数据，并删除缓存
 		DeleteMultiCacheByCacheKey(ctx context.Context, _cacheKey string) error
+		// DeleteMultiUnscopedCacheByCacheKey 根据_cacheKey删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByCacheKey(ctx context.Context, _cacheKey string) error
 		// DeleteMultiByCacheKeyTx 根据_cacheKey删除多条数据
 		DeleteMultiByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string) error
+		// DeleteMultiUnscopedByCacheKeyTx 根据_cacheKey删除多条数据
+		DeleteMultiUnscopedByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string) error
 		// DeleteMultiCacheByCacheKeyTx 根据_cacheKey删除多条数据，并删除缓存
 		DeleteMultiCacheByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string) error
+		// DeleteMultiUnscopedCacheByCacheKeyTx 根据_cacheKey删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string) error
 		// DeleteMultiByCacheKeys 根据CacheKeys删除多条数据
 		DeleteMultiByCacheKeys(ctx context.Context, _cacheKeys []string) error
 		// DeleteMultiUnscopedByCacheKeys 根据CacheKeys删除多条数据
 		DeleteMultiUnscopedByCacheKeys(ctx context.Context, _cacheKeys []string) error
 		// DeleteMultiCacheByCacheKeys 根据CacheKeys删除多条数据，并删除缓存
 		DeleteMultiCacheByCacheKeys(ctx context.Context, _cacheKeys []string) error
+		// DeleteMultiUnscopedCacheByCacheKeys 根据CacheKeys删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByCacheKeys(ctx context.Context, _cacheKeys []string) error
 		// DeleteMultiByCacheKeysTx 根据CacheKeys删除多条数据(事务)
 		DeleteMultiByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string) error
+		// DeleteMultiUnscopedByCacheKeysTx 根据CacheKeys删除多条数据(事务)
+		DeleteMultiUnscopedByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string) error
 		// DeleteMultiCacheByCacheKeysTx 根据CacheKeys删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string) error
+		// DeleteMultiUnscopedCacheByCacheKeysTx 根据CacheKeys删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string) error
 		// DeleteMultiByDataTypeTime 根据DataTypeTime删除多条数据
 		DeleteMultiByDataTypeTime(ctx context.Context, dataTypeTime time.Time) error
 		// DeleteMultiUnscopedByDataTypeTime 根据DataTypeTime删除多条数据
 		DeleteMultiUnscopedByDataTypeTime(ctx context.Context, dataTypeTime time.Time) error
 		// DeleteMultiCacheByDataTypeTime 根据dataTypeTime删除多条数据，并删除缓存
 		DeleteMultiCacheByDataTypeTime(ctx context.Context, dataTypeTime time.Time) error
+		// DeleteMultiUnscopedCacheByDataTypeTime 根据dataTypeTime删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByDataTypeTime(ctx context.Context, dataTypeTime time.Time) error
 		// DeleteMultiByDataTypeTimeTx 根据dataTypeTime删除多条数据
 		DeleteMultiByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time) error
+		// DeleteMultiUnscopedByDataTypeTimeTx 根据dataTypeTime删除多条数据
+		DeleteMultiUnscopedByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time) error
 		// DeleteMultiCacheByDataTypeTimeTx 根据dataTypeTime删除多条数据，并删除缓存
 		DeleteMultiCacheByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time) error
+		// DeleteMultiUnscopedCacheByDataTypeTimeTx 根据dataTypeTime删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time) error
 		// DeleteMultiByDataTypeTimes 根据DataTypeTimes删除多条数据
 		DeleteMultiByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) error
 		// DeleteMultiUnscopedByDataTypeTimes 根据DataTypeTimes删除多条数据
 		DeleteMultiUnscopedByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) error
 		// DeleteMultiCacheByDataTypeTimes 根据DataTypeTimes删除多条数据，并删除缓存
 		DeleteMultiCacheByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) error
+		// DeleteMultiUnscopedCacheByDataTypeTimes 根据DataTypeTimes删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time) error
 		// DeleteMultiByDataTypeTimesTx 根据DataTypeTimes删除多条数据(事务)
 		DeleteMultiByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time) error
+		// DeleteMultiUnscopedByDataTypeTimesTx 根据DataTypeTimes删除多条数据(事务)
+		DeleteMultiUnscopedByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time) error
 		// DeleteMultiCacheByDataTypeTimesTx 根据DataTypeTimes删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time) error
+		// DeleteMultiUnscopedCacheByDataTypeTimesTx 根据DataTypeTimes删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time) error
 		// DeleteIndexCache 删除索引存在的缓存
 		DeleteIndexCache(ctx context.Context, data ...*gorm_gen_model.DataTypeDemo) error
 	}
@@ -449,7 +595,7 @@ func (d *DataTypeDemoRepo) UpsertOne(ctx context.Context, data *gorm_gen_model.D
 // Update all columns, except primary keys, to new value on conflict
 func (d *DataTypeDemoRepo) UpsertOneCache(ctx context.Context, data *gorm_gen_model.DataTypeDemo) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -479,7 +625,7 @@ func (d *DataTypeDemoRepo) UpsertOneByTx(ctx context.Context, tx *gorm_gen_dao.Q
 // Update all columns, except primary keys, to new value on conflict
 func (d *DataTypeDemoRepo) UpsertOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.DataTypeDemo) error {
 	dao := tx.DataTypeDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -544,7 +690,7 @@ func (d *DataTypeDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.DataTypeDemo{}
-	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -613,7 +759,7 @@ func (d *DataTypeDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.DataTypeDemo{}
-	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := d.db.Model(&gorm_gen_model.DataTypeDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -643,6 +789,17 @@ func (d *DataTypeDemoRepo) UpdateOne(ctx context.Context, newData *gorm_gen_mode
 	return nil
 }
 
+// UpdateOneUnscoped 更新一条数据（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (d *DataTypeDemoRepo) UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneCache 更新一条数据，并删除缓存
 // data 中主键字段必须有值，零值不会被更新
 // oldData 旧数据，删除缓存时使用
@@ -659,11 +816,38 @@ func (d *DataTypeDemoRepo) UpdateOneCache(ctx context.Context, newData *gorm_gen
 	return nil
 }
 
+// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (d *DataTypeDemoRepo) UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneByTx 更新一条数据(事务)
 // data 中主键字段必须有值，零值不会被更新
 func (d *DataTypeDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error {
 	dao := tx.DataTypeDemo
 	_, err := dao.WithContext(ctx).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (d *DataTypeDemoRepo) UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -686,11 +870,38 @@ func (d *DataTypeDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_
 	return err
 }
 
+// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (d *DataTypeDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateOneWithZero 更新一条数据,包含零值
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (d *DataTypeDemoRepo) UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (d *DataTypeDemoRepo) UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -713,11 +924,38 @@ func (d *DataTypeDemoRepo) UpdateOneCacheWithZero(ctx context.Context, newData *
 	return nil
 }
 
+// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (d *DataTypeDemoRepo) UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (d *DataTypeDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error {
 	dao := tx.DataTypeDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (d *DataTypeDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -740,10 +978,36 @@ func (d *DataTypeDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *g
 	return err
 }
 
+// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (d *DataTypeDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.DataTypeDemo, oldData *gorm_gen_model.DataTypeDemo) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -760,10 +1024,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_d
 	return nil
 }
 
+// UpdateBatchUnscopedByIDTx 根据字段ID批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -780,10 +1064,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_
 	return nil
 }
 
+// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByULid 根据字段ULid批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByULid(ctx context.Context, uLid string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.ULid.Eq(uLid)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByULid 根据字段ULid批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByULid(ctx context.Context, uLid string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ULid.Eq(uLid)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -800,10 +1104,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByULidTx(ctx context.Context, tx *gorm_gen
 	return nil
 }
 
+// UpdateBatchUnscopedByULidTx 根据字段ULid批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByULidTx(ctx context.Context, tx *gorm_gen_dao.Query, uLid string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ULid.Eq(uLid)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByULids 根据字段ULids批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByULids(ctx context.Context, uLids []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.ULid.In(uLids...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByULids 根据字段ULids批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByULids(ctx context.Context, uLids []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ULid.In(uLids...)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -820,10 +1144,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByULidsTx(ctx context.Context, tx *gorm_ge
 	return nil
 }
 
+// UpdateBatchUnscopedByULidsTx 根据字段ULids批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByULidsTx(ctx context.Context, tx *gorm_gen_dao.Query, uLids []string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ULid.In(uLids...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByBatchAPI 根据字段BatchAPI批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByBatchAPI(ctx context.Context, batchAPI string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.BatchAPI.Eq(batchAPI)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByBatchAPI 根据字段BatchAPI批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByBatchAPI(ctx context.Context, batchAPI string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.BatchAPI.Eq(batchAPI)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -840,10 +1184,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByBatchAPITx(ctx context.Context, tx *gorm
 	return nil
 }
 
+// UpdateBatchUnscopedByBatchAPITx 根据字段BatchAPI批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByBatchAPITx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPI string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.BatchAPI.Eq(batchAPI)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByBatchAPIS 根据字段BatchAPIS批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByBatchAPIS(ctx context.Context, batchAPIS []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.BatchAPI.In(batchAPIS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByBatchAPIS 根据字段BatchAPIS批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByBatchAPIS(ctx context.Context, batchAPIS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.BatchAPI.In(batchAPIS...)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -860,10 +1224,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByBatchAPISTx(ctx context.Context, tx *gor
 	return nil
 }
 
+// UpdateBatchUnscopedByBatchAPISTx 根据字段BatchAPIS批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByBatchAPISTx(ctx context.Context, tx *gorm_gen_dao.Query, batchAPIS []string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.BatchAPI.In(batchAPIS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByCacheKey 根据字段CacheKey批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByCacheKey(ctx context.Context, _cacheKey string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.CacheKey.Eq(_cacheKey)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByCacheKey 根据字段CacheKey批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByCacheKey(ctx context.Context, _cacheKey string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.CacheKey.Eq(_cacheKey)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -880,10 +1264,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByCacheKeyTx(ctx context.Context, tx *gorm
 	return nil
 }
 
+// UpdateBatchUnscopedByCacheKeyTx 根据字段CacheKey批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByCacheKeyTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKey string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.CacheKey.Eq(_cacheKey)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByCacheKeys 根据字段CacheKeys批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByCacheKeys(ctx context.Context, _cacheKeys []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.CacheKey.In(_cacheKeys...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByCacheKeys 根据字段CacheKeys批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByCacheKeys(ctx context.Context, _cacheKeys []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.CacheKey.In(_cacheKeys...)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -900,10 +1304,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByCacheKeysTx(ctx context.Context, tx *gor
 	return nil
 }
 
+// UpdateBatchUnscopedByCacheKeysTx 根据字段CacheKeys批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByCacheKeysTx(ctx context.Context, tx *gorm_gen_dao.Query, _cacheKeys []string, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.CacheKey.In(_cacheKeys...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByDataTypeBool 根据字段DataTypeBool批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByDataTypeBool(ctx context.Context, dataTypeBool bool, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.DataTypeBool.Is(dataTypeBool)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByDataTypeBool 根据字段DataTypeBool批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeBool(ctx context.Context, dataTypeBool bool, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeBool.Is(dataTypeBool)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -920,10 +1344,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByDataTypeBoolTx(ctx context.Context, tx *
 	return nil
 }
 
+// UpdateBatchUnscopedByDataTypeBoolTx 根据字段DataTypeBool批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeBoolTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeBool bool, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeBool.Is(dataTypeBool)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByDataTypeTime 根据字段DataTypeTime批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByDataTypeTime(ctx context.Context, dataTypeTime time.Time, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.DataTypeTime.Eq(dataTypeTime)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByDataTypeTime 根据字段DataTypeTime批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeTime(ctx context.Context, dataTypeTime time.Time, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeTime.Eq(dataTypeTime)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -940,6 +1384,16 @@ func (d *DataTypeDemoRepo) UpdateBatchByDataTypeTimeTx(ctx context.Context, tx *
 	return nil
 }
 
+// UpdateBatchUnscopedByDataTypeTimeTx 根据字段DataTypeTime批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeTimeTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTime time.Time, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeTime.Eq(dataTypeTime)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByDataTypeTimes 根据字段DataTypeTimes批量更新,零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
@@ -950,10 +1404,30 @@ func (d *DataTypeDemoRepo) UpdateBatchByDataTypeTimes(ctx context.Context, dataT
 	return nil
 }
 
+// UpdateBatchUnscopedByDataTypeTimes 根据字段DataTypeTimes批量更新,零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeTimes(ctx context.Context, dataTypeTimes []time.Time, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(d.db).DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeTime.In(dataTypeTimes...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByDataTypeTimesTx 根据字段DataTypeTimes批量更新(事务),零值会被更新
 func (d *DataTypeDemoRepo) UpdateBatchByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time, data map[string]interface{}) error {
 	dao := tx.DataTypeDemo
 	_, err := dao.WithContext(ctx).Where(dao.DataTypeTime.In(dataTypeTimes...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByDataTypeTimesTx 根据字段DataTypeTimes批量更新(事务),零值会被更新（包括软删除）
+func (d *DataTypeDemoRepo) UpdateBatchUnscopedByDataTypeTimesTx(ctx context.Context, tx *gorm_gen_dao.Query, dataTypeTimes []time.Time, data map[string]interface{}) error {
+	dao := tx.DataTypeDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.DataTypeTime.In(dataTypeTimes...)).Updates(data)
 	if err != nil {
 		return err
 	}

@@ -24,9 +24,9 @@ var _ IAdminRoleDemoRepo = (*AdminRoleDemoRepo)(nil)
 
 var (
 	CacheAdminRoleDemoByConditionPrefix         = "DBCache:gorm_gen:AdminRoleDemoByCondition"
-	CacheAdminRoleDemoUnscopedByConditionPrefix = "DBCache:gorm_gen:AdminRoleDemoByCondition"
+	CacheAdminRoleDemoUnscopedByConditionPrefix = "DBCache:gorm_gen:AdminRoleDemoUnscopedByCondition"
 	CacheAdminRoleDemoByIDPrefix                = "DBCache:gorm_gen:AdminRoleDemoByID"
-	CacheAdminRoleDemoUnscopedByIDPrefix        = "DBCache:gorm_gen:AdminRoleDemoByID"
+	CacheAdminRoleDemoUnscopedByIDPrefix        = "DBCache:gorm_gen:AdminRoleDemoUnscopedByID"
 )
 
 type (
@@ -69,28 +69,52 @@ type (
 		UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminRoleDemo, fields []string) error
 		// UpdateOne 更新一条数据
 		UpdateOne(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscoped 更新一条数据（包括软删除）
+		UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCache 更新一条数据，并删除缓存
 		UpdateOneCache(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+		UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneByTx 更新一条数据(事务)
 		UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+		UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
+		// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error
 		// UpdateBatchByID 根据字段ID批量更新,零值会被更新
 		UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDTx 根据主键ID批量更新(事务),零值会被更新
 		UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDTx 根据主键ID批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 		UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
 		// UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 		UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
 		// FindOneByID 根据ID查询一条数据
 		FindOneByID(ctx context.Context, ID string) (*gorm_gen_model.AdminRoleDemo, error)
 		// FindOneUnscopedByID 根据ID查询一条数据（包括软删除）
@@ -101,14 +125,20 @@ type (
 		FindOneUnscopedCacheByID(ctx context.Context, ID string) (*gorm_gen_model.AdminRoleDemo, error)
 		// FindMultiByIDS 根据IDS查询多条数据
 		FindMultiByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminRoleDemo, error)
+		// FindMultiUnscopedByIDS 根据IDS查询多条数据（包括软删除）
+		FindMultiUnscopedByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminRoleDemo, error)
 		// FindMultiCacheByIDS 根据IDS查询多条数据，并设置缓存
 		FindMultiCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminRoleDemo, error)
+		// FindMultiUnscopedCacheByIDS 根据IDS查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminRoleDemo, error)
 		// FindMultiByCondition 自定义查询数据(通用)
 		FindMultiByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminRoleDemo, *condition.Reply, error)
 		// FindMultiUnscopedByCondition 自定义查询数据(通用)（包括软删除）
 		FindMultiUnscopedByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminRoleDemo, *condition.Reply, error)
 		// FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
 		FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminRoleDemo, *condition.Reply, error)
+		// FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+		FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminRoleDemo, *condition.Reply, error)
 		// DeleteOneByID 根据ID删除一条数据
 		DeleteOneByID(ctx context.Context, ID string) error
 		// DeleteOneUnscopedByID 根据ID删除一条数据
@@ -119,18 +149,28 @@ type (
 		DeleteOneUnscopedCacheByID(ctx context.Context, ID string) error
 		// DeleteOneByIDTx 根据ID删除一条数据(事务)
 		DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedByIDTx 根据ID删除一条数据(事务)
+		DeleteOneUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteOneCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteMultiByIDS 根据IDS删除多条数据
 		DeleteMultiByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiUnscopedByIDS 根据IDS删除多条数据
 		DeleteMultiUnscopedByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiCacheByIDS 根据IDS删除多条数据，并删除缓存
 		DeleteMultiCacheByIDS(ctx context.Context, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDS 根据IDS删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiByIDSTx 根据IDS删除多条数据(事务)
 		DeleteMultiByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedByIDSTx 根据IDS删除多条数据(事务)
+		DeleteMultiUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteMultiCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteIndexCache 删除索引存在的缓存
 		DeleteIndexCache(ctx context.Context, data ...*gorm_gen_model.AdminRoleDemo) error
 	}
@@ -272,7 +312,7 @@ func (a *AdminRoleDemoRepo) UpsertOne(ctx context.Context, data *gorm_gen_model.
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminRoleDemoRepo) UpsertOneCache(ctx context.Context, data *gorm_gen_model.AdminRoleDemo) error {
 	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -302,7 +342,7 @@ func (a *AdminRoleDemoRepo) UpsertOneByTx(ctx context.Context, tx *gorm_gen_dao.
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminRoleDemoRepo) UpsertOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminRoleDemo) error {
 	dao := tx.AdminRoleDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -367,7 +407,7 @@ func (a *AdminRoleDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *go
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminRoleDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -436,7 +476,7 @@ func (a *AdminRoleDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *go
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminRoleDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminRoleDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -466,6 +506,17 @@ func (a *AdminRoleDemoRepo) UpdateOne(ctx context.Context, newData *gorm_gen_mod
 	return nil
 }
 
+// UpdateOneUnscoped 更新一条数据（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (a *AdminRoleDemoRepo) UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneCache 更新一条数据，并删除缓存
 // data 中主键字段必须有值，零值不会被更新
 // oldData 旧数据，删除缓存时使用
@@ -482,11 +533,38 @@ func (a *AdminRoleDemoRepo) UpdateOneCache(ctx context.Context, newData *gorm_ge
 	return nil
 }
 
+// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneByTx 更新一条数据(事务)
 // data 中主键字段必须有值，零值不会被更新
 func (a *AdminRoleDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error {
 	dao := tx.AdminRoleDemo
 	_, err := dao.WithContext(ctx).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -509,11 +587,38 @@ func (a *AdminRoleDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen
 	return err
 }
 
+// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateOneWithZero 更新一条数据,包含零值
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (a *AdminRoleDemoRepo) UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error {
 	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -536,11 +641,38 @@ func (a *AdminRoleDemoRepo) UpdateOneCacheWithZero(ctx context.Context, newData 
 	return nil
 }
 
+// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (a *AdminRoleDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error {
 	dao := tx.AdminRoleDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -563,10 +695,36 @@ func (a *AdminRoleDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *
 	return err
 }
 
+// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (a *AdminRoleDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminRoleDemo, oldData *gorm_gen_model.AdminRoleDemo) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
 func (a *AdminRoleDemoRepo) UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+func (a *AdminRoleDemoRepo) UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -583,6 +741,16 @@ func (a *AdminRoleDemoRepo) UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_
 	return nil
 }
 
+// UpdateBatchUnscopedByIDTx 根据字段ID批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminRoleDemoRepo) UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 func (a *AdminRoleDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
@@ -593,10 +761,30 @@ func (a *AdminRoleDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, 
 	return nil
 }
 
+// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+func (a *AdminRoleDemoRepo) UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 func (a *AdminRoleDemoRepo) UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error {
 	dao := tx.AdminRoleDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminRoleDemoRepo) UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error {
+	dao := tx.AdminRoleDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
 	if err != nil {
 		return err
 	}

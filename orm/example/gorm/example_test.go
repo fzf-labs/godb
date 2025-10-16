@@ -20,7 +20,7 @@ import (
 )
 
 func newDB() *gorm.DB {
-	db := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db := gormx.NewDebugGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
 	if db == nil {
 		return nil
 	}
@@ -81,6 +81,24 @@ func Test_UpdateOneCache(t *testing.T) {
 	oldData := repo.DeepCopy(data)
 	data.Remark = "123"
 	err = repo.UpdateOneCache(ctx, data, oldData)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	assert.Equal(t, nil, err)
+}
+
+func Test_UpsertOneWithZeroCache(t *testing.T) {
+	db := newDB()
+	redisClient := newRedis()
+	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
+	ctx := context.Background()
+	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
+	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
+	data := repo.NewData()
+	data.ID = "182a65a0-ee20-4fe0-a0e8-ba30edcf402b"
+	data.Remark = "123"
+	err := repo.UpsertOneCache(ctx, data)
 	if err != nil {
 		fmt.Println(err)
 		return

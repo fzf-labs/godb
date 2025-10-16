@@ -24,9 +24,9 @@ var _ IMultiFieldPrimaryKeyDemoRepo = (*MultiFieldPrimaryKeyDemoRepo)(nil)
 
 var (
 	CacheMultiFieldPrimaryKeyDemoByConditionPrefix                      = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoByCondition"
-	CacheMultiFieldPrimaryKeyDemoUnscopedByConditionPrefix              = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoByCondition"
+	CacheMultiFieldPrimaryKeyDemoUnscopedByConditionPrefix              = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoUnscopedByCondition"
 	CacheMultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2Prefix         = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2"
-	CacheMultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2Prefix = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2"
+	CacheMultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2Prefix = "DBCache:gorm_gen:MultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2"
 )
 
 type (
@@ -69,42 +69,76 @@ type (
 		UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.MultiFieldPrimaryKeyDemo, fields []string) error
 		// UpdateOne 更新一条数据
 		UpdateOne(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscoped 更新一条数据（包括软删除）
+		UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCache 更新一条数据，并删除缓存
 		UpdateOneCache(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+		UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneByTx 更新一条数据(事务)
 		UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+		UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
+		// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 		// UpdateBatchByPrimaryKey1PrimaryKey2 根据字段PrimaryKey1PrimaryKey2批量更新,零值会被更新
 		UpdateBatchByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByPrimaryKey1PrimaryKey2 根据字段PrimaryKey1PrimaryKey2批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error
 		// UpdateBatchByPrimaryKey1PrimaryKey2Tx 根据主键PrimaryKey1PrimaryKey2批量更新(事务),零值会被更新
 		UpdateBatchByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByPrimaryKey1PrimaryKey2Tx 根据主键PrimaryKey1PrimaryKey2批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error
 		// FindOneByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2查询一条数据
 		FindOneByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) (*gorm_gen_model.MultiFieldPrimaryKeyDemo, error)
+		// FindOneUnscopedByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2查询一条数据（包括软删除）
+		FindOneUnscopedByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) (*gorm_gen_model.MultiFieldPrimaryKeyDemo, error)
 		// FindOneCacheByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2查询一条数据，并设置缓存
 		FindOneCacheByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) (*gorm_gen_model.MultiFieldPrimaryKeyDemo, error)
+		// FindOneUnscopedCacheByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2查询一条数据（包括软删除），并设置缓存
+		FindOneUnscopedCacheByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) (*gorm_gen_model.MultiFieldPrimaryKeyDemo, error)
 		// FindMultiByCondition 自定义查询数据(通用)
 		FindMultiByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.MultiFieldPrimaryKeyDemo, *condition.Reply, error)
 		// FindMultiUnscopedByCondition 自定义查询数据(通用)（包括软删除）
 		FindMultiUnscopedByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.MultiFieldPrimaryKeyDemo, *condition.Reply, error)
 		// FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
 		FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.MultiFieldPrimaryKeyDemo, *condition.Reply, error)
+		// FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+		FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.MultiFieldPrimaryKeyDemo, *condition.Reply, error)
 		// DeleteOneByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2删除一条数据
 		DeleteOneByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) error
+		// DeleteOneUnscopedByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2删除一条数据
+		DeleteOneUnscopedByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) error
 		// DeleteOneCacheByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2删除一条数据，并删除缓存
 		DeleteOneCacheByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) error
+		// DeleteOneUnscopedCacheByPrimaryKey1PrimaryKey2 根据PrimaryKey1PrimaryKey2删除一条数据，并删除缓存
+		DeleteOneUnscopedCacheByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string) error
 		// DeleteOneByPrimaryKey1PrimaryKey2Tx 根据PrimaryKey1PrimaryKey2删除一条数据(事务)
 		DeleteOneByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string) error
+		// DeleteOneUnscopedByPrimaryKey1PrimaryKey2Tx 根据PrimaryKey1PrimaryKey2删除一条数据(事务)
+		DeleteOneUnscopedByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string) error
 		// DeleteOneCacheByPrimaryKey1PrimaryKey2Tx 根据PrimaryKey1PrimaryKey2删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string) error
+		// DeleteOneUnscopedCacheByPrimaryKey1PrimaryKey2Tx 根据PrimaryKey1PrimaryKey2删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string) error
 		// DeleteIndexCache 删除索引存在的缓存
 		DeleteIndexCache(ctx context.Context, data ...*gorm_gen_model.MultiFieldPrimaryKeyDemo) error
 	}
@@ -246,7 +280,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOne(ctx context.Context, data *gorm
 // Update all columns, except primary keys, to new value on conflict
 func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCache(ctx context.Context, data *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
 	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(data.PrimaryKey1), dao.PrimaryKey2.Eq(data.PrimaryKey2)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(data.PrimaryKey1), dao.PrimaryKey2.Eq(data.PrimaryKey2)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -276,7 +310,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneByTx(ctx context.Context, tx *go
 // Update all columns, except primary keys, to new value on conflict
 func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
 	dao := tx.MultiFieldPrimaryKeyDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(data.PrimaryKey1), dao.PrimaryKey2.Eq(data.PrimaryKey2)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(data.PrimaryKey1), dao.PrimaryKey2.Eq(data.PrimaryKey2)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -341,7 +375,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFields(ctx context.Contex
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
-	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -410,7 +444,7 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Cont
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
-	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -440,6 +474,17 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOne(ctx context.Context, newData *g
 	return nil
 }
 
+// UpdateOneUnscoped 更新一条数据（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneCache 更新一条数据，并删除缓存
 // data 中主键字段必须有值，零值不会被更新
 // oldData 旧数据，删除缓存时使用
@@ -456,11 +501,38 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCache(ctx context.Context, newDa
 	return nil
 }
 
+// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = m.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneByTx 更新一条数据(事务)
 // data 中主键字段必须有值，零值不会被更新
 func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
 	dao := tx.MultiFieldPrimaryKeyDemo
 	_, err := dao.WithContext(ctx).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := tx.MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -483,11 +555,38 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCacheByTx(ctx context.Context, t
 	return err
 }
 
+// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := tx.MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = m.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateOneWithZero 更新一条数据,包含零值
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
 	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -510,11 +609,38 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCacheWithZero(ctx context.Contex
 	return nil
 }
 
+// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = m.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
 	dao := tx.MultiFieldPrimaryKeyDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := tx.MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -537,6 +663,22 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Co
 	return err
 }
 
+// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.MultiFieldPrimaryKeyDemo, oldData *gorm_gen_model.MultiFieldPrimaryKeyDemo) error {
+	dao := tx.MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = m.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateBatchByPrimaryKey1PrimaryKey2 根据字段PrimaryKey1PrimaryKey2批量更新,零值会被更新
 func (m *MultiFieldPrimaryKeyDemoRepo) UpdateBatchByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
@@ -547,10 +689,30 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpdateBatchByPrimaryKey1PrimaryKey2(ctx c
 	return nil
 }
 
+// UpdateBatchUnscopedByPrimaryKey1PrimaryKey2 根据字段PrimaryKey1PrimaryKey2批量更新,零值会被更新（包括软删除）
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateBatchUnscopedByPrimaryKey1PrimaryKey2(ctx context.Context, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.PrimaryKey1.Eq(primaryKey1), dao.PrimaryKey2.Eq(primaryKey2)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByPrimaryKey1PrimaryKey2Tx 根据字段PrimaryKey1PrimaryKey2批量更新(事务),零值会被更新
 func (m *MultiFieldPrimaryKeyDemoRepo) UpdateBatchByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error {
 	dao := tx.MultiFieldPrimaryKeyDemo
 	_, err := dao.WithContext(ctx).Where(dao.PrimaryKey1.Eq(primaryKey1), dao.PrimaryKey2.Eq(primaryKey2)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByPrimaryKey1PrimaryKey2Tx 根据字段PrimaryKey1PrimaryKey2批量更新(事务),零值会被更新（包括软删除）
+func (m *MultiFieldPrimaryKeyDemoRepo) UpdateBatchUnscopedByPrimaryKey1PrimaryKey2Tx(ctx context.Context, tx *gorm_gen_dao.Query, primaryKey1 string, primaryKey2 string, data map[string]interface{}) error {
+	dao := tx.MultiFieldPrimaryKeyDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.PrimaryKey1.Eq(primaryKey1), dao.PrimaryKey2.Eq(primaryKey2)).Updates(data)
 	if err != nil {
 		return err
 	}

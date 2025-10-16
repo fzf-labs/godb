@@ -37,6 +37,30 @@ type ClientConfig struct {
 	Tracing         bool          `json:"tracing"`         // 是否开启链路追踪 默认false
 }
 
+// NewDebugGormClient 创建调试模式的gorm客户端
+func NewDebugGormClient(driver, dsn string) *gorm.DB {
+	switch driver {
+	case MySQL:
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+		if err != nil {
+			log.Fatalf("open db err:%s", err.Error())
+		}
+		return db
+	case Postgres:
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+		if err != nil {
+			log.Fatalf("open db err:%s", err.Error())
+		}
+		return db
+	default:
+		return nil
+	}
+}
+
 // NewSimpleGormClient 创建数据库连接
 func NewSimpleGormClient(driver, dsn string) *gorm.DB {
 	switch driver {
@@ -57,7 +81,7 @@ func NewSimpleGormClient(driver, dsn string) *gorm.DB {
 		}
 		return db
 	default:
-		panic("db not support")
+		return nil
 	}
 }
 

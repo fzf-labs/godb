@@ -24,11 +24,11 @@ var _ IAdminDemoRepo = (*AdminDemoRepo)(nil)
 
 var (
 	CacheAdminDemoByConditionPrefix         = "DBCache:gorm_gen:AdminDemoByCondition"
-	CacheAdminDemoUnscopedByConditionPrefix = "DBCache:gorm_gen:AdminDemoByCondition"
+	CacheAdminDemoUnscopedByConditionPrefix = "DBCache:gorm_gen:AdminDemoUnscopedByCondition"
 	CacheAdminDemoByIDPrefix                = "DBCache:gorm_gen:AdminDemoByID"
-	CacheAdminDemoUnscopedByIDPrefix        = "DBCache:gorm_gen:AdminDemoByID"
+	CacheAdminDemoUnscopedByIDPrefix        = "DBCache:gorm_gen:AdminDemoUnscopedByID"
 	CacheAdminDemoByUsernamePrefix          = "DBCache:gorm_gen:AdminDemoByUsername"
-	CacheAdminDemoUnscopedByUsernamePrefix  = "DBCache:gorm_gen:AdminDemoByUsername"
+	CacheAdminDemoUnscopedByUsernamePrefix  = "DBCache:gorm_gen:AdminDemoUnscopedByUsername"
 )
 
 type (
@@ -71,36 +71,68 @@ type (
 		UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminDemo, fields []string) error
 		// UpdateOne 更新一条数据
 		UpdateOne(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscoped 更新一条数据（包括软删除）
+		UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCache 更新一条数据，并删除缓存
 		UpdateOneCache(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+		UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateOneByTx 更新一条数据(事务)
 		UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+		UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCacheByTx 更新一条数据(事务)，并删除缓存
 		UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+		UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCacheWithZero 更新一条数据,包含零值，并删除缓存
 		UpdateOneCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+		UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error
 		// UpdateOneCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存
 		UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
+		// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+		UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error
 		// UpdateBatchByID 根据字段ID批量更新,零值会被更新
 		UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDTx 根据主键ID批量更新(事务),零值会被更新
 		UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDTx 根据主键ID批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error
 		// UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 		UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error
 		// UpdateBatchByIDSTx 根据字段IDS批量更新(事务),零值会被更新
 		UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error
 		// UpdateBatchByUsername 根据字段Username批量更新,零值会被更新
 		UpdateBatchByUsername(ctx context.Context, username string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByUsername 根据字段Username批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByUsername(ctx context.Context, username string, data map[string]interface{}) error
 		// UpdateBatchByUsernameTx 根据主键Username批量更新(事务),零值会被更新
 		UpdateBatchByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByUsernameTx 根据主键Username批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string, data map[string]interface{}) error
 		// UpdateBatchByUsernames 根据字段Usernames批量更新,零值会被更新
 		UpdateBatchByUsernames(ctx context.Context, usernames []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByUsernames 根据字段Usernames批量更新,零值会被更新（包括软删除）
+		UpdateBatchUnscopedByUsernames(ctx context.Context, usernames []string, data map[string]interface{}) error
 		// UpdateBatchByUsernamesTx 根据字段Usernames批量更新(事务),零值会被更新
 		UpdateBatchByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string, data map[string]interface{}) error
+		// UpdateBatchUnscopedByUsernamesTx 根据字段Usernames批量更新(事务),零值会被更新（包括软删除）
+		UpdateBatchUnscopedByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string, data map[string]interface{}) error
 		// FindOneByID 根据ID查询一条数据
 		FindOneByID(ctx context.Context, ID string) (*gorm_gen_model.AdminDemo, error)
 		// FindOneUnscopedByID 根据ID查询一条数据（包括软删除）
@@ -111,8 +143,12 @@ type (
 		FindOneUnscopedCacheByID(ctx context.Context, ID string) (*gorm_gen_model.AdminDemo, error)
 		// FindMultiByIDS 根据IDS查询多条数据
 		FindMultiByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminDemo, error)
+		// FindMultiUnscopedByIDS 根据IDS查询多条数据（包括软删除）
+		FindMultiUnscopedByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminDemo, error)
 		// FindMultiCacheByIDS 根据IDS查询多条数据，并设置缓存
 		FindMultiCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminDemo, error)
+		// FindMultiUnscopedCacheByIDS 根据IDS查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) ([]*gorm_gen_model.AdminDemo, error)
 		// FindOneByUsername 根据username查询一条数据
 		FindOneByUsername(ctx context.Context, username string) (*gorm_gen_model.AdminDemo, error)
 		// FindOneUnscopedByUsername 根据username查询一条数据（包括软删除）
@@ -123,14 +159,20 @@ type (
 		FindOneUnscopedCacheByUsername(ctx context.Context, username string) (*gorm_gen_model.AdminDemo, error)
 		// FindMultiByUsernames 根据usernames查询多条数据
 		FindMultiByUsernames(ctx context.Context, usernames []string) ([]*gorm_gen_model.AdminDemo, error)
+		// FindMultiUnscopedByUsernames 根据usernames查询多条数据（包括软删除）
+		FindMultiUnscopedByUsernames(ctx context.Context, usernames []string) ([]*gorm_gen_model.AdminDemo, error)
 		// FindMultiCacheByUsernames 根据usernames查询多条数据，并设置缓存
 		FindMultiCacheByUsernames(ctx context.Context, usernames []string) ([]*gorm_gen_model.AdminDemo, error)
+		// FindMultiUnscopedCacheByUsernames 根据usernames查询多条数据（包括软删除），并设置缓存
+		FindMultiUnscopedCacheByUsernames(ctx context.Context, usernames []string) ([]*gorm_gen_model.AdminDemo, error)
 		// FindMultiByCondition 自定义查询数据(通用)
 		FindMultiByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminDemo, *condition.Reply, error)
 		// FindMultiUnscopedByCondition 自定义查询数据(通用)（包括软删除）
 		FindMultiUnscopedByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminDemo, *condition.Reply, error)
 		// FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
 		FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminDemo, *condition.Reply, error)
+		// FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+		FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.AdminDemo, *condition.Reply, error)
 		// DeleteOneByID 根据ID删除一条数据
 		DeleteOneByID(ctx context.Context, ID string) error
 		// DeleteOneUnscopedByID 根据ID删除一条数据
@@ -141,18 +183,28 @@ type (
 		DeleteOneUnscopedCacheByID(ctx context.Context, ID string) error
 		// DeleteOneByIDTx 根据ID删除一条数据(事务)
 		DeleteOneByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedByIDTx 根据ID删除一条数据(事务)
+		DeleteOneUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteOneCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
+		// DeleteOneUnscopedCacheByIDTx 根据ID删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string) error
 		// DeleteMultiByIDS 根据IDS删除多条数据
 		DeleteMultiByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiUnscopedByIDS 根据IDS删除多条数据
 		DeleteMultiUnscopedByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiCacheByIDS 根据IDS删除多条数据，并删除缓存
 		DeleteMultiCacheByIDS(ctx context.Context, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDS 根据IDS删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByIDS(ctx context.Context, IDS []string) error
 		// DeleteMultiByIDSTx 根据IDS删除多条数据(事务)
 		DeleteMultiByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedByIDSTx 根据IDS删除多条数据(事务)
+		DeleteMultiUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteMultiCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
+		// DeleteMultiUnscopedCacheByIDSTx 根据IDS删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string) error
 		// DeleteOneByUsername 根据username删除一条数据
 		DeleteOneByUsername(ctx context.Context, username string) error
 		// DeleteOneUnscopedByUsername 根据username删除一条数据
@@ -163,18 +215,28 @@ type (
 		DeleteOneUnscopedCacheByUsername(ctx context.Context, username string) error
 		// DeleteOneByUsernameTx 根据username删除一条数据(事务)
 		DeleteOneByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string) error
+		// DeleteOneUnscopedByUsernameTx 根据username删除一条数据(事务)
+		DeleteOneUnscopedByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string) error
 		// DeleteOneCacheByUsernameTx 根据username删除一条数据，并删除缓存(事务)
 		DeleteOneCacheByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string) error
+		// DeleteOneUnscopedCacheByUsernameTx 根据username删除一条数据，并删除缓存(事务)
+		DeleteOneUnscopedCacheByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string) error
 		// DeleteMultiByUsernames 根据Usernames删除多条数据
 		DeleteMultiByUsernames(ctx context.Context, usernames []string) error
 		// DeleteMultiUnscopedByUsernames 根据Usernames删除多条数据
 		DeleteMultiUnscopedByUsernames(ctx context.Context, usernames []string) error
 		// DeleteMultiCacheByUsernames 根据Usernames删除多条数据，并删除缓存
 		DeleteMultiCacheByUsernames(ctx context.Context, usernames []string) error
+		// DeleteMultiUnscopedCacheByUsernames 根据Usernames删除多条数据，并删除缓存
+		DeleteMultiUnscopedCacheByUsernames(ctx context.Context, usernames []string) error
 		// DeleteMultiByUsernamesTx 根据Usernames删除多条数据(事务)
 		DeleteMultiByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string) error
+		// DeleteMultiUnscopedByUsernamesTx 根据Usernames删除多条数据(事务)
+		DeleteMultiUnscopedByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string) error
 		// DeleteMultiCacheByUsernamesTx 根据Usernames删除多条数据，并删除缓存(事务)
 		DeleteMultiCacheByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string) error
+		// DeleteMultiUnscopedCacheByUsernamesTx 根据Usernames删除多条数据，并删除缓存(事务)
+		DeleteMultiUnscopedCacheByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string) error
 		// DeleteIndexCache 删除索引存在的缓存
 		DeleteIndexCache(ctx context.Context, data ...*gorm_gen_model.AdminDemo) error
 	}
@@ -316,7 +378,7 @@ func (a *AdminDemoRepo) UpsertOne(ctx context.Context, data *gorm_gen_model.Admi
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminDemoRepo) UpsertOneCache(ctx context.Context, data *gorm_gen_model.AdminDemo) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -346,7 +408,7 @@ func (a *AdminDemoRepo) UpsertOneByTx(ctx context.Context, tx *gorm_gen_dao.Quer
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminDemoRepo) UpsertOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminDemo) error {
 	dao := tx.AdminDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -411,7 +473,7 @@ func (a *AdminDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gorm_g
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -480,7 +542,7 @@ func (a *AdminDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_g
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -510,6 +572,17 @@ func (a *AdminDemoRepo) UpdateOne(ctx context.Context, newData *gorm_gen_model.A
 	return nil
 }
 
+// UpdateOneUnscoped 更新一条数据（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (a *AdminDemoRepo) UpdateOneUnscoped(ctx context.Context, newData *gorm_gen_model.AdminDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneCache 更新一条数据，并删除缓存
 // data 中主键字段必须有值，零值不会被更新
 // oldData 旧数据，删除缓存时使用
@@ -526,11 +599,38 @@ func (a *AdminDemoRepo) UpdateOneCache(ctx context.Context, newData *gorm_gen_mo
 	return nil
 }
 
+// UpdateOneUnscopedCache 更新一条数据，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (a *AdminDemoRepo) UpdateOneUnscopedCache(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneByTx 更新一条数据(事务)
 // data 中主键字段必须有值，零值不会被更新
 func (a *AdminDemoRepo) UpdateOneByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error {
 	dao := tx.AdminDemo
 	_, err := dao.WithContext(ctx).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedByTx 更新一条数据(事务)（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+func (a *AdminDemoRepo) UpdateOneUnscopedByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -553,11 +653,38 @@ func (a *AdminDemoRepo) UpdateOneCacheByTx(ctx context.Context, tx *gorm_gen_dao
 	return err
 }
 
+// UpdateOneUnscopedCacheByTx 更新一条数据(事务)，并删除缓存（包括软删除）
+// data 中主键字段必须有值，零值不会被更新
+// oldData 旧数据，删除缓存时使用
+func (a *AdminDemoRepo) UpdateOneUnscopedCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateOneWithZero 更新一条数据,包含零值
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (a *AdminDemoRepo) UpdateOneWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateOneUnscopedWithZero 更新一条数据,包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (a *AdminDemoRepo) UpdateOneUnscopedWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -580,11 +707,38 @@ func (a *AdminDemoRepo) UpdateOneCacheWithZero(ctx context.Context, newData *gor
 	return nil
 }
 
+// UpdateOneUnscopedCacheWithZero 更新一条数据,包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (a *AdminDemoRepo) UpdateOneUnscopedCacheWithZero(ctx context.Context, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateOneWithZeroByTx 更新一条数据(事务),包含零值，
 // data 中主键字段必须有值,并且会更新所有字段,包括零值
 func (a *AdminDemoRepo) UpdateOneWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error {
 	dao := tx.AdminDemo
 	_, err := dao.WithContext(ctx).Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// UpdateOneUnscopedWithZeroByTx 更新一条数据(事务),包含零值（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+func (a *AdminDemoRepo) UpdateOneUnscopedWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
 	if err != nil {
 		return err
 	}
@@ -607,10 +761,36 @@ func (a *AdminDemoRepo) UpdateOneCacheWithZeroByTx(ctx context.Context, tx *gorm
 	return err
 }
 
+// UpdateOneUnscopedCacheWithZeroByTx 更新一条数据(事务),包含零值，并删除缓存（包括软删除）
+// data 中主键字段必须有值,并且会更新所有字段,包括零值
+// oldData 旧数据，删除缓存时使用
+func (a *AdminDemoRepo) UpdateOneUnscopedCacheWithZeroByTx(ctx context.Context, tx *gorm_gen_dao.Query, newData *gorm_gen_model.AdminDemo, oldData *gorm_gen_model.AdminDemo) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Select(dao.ALL.WithTable("")).Updates(newData)
+	if err != nil {
+		return err
+	}
+	err = a.DeleteIndexCache(ctx, oldData, newData)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 // UpdateBatchByID 根据字段ID批量更新,零值会被更新
 func (a *AdminDemoRepo) UpdateBatchByID(ctx context.Context, ID string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByID 根据字段ID批量更新,零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByID(ctx context.Context, ID string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -627,10 +807,30 @@ func (a *AdminDemoRepo) UpdateBatchByIDTx(ctx context.Context, tx *gorm_gen_dao.
 	return nil
 }
 
+// UpdateBatchUnscopedByIDTx 根据字段ID批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByIDTx(ctx context.Context, tx *gorm_gen_dao.Query, ID string, data map[string]interface{}) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.Eq(ID)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByIDS 根据字段IDS批量更新,零值会被更新
 func (a *AdminDemoRepo) UpdateBatchByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByIDS 根据字段IDS批量更新,零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByIDS(ctx context.Context, IDS []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -647,10 +847,30 @@ func (a *AdminDemoRepo) UpdateBatchByIDSTx(ctx context.Context, tx *gorm_gen_dao
 	return nil
 }
 
+// UpdateBatchUnscopedByIDSTx 根据字段IDS批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByIDSTx(ctx context.Context, tx *gorm_gen_dao.Query, IDS []string, data map[string]interface{}) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(IDS...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByUsername 根据字段Username批量更新,零值会被更新
 func (a *AdminDemoRepo) UpdateBatchByUsername(ctx context.Context, username string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.Username.Eq(username)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByUsername 根据字段Username批量更新,零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByUsername(ctx context.Context, username string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.Username.Eq(username)).Updates(data)
 	if err != nil {
 		return err
 	}
@@ -667,6 +887,16 @@ func (a *AdminDemoRepo) UpdateBatchByUsernameTx(ctx context.Context, tx *gorm_ge
 	return nil
 }
 
+// UpdateBatchUnscopedByUsernameTx 根据字段Username批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByUsernameTx(ctx context.Context, tx *gorm_gen_dao.Query, username string, data map[string]interface{}) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.Username.Eq(username)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByUsernames 根据字段Usernames批量更新,零值会被更新
 func (a *AdminDemoRepo) UpdateBatchByUsernames(ctx context.Context, usernames []string, data map[string]interface{}) error {
 	dao := gorm_gen_dao.Use(a.db).AdminDemo
@@ -677,10 +907,30 @@ func (a *AdminDemoRepo) UpdateBatchByUsernames(ctx context.Context, usernames []
 	return nil
 }
 
+// UpdateBatchUnscopedByUsernames 根据字段Usernames批量更新,零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByUsernames(ctx context.Context, usernames []string, data map[string]interface{}) error {
+	dao := gorm_gen_dao.Use(a.db).AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.Username.In(usernames...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UpdateBatchByUsernamesTx 根据字段Usernames批量更新(事务),零值会被更新
 func (a *AdminDemoRepo) UpdateBatchByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string, data map[string]interface{}) error {
 	dao := tx.AdminDemo
 	_, err := dao.WithContext(ctx).Where(dao.Username.In(usernames...)).Updates(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateBatchUnscopedByUsernamesTx 根据字段Usernames批量更新(事务),零值会被更新（包括软删除）
+func (a *AdminDemoRepo) UpdateBatchUnscopedByUsernamesTx(ctx context.Context, tx *gorm_gen_dao.Query, usernames []string, data map[string]interface{}) error {
+	dao := tx.AdminDemo
+	_, err := dao.WithContext(ctx).Unscoped().Where(dao.Username.In(usernames...)).Updates(data)
 	if err != nil {
 		return err
 	}

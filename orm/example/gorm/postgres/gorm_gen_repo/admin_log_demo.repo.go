@@ -258,7 +258,7 @@ func (a *AdminLogDemoRepo) UpsertOne(ctx context.Context, data *gorm_gen_model.A
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminLogDemoRepo) UpsertOneCache(ctx context.Context, data *gorm_gen_model.AdminLogDemo) error {
 	dao := gorm_gen_dao.Use(a.db).AdminLogDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -288,7 +288,7 @@ func (a *AdminLogDemoRepo) UpsertOneByTx(ctx context.Context, tx *gorm_gen_dao.Q
 // Update all columns, except primary keys, to new value on conflict
 func (a *AdminLogDemoRepo) UpsertOneCacheByTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminLogDemo) error {
 	dao := tx.AdminLogDemo
-	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).First()
+	oldData, err := dao.WithContext(ctx).Where(dao.ID.Eq(data.ID)).Unscoped().First()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -353,7 +353,7 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -422,7 +422,7 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 		columns = append(columns, clause.Column{Name: v})
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
-	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).First(oldData).Error
+	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
