@@ -4,8 +4,8 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneByFields(ctx contex
         return errors.New("UpsertOneByFields fields is empty")
     }
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := {{.dbName}}_dao.Use({{.firstTableChar}}.db).{{.upperTableName}}
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{

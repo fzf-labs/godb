@@ -3,29 +3,29 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiCacheBy{{.upperFiel
 	resp := make([]*{{.dbName}}_model.{{.upperTableName}}, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]{{.dataType}})
-	for _, v := range {{.lowerFieldPlural}} {
-	    cacheKey := {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}By{{.upperField}}Prefix, v)
+	for _, item := range {{.lowerFieldPlural}} {
+	    cacheKey := {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}By{{.upperField}}Prefix, item)
 		cacheKeys = append(cacheKeys,cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := {{.firstTableChar}}.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
         dbValue := make(map[string]string)
         params := make([]{{.dataType}},0)
-        for _, v := range miss {
-        	dbValue[v] = ""
-            params = append(params, keyToParam[v])
+        for _, item := range miss {
+        	dbValue[item] = ""
+            params = append(params, keyToParam[item])
         }
 		dao := {{.dbName}}_dao.Use({{.firstTableChar}}.db).{{.upperTableName}}
 		result, err := dao.WithContext(ctx).Where(dao.{{.upperField}}.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-            marshal, err := {{.firstTableChar}}.encoding.Marshal(v)
+		for _, item := range result {
+            marshal, err := {{.firstTableChar}}.encoding.Marshal(item)
             if err != nil {
                 return nil, err
             }
-			dbValue[{{.firstTableChar}}.cache.Key( Cache{{.upperTableName}}By{{.upperField}}Prefix, v.{{.upperField}})] = string(marshal)
+			dbValue[{{.firstTableChar}}.cache.Key( Cache{{.upperTableName}}By{{.upperField}}Prefix, item.{{.upperField}})] = string(marshal)
 		}
 		return dbValue, nil
 	}, {{.firstTableChar}}.cache.TTL())
@@ -50,29 +50,29 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiUnscopedCacheBy{{.u
 	resp := make([]*{{.dbName}}_model.{{.upperTableName}}, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]{{.dataType}})
-	for _, v := range {{.lowerFieldPlural}} {
-	    cacheKey := {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}UnscopedBy{{.upperField}}Prefix, v)
+	for _, item := range {{.lowerFieldPlural}} {
+	    cacheKey := {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}UnscopedBy{{.upperField}}Prefix, item)
 		cacheKeys = append(cacheKeys,cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := {{.firstTableChar}}.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
         dbValue := make(map[string]string)
         params := make([]{{.dataType}},0)
-        for _, v := range miss {
-        	dbValue[v] = ""
-            params = append(params, keyToParam[v])
+        for _, item := range miss {
+        	dbValue[item] = ""
+            params = append(params, keyToParam[item])
         }
 		dao := {{.dbName}}_dao.Use({{.firstTableChar}}.db).{{.upperTableName}}
 		result, err := dao.WithContext(ctx).Unscoped().Where(dao.{{.upperField}}.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-            marshal, err := {{.firstTableChar}}.encoding.Marshal(v)
+		for _, item := range result {
+            marshal, err := {{.firstTableChar}}.encoding.Marshal(item)
             if err != nil {
                 return nil, err
             }
-			dbValue[{{.firstTableChar}}.cache.Key( Cache{{.upperTableName}}UnscopedBy{{.upperField}}Prefix, v.{{.upperField}})] = string(marshal)
+			dbValue[{{.firstTableChar}}.cache.Key( Cache{{.upperTableName}}UnscopedBy{{.upperField}}Prefix, item.{{.upperField}})] = string(marshal)
 		}
 		return dbValue, nil
 	}, {{.firstTableChar}}.cache.TTL())

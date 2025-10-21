@@ -630,8 +630,8 @@ func (u *UserDemoRepo) UpsertOneByFields(ctx context.Context, data *gorm_gen_mod
 		return errors.New("UpsertOneByFields fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := gorm_gen_dao.Use(u.db).UserDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -657,9 +657,9 @@ func (u *UserDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gorm_ge
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -669,9 +669,9 @@ func (u *UserDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gorm_ge
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.UserDemo{}
 	err := u.db.Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -699,8 +699,8 @@ func (u *UserDemoRepo) UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen_dao
 		return errors.New("UpsertOneByFieldsTx fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := tx.UserDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -726,9 +726,9 @@ func (u *UserDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_ge
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -738,9 +738,9 @@ func (u *UserDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_ge
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.UserDemo{}
 	err := u.db.Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -1479,29 +1479,29 @@ func (u *UserDemoRepo) FindMultiCacheByIDS(ctx context.Context, IDS []string) ([
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range IDS {
-		cacheKey := u.cache.Key(CacheUserDemoByIDPrefix, v)
+	for _, item := range IDS {
+		cacheKey := u.cache.Key(CacheUserDemoByIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Where(dao.ID.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-			marshal, err := u.encoding.Marshal(v)
+		for _, item := range result {
+			marshal, err := u.encoding.Marshal(item)
 			if err != nil {
 				return nil, err
 			}
-			dbValue[u.cache.Key(CacheUserDemoByIDPrefix, v.ID)] = string(marshal)
+			dbValue[u.cache.Key(CacheUserDemoByIDPrefix, item.ID)] = string(marshal)
 		}
 		return dbValue, nil
 	}, u.cache.TTL())
@@ -1526,29 +1526,29 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByIDS(ctx context.Context, IDS []st
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range IDS {
-		cacheKey := u.cache.Key(CacheUserDemoUnscopedByIDPrefix, v)
+	for _, item := range IDS {
+		cacheKey := u.cache.Key(CacheUserDemoUnscopedByIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Unscoped().Where(dao.ID.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-			marshal, err := u.encoding.Marshal(v)
+		for _, item := range result {
+			marshal, err := u.encoding.Marshal(item)
 			if err != nil {
 				return nil, err
 			}
-			dbValue[u.cache.Key(CacheUserDemoUnscopedByIDPrefix, v.ID)] = string(marshal)
+			dbValue[u.cache.Key(CacheUserDemoUnscopedByIDPrefix, item.ID)] = string(marshal)
 		}
 		return dbValue, nil
 	}, u.cache.TTL())
@@ -1669,29 +1669,29 @@ func (u *UserDemoRepo) FindMultiCacheByUIDS(ctx context.Context, UIDS []string) 
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range UIDS {
-		cacheKey := u.cache.Key(CacheUserDemoByUIDPrefix, v)
+	for _, item := range UIDS {
+		cacheKey := u.cache.Key(CacheUserDemoByUIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Where(dao.UID.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-			marshal, err := u.encoding.Marshal(v)
+		for _, item := range result {
+			marshal, err := u.encoding.Marshal(item)
 			if err != nil {
 				return nil, err
 			}
-			dbValue[u.cache.Key(CacheUserDemoByUIDPrefix, v.UID)] = string(marshal)
+			dbValue[u.cache.Key(CacheUserDemoByUIDPrefix, item.UID)] = string(marshal)
 		}
 		return dbValue, nil
 	}, u.cache.TTL())
@@ -1716,29 +1716,29 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByUIDS(ctx context.Context, UIDS []
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range UIDS {
-		cacheKey := u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, v)
+	for _, item := range UIDS {
+		cacheKey := u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Unscoped().Where(dao.UID.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-			marshal, err := u.encoding.Marshal(v)
+		for _, item := range result {
+			marshal, err := u.encoding.Marshal(item)
 			if err != nil {
 				return nil, err
 			}
-			dbValue[u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, v.UID)] = string(marshal)
+			dbValue[u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, item.UID)] = string(marshal)
 		}
 		return dbValue, nil
 	}, u.cache.TTL())
@@ -2011,17 +2011,17 @@ func (u *UserDemoRepo) FindMultiCacheByUsernames(ctx context.Context, usernames 
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range usernames {
-		cacheKey := u.cache.Key(CacheUserDemoByUsernamePrefix, v)
+	for _, item := range usernames {
+		cacheKey := u.cache.Key(CacheUserDemoByUsernamePrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Where(dao.Username.In(params...)).Find()
@@ -2029,20 +2029,20 @@ func (u *UserDemoRepo) FindMultiCacheByUsernames(ctx context.Context, usernames 
 			return nil, err
 		}
 		keyToValues := make(map[string][]*gorm_gen_model.UserDemo)
-		for _, v := range result {
-			key := u.cache.Key(CacheUserDemoByUsernamePrefix, v.Username)
+		for _, item := range result {
+			key := u.cache.Key(CacheUserDemoByUsernamePrefix, item.Username)
 			if keyToValues[key] == nil {
 				keyToValues[key] = make([]*gorm_gen_model.UserDemo, 0)
 			}
-			keyToValues[key] = append(keyToValues[key], v)
+			keyToValues[key] = append(keyToValues[key], item)
 		}
-		for k := range dbValue {
-			if keyToValues[k] != nil {
-				marshal, err := u.encoding.Marshal(keyToValues[k])
+		for item := range dbValue {
+			if keyToValues[item] != nil {
+				marshal, err := u.encoding.Marshal(keyToValues[item])
 				if err != nil {
 					return nil, err
 				}
-				dbValue[k] = string(marshal)
+				dbValue[item] = string(marshal)
 			}
 		}
 		return dbValue, nil
@@ -2068,17 +2068,17 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByUsernames(ctx context.Context, us
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range usernames {
-		cacheKey := u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, v)
+	for _, item := range usernames {
+		cacheKey := u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Unscoped().Where(dao.Username.In(params...)).Find()
@@ -2086,20 +2086,20 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByUsernames(ctx context.Context, us
 			return nil, err
 		}
 		keyToValues := make(map[string][]*gorm_gen_model.UserDemo)
-		for _, v := range result {
-			key := u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, v.Username)
+		for _, item := range result {
+			key := u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, item.Username)
 			if keyToValues[key] == nil {
 				keyToValues[key] = make([]*gorm_gen_model.UserDemo, 0)
 			}
-			keyToValues[key] = append(keyToValues[key], v)
+			keyToValues[key] = append(keyToValues[key], item)
 		}
-		for k := range dbValue {
-			if keyToValues[k] != nil {
-				marshal, err := u.encoding.Marshal(keyToValues[k])
+		for item := range dbValue {
+			if keyToValues[item] != nil {
+				marshal, err := u.encoding.Marshal(keyToValues[item])
 				if err != nil {
 					return nil, err
 				}
-				dbValue[k] = string(marshal)
+				dbValue[item] = string(marshal)
 			}
 		}
 		return dbValue, nil
@@ -2221,17 +2221,17 @@ func (u *UserDemoRepo) FindMultiCacheByTenantIDS(ctx context.Context, tenantIDS 
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]int64)
-	for _, v := range tenantIDS {
-		cacheKey := u.cache.Key(CacheUserDemoByTenantIDPrefix, v)
+	for _, item := range tenantIDS {
+		cacheKey := u.cache.Key(CacheUserDemoByTenantIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]int64, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Where(dao.TenantID.In(params...)).Find()
@@ -2239,20 +2239,20 @@ func (u *UserDemoRepo) FindMultiCacheByTenantIDS(ctx context.Context, tenantIDS 
 			return nil, err
 		}
 		keyToValues := make(map[string][]*gorm_gen_model.UserDemo)
-		for _, v := range result {
-			key := u.cache.Key(CacheUserDemoByTenantIDPrefix, v.TenantID)
+		for _, item := range result {
+			key := u.cache.Key(CacheUserDemoByTenantIDPrefix, item.TenantID)
 			if keyToValues[key] == nil {
 				keyToValues[key] = make([]*gorm_gen_model.UserDemo, 0)
 			}
-			keyToValues[key] = append(keyToValues[key], v)
+			keyToValues[key] = append(keyToValues[key], item)
 		}
-		for k := range dbValue {
-			if keyToValues[k] != nil {
-				marshal, err := u.encoding.Marshal(keyToValues[k])
+		for item := range dbValue {
+			if keyToValues[item] != nil {
+				marshal, err := u.encoding.Marshal(keyToValues[item])
 				if err != nil {
 					return nil, err
 				}
-				dbValue[k] = string(marshal)
+				dbValue[item] = string(marshal)
 			}
 		}
 		return dbValue, nil
@@ -2278,17 +2278,17 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByTenantIDS(ctx context.Context, te
 	resp := make([]*gorm_gen_model.UserDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]int64)
-	for _, v := range tenantIDS {
-		cacheKey := u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, v)
+	for _, item := range tenantIDS {
+		cacheKey := u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := u.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]int64, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(u.db).UserDemo
 		result, err := dao.WithContext(ctx).Unscoped().Where(dao.TenantID.In(params...)).Find()
@@ -2296,20 +2296,20 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByTenantIDS(ctx context.Context, te
 			return nil, err
 		}
 		keyToValues := make(map[string][]*gorm_gen_model.UserDemo)
-		for _, v := range result {
-			key := u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, v.TenantID)
+		for _, item := range result {
+			key := u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, item.TenantID)
 			if keyToValues[key] == nil {
 				keyToValues[key] = make([]*gorm_gen_model.UserDemo, 0)
 			}
-			keyToValues[key] = append(keyToValues[key], v)
+			keyToValues[key] = append(keyToValues[key], item)
 		}
-		for k := range dbValue {
-			if keyToValues[k] != nil {
-				marshal, err := u.encoding.Marshal(keyToValues[k])
+		for item := range dbValue {
+			if keyToValues[item] != nil {
+				marshal, err := u.encoding.Marshal(keyToValues[item])
 				if err != nil {
 					return nil, err
 				}
-				dbValue[k] = string(marshal)
+				dbValue[item] = string(marshal)
 			}
 		}
 		return dbValue, nil
@@ -3714,24 +3714,24 @@ func (u *UserDemoRepo) DeleteIndexCache(ctx context.Context, data ...*gorm_gen_m
 	keys := make([]string, 0)
 	keys = append(keys, u.cache.Key(CacheUserDemoByConditionPrefix))
 	keys = append(keys, u.cache.Key(CacheUserDemoUnscopedByConditionPrefix))
-	for _, v := range data {
-		if v != nil {
-			KeyMap[u.cache.Key(CacheUserDemoByIDPrefix, v.ID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByIDPrefix, v.ID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoByUIDPrefix, v.UID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, v.UID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoByUIDStatusPrefix, v.UID, v.Status)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUIDStatusPrefix, v.UID, v.Status)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoByTenantIDDeptIDPrefix, v.TenantID, v.DeptID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByTenantIDDeptIDPrefix, v.TenantID, v.DeptID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoByUsernamePrefix, v.Username)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, v.Username)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoByTenantIDPrefix, v.TenantID)] = struct{}{}
-			KeyMap[u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, v.TenantID)] = struct{}{}
+	for _, item := range data {
+		if item != nil {
+			KeyMap[u.cache.Key(CacheUserDemoByIDPrefix, item.ID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByIDPrefix, item.ID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoByUIDPrefix, item.UID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUIDPrefix, item.UID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoByUIDStatusPrefix, item.UID, item.Status)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUIDStatusPrefix, item.UID, item.Status)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoByTenantIDDeptIDPrefix, item.TenantID, item.DeptID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByTenantIDDeptIDPrefix, item.TenantID, item.DeptID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoByUsernamePrefix, item.Username)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByUsernamePrefix, item.Username)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoByTenantIDPrefix, item.TenantID)] = struct{}{}
+			KeyMap[u.cache.Key(CacheUserDemoUnscopedByTenantIDPrefix, item.TenantID)] = struct{}{}
 		}
 	}
-	for k := range KeyMap {
-		keys = append(keys, k)
+	for item := range KeyMap {
+		keys = append(keys, item)
 	}
 	err := u.cache.DelBatch(ctx, keys)
 	if err != nil {

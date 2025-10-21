@@ -6,13 +6,13 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) DeleteIndexCache(ctx context
 	{{- if .haveDeletedAt }}
 	keys = append(keys, {{.firstTableChar}}.cache.Key(Cache{{.upperTableName}}UnscopedByConditionPrefix))
 	{{- end }}
-	for _, v := range data {
-		if v != nil {
+	for _, item := range data {
+		if item != nil {
 			{{.cacheDelKeys}}
 		}
 	}
-	for k := range KeyMap {
-		keys = append(keys, k)
+	for item := range KeyMap {
+		keys = append(keys, item)
 	}
 	err := {{.firstTableChar}}.cache.DelBatch(ctx, keys)
 	if err != nil {

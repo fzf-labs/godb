@@ -29,6 +29,7 @@ var KeyWords = []string{
 	"resp",
 	"result",
 	"marshal",
+	"item",
 }
 
 func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table string, partitionTables []string, columnNameToDataType, columnNameToName, columnNameToFieldType map[string]string) error {
@@ -1368,7 +1369,7 @@ func (r *Repo) generateDelFunc() (string, error) {
 		}
 		cacheFieldsJoinSli := make([]string, 0)
 		for _, column := range v.Columns {
-			cacheFieldsJoinSli = append(cacheFieldsJoinSli, fmt.Sprintf("v.%s", r.upperFieldName(column)))
+			cacheFieldsJoinSli = append(cacheFieldsJoinSli, fmt.Sprintf("item.%s", r.upperFieldName(column)))
 		}
 		// 缓存删除key
 		varCacheDelKeyTpl, err := template.NewTemplate().Parse(VarCacheDelKey).Execute(map[string]any{
@@ -1661,6 +1662,9 @@ func (r *Repo) lowerName(s string) string {
 
 // plural 复数形式
 func (r *Repo) plural(s string) string {
+	if s == "" {
+		return s
+	}
 	str := inflection.Plural(s)
 	if str == s {
 		str += "plural"

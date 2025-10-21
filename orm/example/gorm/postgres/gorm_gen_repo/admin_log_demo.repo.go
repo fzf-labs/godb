@@ -310,8 +310,8 @@ func (a *AdminLogDemoRepo) UpsertOneByFields(ctx context.Context, data *gorm_gen
 		return errors.New("UpsertOneByFields fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := gorm_gen_dao.Use(a.db).AdminLogDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -337,9 +337,9 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -349,9 +349,9 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gor
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -379,8 +379,8 @@ func (a *AdminLogDemoRepo) UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen
 		return errors.New("UpsertOneByFieldsTx fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := tx.AdminLogDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -406,9 +406,9 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -418,9 +418,9 @@ func (a *AdminLogDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gor
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.AdminLogDemo{}
 	err := a.db.Model(&gorm_gen_model.AdminLogDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -643,29 +643,29 @@ func (a *AdminLogDemoRepo) FindMultiCacheByIDS(ctx context.Context, IDS []string
 	resp := make([]*gorm_gen_model.AdminLogDemo, 0)
 	cacheKeys := make([]string, 0)
 	keyToParam := make(map[string]string)
-	for _, v := range IDS {
-		cacheKey := a.cache.Key(CacheAdminLogDemoByIDPrefix, v)
+	for _, item := range IDS {
+		cacheKey := a.cache.Key(CacheAdminLogDemoByIDPrefix, item)
 		cacheKeys = append(cacheKeys, cacheKey)
-		keyToParam[cacheKey] = v
+		keyToParam[cacheKey] = item
 	}
 	cacheValue, err := a.cache.FetchBatch(ctx, cacheKeys, func(miss []string) (map[string]string, error) {
 		dbValue := make(map[string]string)
 		params := make([]string, 0)
-		for _, v := range miss {
-			dbValue[v] = ""
-			params = append(params, keyToParam[v])
+		for _, item := range miss {
+			dbValue[item] = ""
+			params = append(params, keyToParam[item])
 		}
 		dao := gorm_gen_dao.Use(a.db).AdminLogDemo
 		result, err := dao.WithContext(ctx).Where(dao.ID.In(params...)).Find()
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range result {
-			marshal, err := a.encoding.Marshal(v)
+		for _, item := range result {
+			marshal, err := a.encoding.Marshal(item)
 			if err != nil {
 				return nil, err
 			}
-			dbValue[a.cache.Key(CacheAdminLogDemoByIDPrefix, v.ID)] = string(marshal)
+			dbValue[a.cache.Key(CacheAdminLogDemoByIDPrefix, item.ID)] = string(marshal)
 		}
 		return dbValue, nil
 	}, a.cache.TTL())
@@ -883,13 +883,13 @@ func (a *AdminLogDemoRepo) DeleteIndexCache(ctx context.Context, data ...*gorm_g
 	KeyMap := make(map[string]struct{})
 	keys := make([]string, 0)
 	keys = append(keys, a.cache.Key(CacheAdminLogDemoByConditionPrefix))
-	for _, v := range data {
-		if v != nil {
-			KeyMap[a.cache.Key(CacheAdminLogDemoByIDPrefix, v.ID)] = struct{}{}
+	for _, item := range data {
+		if item != nil {
+			KeyMap[a.cache.Key(CacheAdminLogDemoByIDPrefix, item.ID)] = struct{}{}
 		}
 	}
-	for k := range KeyMap {
-		keys = append(keys, k)
+	for item := range KeyMap {
+		keys = append(keys, item)
 	}
 	err := a.cache.DelBatch(ctx, keys)
 	if err != nil {

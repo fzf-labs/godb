@@ -332,8 +332,8 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneByFields(ctx context.Context, da
 		return errors.New("UpsertOneByFields fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := gorm_gen_dao.Use(m.db).MultiFieldPrimaryKeyDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -359,9 +359,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFields(ctx context.Contex
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -371,9 +371,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFields(ctx context.Contex
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
 	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -401,8 +401,8 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneByFieldsTx(ctx context.Context, 
 		return errors.New("UpsertOneByFieldsTx fields is empty")
 	}
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		columns = append(columns, clause.Column{Name: item})
 	}
 	dao := tx.MultiFieldPrimaryKeyDemo
 	err := dao.WithContext(ctx).Clauses(clause.OnConflict{
@@ -428,9 +428,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Cont
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -440,9 +440,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Cont
 	}
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions, clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &gorm_gen_model.MultiFieldPrimaryKeyDemo{}
 	err := m.db.Model(&gorm_gen_model.MultiFieldPrimaryKeyDemo{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
@@ -1064,14 +1064,14 @@ func (m *MultiFieldPrimaryKeyDemoRepo) DeleteIndexCache(ctx context.Context, dat
 	keys := make([]string, 0)
 	keys = append(keys, m.cache.Key(CacheMultiFieldPrimaryKeyDemoByConditionPrefix))
 	keys = append(keys, m.cache.Key(CacheMultiFieldPrimaryKeyDemoUnscopedByConditionPrefix))
-	for _, v := range data {
-		if v != nil {
-			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2Prefix, v.PrimaryKey1, v.PrimaryKey2)] = struct{}{}
-			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2Prefix, v.PrimaryKey1, v.PrimaryKey2)] = struct{}{}
+	for _, item := range data {
+		if item != nil {
+			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoByPrimaryKey1PrimaryKey2Prefix, item.PrimaryKey1, item.PrimaryKey2)] = struct{}{}
+			KeyMap[m.cache.Key(CacheMultiFieldPrimaryKeyDemoUnscopedByPrimaryKey1PrimaryKey2Prefix, item.PrimaryKey1, item.PrimaryKey2)] = struct{}{}
 		}
 	}
-	for k := range KeyMap {
-		keys = append(keys, k)
+	for item := range KeyMap {
+		keys = append(keys, item)
 	}
 	err := m.cache.DelBatch(ctx, keys)
 	if err != nil {

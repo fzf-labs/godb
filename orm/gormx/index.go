@@ -50,7 +50,7 @@ func GetIndexes(db *gorm.DB, table string) ([]*Index, error) {
 // getPgIndexes 查询PG索引
 func getPgIndexes(db *gorm.DB, table string) ([]*Index, error) {
 	result := make([]*Index, 0)
-	sql := fmt.Sprintf(`select t.relname as table_name,i.relname as index_name,a.attname as column_name,ix.indisunique as is_unique,ix.indisprimary as primary from pg_class t,pg_class i,pg_index ix,pg_attribute a where t.oid=ix.indrelid and i.oid=ix.indexrelid and a.attrelid=t.oid and a.attnum=ANY(ix.indkey)and t.relkind='r' and t.relname='%s'`, table)
+	sql := fmt.Sprintf(`select t.relname as table_name,i.relname as index_name,a.attname as column_name,ix.indisunique as is_unique,ix.indisprimary as primary from pg_class t,pg_class i,pg_index ix,pg_attribute a where t.oid=ix.indrelid and i.oid=ix.indexrelid and a.attrelid=t.oid and a.attnum=ANY(ix.indkey)and t.relkind IN ('r','p') and t.relname='%s'`, table)
 	err := db.Raw(sql).Scan(&result).Error
 	if err != nil {
 		return nil, err

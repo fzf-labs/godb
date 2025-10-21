@@ -11,9 +11,9 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCacheByFieldsTx(ctx
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")	
-			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					columnName := strings.TrimPrefix(v, "column:")
+			for _, item := range gormTags {
+				if strings.Contains(item, "column") {
+					columnName := strings.TrimPrefix(item, "column:")
 					fieldValue := val.Field(i).Interface()
 					fieldNameToValue[columnName] = fieldValue
 					break
@@ -23,9 +23,9 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCacheByFieldsTx(ctx
 	}	
 	whereExpressions := make([]clause.Expression, 0)
 	columns := make([]clause.Column, 0)
-	for _, v := range fields {
-		whereExpressions = append(whereExpressions,clause.And(clause.Eq{Column: v, Value: fieldNameToValue[v]}))
-		columns = append(columns, clause.Column{Name: v})
+	for _, item := range fields {
+		whereExpressions = append(whereExpressions,clause.And(clause.Eq{Column: item, Value: fieldNameToValue[item]}))
+		columns = append(columns, clause.Column{Name: item})
 	}
 	oldData := &{{.dbName}}_model.{{.upperTableName}}{}
 	err := {{.firstTableChar}}.db.Model(&{{.dbName}}_model.{{.upperTableName}}{}).Clauses(whereExpressions...).Unscoped().First(oldData).Error
