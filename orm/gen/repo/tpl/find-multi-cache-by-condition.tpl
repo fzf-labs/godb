@@ -1,4 +1,5 @@
 // FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
+// 非万能查询方法,缓存命中率低,请评估后谨慎使用
 func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*{{.dbName}}_model.{{.upperTableName}}, *condition.Reply, error) {
 	type Tmp struct {
 		Result []*{{.dbName}}_model.{{.upperTableName}}
@@ -36,6 +37,7 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiCacheByCondition(ct
 }
 {{- if .haveDeletedAt }}
 // FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+// 非万能查询方法,缓存命中率低,请评估后谨慎使用
 func ({{.firstTableChar}} *{{.upperTableName}}Repo) FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*{{.dbName}}_model.{{.upperTableName}}, *condition.Reply, error) {
 	type Tmp struct {
 		Result []*{{.dbName}}_model.{{.upperTableName}}
