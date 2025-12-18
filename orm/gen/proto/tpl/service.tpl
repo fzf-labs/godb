@@ -53,7 +53,7 @@ service {{.upperTableName}} {
     };
   }
 	{{- end }}
-  //{{.tableNameComment}}-删除多条数据
+  //{{.tableNameComment}}-删除一条数据
   rpc Delete{{.upperTableName}}(Delete{{.upperTableName}}Req) returns (Delete{{.upperTableName}}Reply) {
     option (google.api.http) = {
       post: "/{{ .urlPrefix }}/{{.tableNameUnderScore}}/delete"

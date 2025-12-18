@@ -47,7 +47,7 @@ message Update{{.upperTableName}}StatusReq {
 message Update{{.upperTableName}}StatusReply {}
 {{- end }}
 
-//请求-{{.tableNameComment}}-删除多条数据
+//请求-{{.tableNameComment}}-删除一条数据
 message Delete{{.upperTableName}}Req {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
@@ -57,7 +57,7 @@ message Delete{{.upperTableName}}Req {
   {{.deleteReq}}
 }
 
-//响应-{{.tableNameComment}}-删除多条数据
+//响应-{{.tableNameComment}}-删除一条数据
 message Delete{{.upperTableName}}Reply {}
 
 //请求-{{.tableNameComment}}-单条数据查询
