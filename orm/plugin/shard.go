@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dromara/carbon/v2"
@@ -24,12 +25,18 @@ func NewMonthShardingPlugin(table, shardingKey string) *sharding.Sharding {
 		ShardingKey:         shardingKey,
 		PrimaryKeyGenerator: sharding.PKCustom,
 		ShardingAlgorithm: func(columnValue any) (suffix string, err error) {
+			if columnValue == nil {
+				return "", fmt.Errorf("sharding key %s cannot be nil", shardingKey)
+			}
 			var t time.Time
 			// columnValue要是time类型
 			switch value := columnValue.(type) {
 			case time.Time:
 				t = value
 			case *time.Time:
+				if value == nil {
+					return "", fmt.Errorf("sharding key %s cannot be nil", shardingKey)
+				}
 				t = *value
 			default:
 				// 时间转换

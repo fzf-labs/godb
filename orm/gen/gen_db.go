@@ -161,8 +161,8 @@ func (g *GenerationDB) Do() {
 	models := make(map[string]any, len(tables))
 	for _, tableName := range tables {
 		generateModel := generator.GenerateModel(tableName)
-		if _, ok := partitionTableToChildTables[tableName]; ok {
-			generatePartitionChildModel := generator.GenerateModel(partitionTableToChildTables[tableName][0])
+		if childTables := partitionTableToChildTables[tableName]; len(childTables) > 0 {
+			generatePartitionChildModel := generator.GenerateModel(childTables[0])
 			generateModel.Fields = generatePartitionChildModel.Fields
 			generatePartitionChildModel.Generated = false
 		}

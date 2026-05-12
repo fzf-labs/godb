@@ -107,14 +107,21 @@ func OrderValidate(s Order) bool {
 
 // ToInterfaceSlice 将任意类型的切片转换为 []interface{}
 func (p *Req) ToInterfaceSlice(val interface{}) ([]interface{}, error) {
-	// 检查 val 是否为切片类型
+	if val == nil {
+		return nil, fmt.Errorf("value is not a slice")
+	}
+	if values, ok := val.([]interface{}); ok {
+		return values, nil
+	}
 	rv := reflect.ValueOf(val)
-	// 如果是[]interface{}，直接返回
-	if rv.Type().Elem().Kind() == reflect.Interface {
-		return val.([]interface{}), nil
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, fmt.Errorf("value is not a slice")
+		}
+		rv = rv.Elem()
 	}
 	// 如果不是切片类型，返回错误
-	if rv.Kind() != reflect.Slice {
+	if rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array {
 		return nil, fmt.Errorf("value is not a slice")
 	}
 	// 遍历切片中的每个元素，将其转换为 interface{} 类型
@@ -141,9 +148,15 @@ func (p *Req) ConvertToCacheField() string {
 func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orderExpressions []clause.Expression, err error) {
 	whereExpressions = make([]clause.Expression, 0)
 	orderExpressions = make([]clause.Expression, 0)
+	if p == nil {
+		return whereExpressions, orderExpressions, nil
+	}
 	column := fieldToColumn(model)
 	if len(p.Query) > 0 {
 		for _, v := range p.Query {
+			if v == nil {
+				return whereExpressions, orderExpressions, fmt.Errorf("query cannot be nil")
+			}
 			if v.Field == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
@@ -212,6 +225,9 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 	}
 	if len(p.Order) > 0 {
 		for _, v := range p.Order {
+			if v == nil {
+				return whereExpressions, orderExpressions, fmt.Errorf("order cannot be nil")
+			}
 			if v.Field == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
@@ -279,14 +295,23 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 func fieldToColumn(model interface{}) map[string]string {
 	m := make(map[string]string)
 	t := reflect.TypeOf(model)
+	if t == nil {
+		return m
+	}
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return m
+	}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
 			for _, v := range gormTags {
-				if strings.Contains(v, "column") {
-					column := strings.Split(v, ":")
+				if strings.HasPrefix(v, "column:") {
+					column := strings.SplitN(v, ":", 2)
 					if len(column) == 2 {
 						m[strings.ToLower(column[1])] = column[1]
 					}

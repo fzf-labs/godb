@@ -7,8 +7,27 @@ import (
 	"time"
 
 	"github.com/redis/rueidis"
+	"github.com/redis/rueidis/rueidislock"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestLockerOptionWithTTL(t *testing.T) {
+	defaultTTL := 5 * time.Second
+	customTTL := 10 * time.Second
+	locker := NewLocker(rueidislockOption(defaultTTL))
+
+	option := locker.optionWithTTL(customTTL)
+	assert.Equal(t, customTTL, option.KeyValidity)
+
+	option = locker.optionWithTTL(0)
+	assert.Equal(t, defaultTTL, option.KeyValidity)
+}
+
+func rueidislockOption(ttl time.Duration) rueidislock.LockerOption {
+	return rueidislock.LockerOption{
+		KeyValidity: ttl,
+	}
+}
 
 func TestLocker_AutoLock(t *testing.T) {
 	client, err := NewRueidisClient(&rueidis.ClientOption{

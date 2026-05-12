@@ -24,10 +24,20 @@ type Locker struct {
 	option rueidislock.LockerOption
 }
 
+// optionWithTTL 返回带有指定 ttl 的配置副本。
+// ttl 小于等于 0 时保留原 KeyValidity，用于沿用默认锁有效期。
+func (l *Locker) optionWithTTL(ttl time.Duration) rueidislock.LockerOption {
+	option := l.option
+	if ttl > 0 {
+		option.KeyValidity = ttl
+	}
+	return option
+}
+
 // LockOnce 自动锁-一次
 // 自动加锁与释放
 func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
-	locker, err := rueidislock.NewLocker(l.option)
+	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
 	}
@@ -43,7 +53,7 @@ func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn
 // LockRetry 自动锁-重试
 // 自动加锁与释放，间隔100ms 重试3次
 func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
-	locker, err := rueidislock.NewLocker(l.option)
+	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
 	}
@@ -58,7 +68,7 @@ func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 
 // LockOnceNotRelease 自动锁-一次-不释放
 func (l *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
-	locker, err := rueidislock.NewLocker(l.option)
+	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
 	}

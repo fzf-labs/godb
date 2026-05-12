@@ -1,7 +1,6 @@
 package gormx
 
 import (
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -50,22 +49,17 @@ func getPGPartitionTableToChildTables(db *gorm.DB) (map[string][]string, error) 
 func getMySQLPartitionTableToChildTables(db *gorm.DB) (map[string][]string, error) {
 	resp := make(map[string][]string)
 	type tmp struct {
-		TableName                string `gorm:"column:TABLE_NAME"`
-		PartitionMethod          string `gorm:"column:PARTITION_METHOD"`
-		SubPartitionMethod       string `gorm:"column:SUBPARTITION_METHOD"`
-		PartitionOrdinalPosition string `gorm:"column:PARTITION_ORDINAL_POSITION"`
+		TableName string `gorm:"column:TABLE_NAME"`
 	}
 	result := make([]tmp, 0)
-	sql := fmt.Sprintf(`SELECT TABLE_NAME,PARTITION_METHOD,SUBPARTITION_METHOD,PARTITION_ORDINAL_POSITION FROM INFORMATION_SCHEMA.PARTITIONS WHERE PARTITION_NAME IS NOT NULL AND TABLE_SCHEMA='%s' ORDER BY TABLE_NAME`, db.Name())
-	err := db.Raw(sql).Scan(&result).Error
+	sql := `SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.PARTITIONS WHERE PARTITION_NAME IS NOT NULL AND TABLE_SCHEMA=? ORDER BY TABLE_NAME`
+	err := db.Raw(sql, db.Migrator().CurrentDatabase()).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}
-	// mysql 特殊处理成这种形式
+	// MySQL partitions do not have child tables like PostgreSQL inheritance.
 	for _, v := range result {
-		resp[v.TableName] = []string{
-			v.TableName,
-		}
+		resp[v.TableName] = nil
 	}
 	return resp, nil
 }
@@ -80,8 +74,8 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 			TableComment string `gorm:"column:TABLE_COMMENT"`
 		}
 		result := make([]tmp, 0)
-		sql := fmt.Sprintf(`SELECT TABLE_NAME,TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'`, db.Name())
-		err := db.Raw(sql).Scan(&result).Error
+		sql := `SELECT TABLE_NAME,TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=?`
+		err := db.Raw(sql, db.Migrator().CurrentDatabase()).Scan(&result).Error
 		if err != nil {
 			return nil, err
 		}

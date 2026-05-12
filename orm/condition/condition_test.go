@@ -349,6 +349,45 @@ func TestPaginatorReq_ConvertToGormExpression(t *testing.T) {
 	}
 }
 
+func TestReq_ConvertToGormExpressionPointerModel(t *testing.T) {
+	p := &Req{
+		Query: []*QueryParam{
+			{
+				Field: "id",
+				Value: []string{"admin"},
+				Exp:   IN,
+				Logic: AND,
+			},
+		},
+	}
+	whereExpressions, orderExpressions, err := p.ConvertToGormExpression(&UserTest{})
+	if err != nil {
+		t.Fatalf("ConvertToGormExpression() error = %v", err)
+	}
+	if len(whereExpressions) != 1 {
+		t.Fatalf("ConvertToGormExpression() got %d where expressions, want 1", len(whereExpressions))
+	}
+	if len(orderExpressions) != 0 {
+		t.Fatalf("ConvertToGormExpression() got %d order expressions, want 0", len(orderExpressions))
+	}
+}
+
+func TestReq_ConvertToGormExpressionInvalidInValue(t *testing.T) {
+	p := &Req{
+		Query: []*QueryParam{
+			{
+				Field: "id",
+				Value: "admin",
+				Exp:   IN,
+				Logic: AND,
+			},
+		},
+	}
+	if _, _, err := p.ConvertToGormExpression(UserTest{}); err == nil {
+		t.Fatal("ConvertToGormExpression() error = nil, want non-nil")
+	}
+}
+
 func TestPaginatorReq_ConvertToPage(t *testing.T) {
 	type fields struct {
 		Page     int32
