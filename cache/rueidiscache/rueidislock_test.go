@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestLockerOptionWithTTL 验证自定义锁 TTL 配置。
 func TestLockerOptionWithTTL(t *testing.T) {
 	defaultTTL := 5 * time.Second
 	customTTL := 10 * time.Second
@@ -23,12 +24,14 @@ func TestLockerOptionWithTTL(t *testing.T) {
 	assert.Equal(t, defaultTTL, option.KeyValidity)
 }
 
+// rueidislockOption 构造带 TTL 的 rueidis 分布式锁配置。
 func rueidislockOption(ttl time.Duration) rueidislock.LockerOption {
 	return rueidislock.LockerOption{
 		KeyValidity: ttl,
 	}
 }
 
+// TestLocker_AutoLock 验证 AutoLock 加锁和释放流程。
 func TestLocker_AutoLock(t *testing.T) {
 	client, err := NewRueidisClient(&rueidis.ClientOption{
 		Username:    "",
@@ -37,7 +40,11 @@ func TestLocker_AutoLock(t *testing.T) {
 		SelectDB:    0,
 	})
 	if err != nil {
-		return
+		t.Skipf("redis unavailable: %v", err)
+	}
+	defer client.Close()
+	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
+		t.Skipf("redis unavailable: %v", err)
 	}
 	locker := NewLocker(NewDefaultLockerOption(client))
 	ctx := context.Background()

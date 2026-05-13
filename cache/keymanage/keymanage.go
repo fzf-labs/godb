@@ -21,9 +21,9 @@ func New(serverName string) *KeyManage {
 }
 
 // AddKey 添加一个key prefix
-func (p *KeyManage) AddKey(prefix string, expirationTime time.Duration, remark string) *KeyPrefix {
+func (p *KeyManage) AddKey(prefix string, expirationTime time.Duration, remark string) (*KeyPrefix, error) {
 	if _, ok := p.List[prefix]; ok {
-		panic(fmt.Sprintf("key %s is exsit, please change one", prefix))
+		return nil, fmt.Errorf("key %s is exist, please change one", prefix)
 	}
 	key := KeyPrefix{
 		ServerName:     p.ServerName,
@@ -32,7 +32,7 @@ func (p *KeyManage) AddKey(prefix string, expirationTime time.Duration, remark s
 		ExpirationTime: expirationTime,
 	}
 	p.List[prefix] = key
-	return &key
+	return &key, nil
 }
 
 // Document 导出MD文档

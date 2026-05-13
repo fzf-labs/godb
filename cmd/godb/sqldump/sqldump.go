@@ -1,6 +1,6 @@
 package sqldump
 
-import "log"
+import "fmt"
 
 type SQLDump struct {
 	db            string // 数据库类型 mysql postgres
@@ -10,17 +10,19 @@ type SQLDump struct {
 	fileOverwrite bool   // 是否覆盖
 }
 
+// NewSQLDump 创建数据库结构导出器。
 func NewSQLDump(db, dsn, outPutPath, targetTables string, fileCover bool) *SQLDump {
 	return &SQLDump{db: db, dsn: dsn, outPutPath: outPutPath, targetTables: targetTables, fileOverwrite: fileCover}
 }
 
-func (s *SQLDump) Run() {
+// Run 根据数据库类型执行结构导出。
+func (s *SQLDump) Run() error {
 	switch s.db {
 	case "mysql":
-		s.DumpMySQL()
+		return s.DumpMySQL()
 	case "postgres":
-		s.DumpPostgres()
+		return s.DumpPostgres()
 	default:
-		log.Println("unknown database type: ", s.db)
+		return fmt.Errorf("unknown database type: %s", s.db)
 	}
 }

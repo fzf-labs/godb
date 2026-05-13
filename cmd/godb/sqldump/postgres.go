@@ -3,7 +3,6 @@ package sqldump
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,29 +15,30 @@ import (
 )
 
 // DumpPostgres 导出创建语句
-func (s *SQLDump) DumpPostgres() {
+func (s *SQLDump) DumpPostgres() error {
 	// 查找命令的可执行文件
 	_, err := exec.LookPath("pg_dump")
 	if err != nil {
-		log.Println("command pg_dump not found,please install")
-		return
+		return fmt.Errorf("command pg_dump not found, please install: %w", err)
 	}
-	dbClient := gormx.NewSimpleGormClient(s.db, s.dsn)
+	dbClient, err := gormx.NewSimpleGormClient(s.db, s.dsn)
+	if err != nil {
+		return err
+	}
 	var tables []string
 	if s.targetTables != "" {
 		tables = strings.Split(s.targetTables, ",")
 	} else {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
-			return
+			return err
 		}
 	}
 	dsnParse := s.postgresDsnParse()
 	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dsnParse.Dbname)
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
-		log.Println("DumpPostgres create path err:", err)
-		return
+		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
@@ -56,8 +56,7 @@ func (s *SQLDump) DumpPostgres() {
 		// 执行命令，并捕获输出和错误信息
 		output, err := cmd.Output()
 		if err != nil {
-			log.Println("cmd exec err:", err)
-			return
+			return fmt.Errorf("pg_dump table %s: %w", v, err)
 		}
 		if !s.fileOverwrite {
 			if fileutil.Exists(outFile) {
@@ -68,11 +67,11 @@ func (s *SQLDump) DumpPostgres() {
 		if tableContent != "" {
 			err := fileutil.WriteContentCover(outFile, tableContent)
 			if err != nil {
-				log.Println("DumpPostgres err:", err)
-				return
+				return fmt.Errorf("write %s: %w", outFile, err)
 			}
 		}
 	}
+	return nil
 }
 
 type PostgresDsn struct {

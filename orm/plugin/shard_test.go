@@ -12,18 +12,20 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// TestNewMonthShardingPlugin 验证按月分片插件配置。
 func TestNewMonthShardingPlugin(t *testing.T) {
 	sqlDB, err := sql.Open("pgx", "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=fkratos_sys sslmode=disable TimeZone=Asia/Shanghai")
 	if err != nil {
-		fmt.Printf("open mysql failed! err: %+v", err)
+		t.Skipf("postgres unavailable: %v", err)
 	}
+	defer sqlDB.Close()
 	gormConfig := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	}
 	gormConfig.Logger = logger.Default.LogMode(logger.Info)
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gormConfig)
 	if err != nil {
-		fmt.Printf("database connection failed!  err: %+v", err)
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	err = db.Use(NewMonthShardingPlugin("sys_admin", "created_at"))
@@ -38,18 +40,20 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// TestNewShardingPlugin 验证通用分片插件配置。
 func TestNewShardingPlugin(t *testing.T) {
 	sqlDB, err := sql.Open("pgx", "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=fkratos_sys sslmode=disable TimeZone=Asia/Shanghai")
 	if err != nil {
-		fmt.Printf("open mysql failed! err: %+v", err)
+		t.Skipf("postgres unavailable: %v", err)
 	}
+	defer sqlDB.Close()
 	gormConfig := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	}
 	gormConfig.Logger = logger.Default.LogMode(logger.Info)
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gormConfig)
 	if err != nil {
-		fmt.Printf("database connection failed!  err: %+v", err)
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	err = db.Use(NewShardingPlugin("sys_admin", "created_at", 64))

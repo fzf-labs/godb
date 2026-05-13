@@ -19,14 +19,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func newDB() *gorm.DB {
-	db := gormx.NewDebugGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
-	if db == nil {
-		return nil
+// newDB 创建示例测试用 PostgreSQL 连接。
+func newDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gormx.NewDebugGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	if err != nil {
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	return db
 }
 
+// newRedis 创建示例测试用 Redis 客户端。
 func newRedis() *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "0.0.0.0:6379",
@@ -35,8 +38,9 @@ func newRedis() *redis.Client {
 	return redisClient
 }
 
+// Test_DeepCopy 验证模型深拷贝逻辑。
 func Test_DeepCopy(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -63,7 +67,7 @@ func Test_DeepCopy(t *testing.T) {
 
 // Test_FindOneCacheByID 根据ID查询单条数据
 func Test_FindOneCacheByID(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -77,8 +81,9 @@ func Test_FindOneCacheByID(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_FindMultiCacheByUsernames 验证按用户名批量查询缓存。
 func Test_FindMultiCacheByUsernames(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -93,8 +98,9 @@ func Test_FindMultiCacheByUsernames(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_UpdateOneCache 验证单条记录缓存更新。
 func Test_UpdateOneCache(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -114,8 +120,9 @@ func Test_UpdateOneCache(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_UpsertOneWithZeroCache 验证带零值字段的 upsert 缓存更新。
 func Test_UpsertOneWithZeroCache(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -132,8 +139,9 @@ func Test_UpsertOneWithZeroCache(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_UpsertOneCacheByFieldsTx 验证事务内按字段 upsert 缓存。
 func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -152,8 +160,9 @@ func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_UpdateBatchByIDS 验证按 ID 批量更新。
 func Test_UpdateBatchByIDS(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -168,8 +177,9 @@ func Test_UpdateBatchByIDS(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// Test_FindMultiCacheByTenantIDS 验证按租户 ID 批量查询缓存。
 func Test_FindMultiCacheByTenantIDS(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	redisClient := newRedis()
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
@@ -186,7 +196,7 @@ func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 
 // Test_FindMultiByCustom 自定义查询
 func Test_FindMultiByCondition(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	client, _ := redismock.NewClientMock()
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)
 	ctx := context.Background()
@@ -233,9 +243,9 @@ func Test_FindMultiByCondition(t *testing.T) {
 
 // Test_Tx 使用事务
 func Test_Tx(t *testing.T) {
-	db := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
-	if db == nil {
-		return
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	if err != nil {
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	client, _ := redismock.NewClientMock()
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)
@@ -243,7 +253,7 @@ func Test_Tx(t *testing.T) {
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	adminDemoRepo := gorm_gen_repo2.NewAdminDemoRepo(cfg)
 	adminLogDemoRepo := gorm_gen_repo2.NewAdminLogDemoRepo(cfg)
-	err := gorm_gen_dao.Use(db).Transaction(func(tx *gorm_gen_dao.Query) error {
+	err = gorm_gen_dao.Use(db).Transaction(func(tx *gorm_gen_dao.Query) error {
 		err2 := adminDemoRepo.UpsertOneByTx(ctx, tx, &gorm_gen_model2.AdminDemo{
 			ID:       "c8ddd930-339a-408b-8acb-fac22f5b43aa",
 			Username: "admin",

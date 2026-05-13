@@ -12,7 +12,7 @@ var CmdSQLToPb = &cobra.Command{
 	Use:   "sqltopb",
 	Short: "sql generate proto file",
 	Long:  "sql generate proto file",
-	Run:   Run,
+	RunE:  Run,
 }
 
 var (
@@ -24,6 +24,8 @@ var (
 	outPutPath   string // 输出路径
 )
 
+// init 注册 sqltopb 命令行参数。
+//
 //nolint:gochecknoinits
 func init() {
 	CmdSQLToPb.Flags().StringVarP(&db, "db", "d", "", "db: mysql postgres")
@@ -34,13 +36,18 @@ func init() {
 	CmdSQLToPb.Flags().StringVarP(&outPutPath, "outPutPath", "o", "./pb", "outPutPath")
 }
 
-func Run(_ *cobra.Command, _ []string) {
+// Run 执行 SQL 转 proto 命令。
+func Run(_ *cobra.Command, _ []string) error {
 	var tables []string
 	if targetTables != "" {
 		tables = strings.Split(targetTables, ",")
 	}
+	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
+	if err != nil {
+		return err
+	}
 	gen.NewGenerationPB(
-		gormx.NewSimpleGormClient(db, dsn),
+		dbClient,
 		outPutPath,
 		pbPackage,
 		pbGoPackage,
@@ -50,4 +57,5 @@ func Run(_ *cobra.Command, _ []string) {
 		),
 		gen.WithPBTables(tables),
 	).Do()
+	return nil
 }

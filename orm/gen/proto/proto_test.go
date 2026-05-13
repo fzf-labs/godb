@@ -7,16 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func newDB() *gorm.DB {
-	db := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
-	if db == nil {
-		return nil
+// newDB 创建 proto 生成测试用数据库连接。
+func newDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	if err != nil {
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	return db
 }
 
+// TestGenerationPB 验证从数据库表生成 proto。
 func TestGenerationPB(t *testing.T) {
-	db := newDB()
+	db := newDB(t)
 	type args struct {
 		db                   *gorm.DB
 		outPutPath           string

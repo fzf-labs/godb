@@ -15,6 +15,9 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 	if tableName == "" {
 		return nil, errors.New("tableName cannot be empty")
 	}
+	if err := validateQualifiedIdentifier(tableName); err != nil {
+		return nil, err
+	}
 
 	// 检查 dataList 是否为切片
 	rv := reflect.ValueOf(dataList)
@@ -107,7 +110,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 		batchStart := i * batchSize
 		batchEnd := min((i+1)*batchSize, length)
 
-		sql, err := buildBatchUpdateSQL(tableName, updateMap, ids[batchStart:batchEnd])
+		sql, err := buildBatchUpdateSQL(tableName, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
 		if err != nil {
 			return nil, fmt.Errorf("build batch update SQL error: %w", err)
 		}
@@ -141,6 +144,9 @@ func getStructFields(structType reflect.Type) (map[string]structField, error) {
 
 		if _, ok := fields[columnName]; ok {
 			return nil, fmt.Errorf("duplicate column name '%s' in struct", columnName)
+		}
+		if err := validateIdentifier(columnName); err != nil {
+			return nil, err
 		}
 
 		fields[columnName] = structField{
@@ -177,7 +183,7 @@ func formatFieldValue(field reflect.Value) (string, error) {
 }
 
 // 辅助函数：生成每批次的 SQL 语句
-func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchIDs []string) (string, error) {
+func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
 	if len(batchIDs) == 0 {
 		return "", errors.New("batchIDs cannot be empty")
 	}
@@ -185,10 +191,15 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchI
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(4096) // 预分配空间
 
-	sqlBuilder.WriteString("UPDATE " + escapeIdentifier(tableName) + " SET ")
+	sqlBuilder.WriteString("UPDATE " + escapeQualifiedIdentifier(tableName, escapeIdentifier) + " SET ")
 
-	setClauses := make([]string, 0, len(updateMap))
-	for fieldName, fieldValueList := range updateMap {
+	fieldNames := sortedFieldNames(updateMap)
+	setClauses := make([]string, 0, len(fieldNames))
+	for _, fieldName := range fieldNames {
+		fieldValueList, err := sliceBatchValues(updateMap[fieldName], batchStart, batchEnd)
+		if err != nil {
+			return "", err
+		}
 		clause := escapeIdentifier(fieldName) + " = CASE id"
 		for i, id := range batchIDs {
 			clause += " WHEN " + id + " THEN " + fieldValueList[i]
@@ -203,6 +214,7 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchI
 	return sqlBuilder.String(), nil
 }
 
+// escapeIdentifier 转义 MySQL 标识符。
 func escapeIdentifier(name string) string {
 	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
 }

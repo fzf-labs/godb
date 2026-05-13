@@ -15,6 +15,9 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 	if tableName == "" {
 		return nil, errors.New("tableName cannot be empty")
 	}
+	if err := validateQualifiedIdentifier(tableName); err != nil {
+		return nil, err
+	}
 
 	// 检查 dataList 是否为切片
 	rv := reflect.ValueOf(dataList)
@@ -102,7 +105,7 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 		batchStart := i * batchSize
 		batchEnd := min((i+1)*batchSize, length)
 
-		sql, err := buildPostgresBatchUpdateSQL(tableName, updateMap, ids[batchStart:batchEnd])
+		sql, err := buildPostgresBatchUpdateSQL(tableName, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
 		if err != nil {
 			return nil, fmt.Errorf("build batch update SQL error: %w", err)
 		}
@@ -134,7 +137,7 @@ func formatPostgresFieldValue(field reflect.Value) (string, error) {
 }
 
 // buildPostgresBatchUpdateSQL 生成 PostgreSQL 批量更新 SQL
-func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string, batchIDs []string) (string, error) {
+func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
 	if len(batchIDs) == 0 {
 		return "", errors.New("batchIDs cannot be empty")
 	}
@@ -142,11 +145,16 @@ func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string
 	var sqlBuilder strings.Builder
 	sqlBuilder.Grow(4096)
 
-	sqlBuilder.WriteString(`UPDATE "` + tableName + `" SET `)
+	sqlBuilder.WriteString("UPDATE " + escapeQualifiedIdentifier(tableName, escapePostgresIdentifier) + " SET ")
 
-	setClauses := make([]string, 0, len(updateMap))
-	for fieldName, fieldValueList := range updateMap {
-		clause := `"` + fieldName + `" = CASE "id"`
+	fieldNames := sortedFieldNames(updateMap)
+	setClauses := make([]string, 0, len(fieldNames))
+	for _, fieldName := range fieldNames {
+		fieldValueList, err := sliceBatchValues(updateMap[fieldName], batchStart, batchEnd)
+		if err != nil {
+			return "", err
+		}
+		clause := escapePostgresIdentifier(fieldName) + ` = CASE "id"`
 		for i, id := range batchIDs {
 			clause += " WHEN " + id + " THEN " + fieldValueList[i]
 		}

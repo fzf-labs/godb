@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestFileExists 验证文件存在性判断。
 func TestFileExists(t *testing.T) {
 	type args struct {
 		path string
@@ -16,7 +17,7 @@ func TestFileExists(t *testing.T) {
 		{
 			name: "test1",
 			args: args{
-				path: "./file.go",
+				path: "./fileutil.go",
 			},
 			want: true,
 		},
@@ -30,6 +31,7 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
+// TestMkdirPath 验证目录创建工具函数。
 func TestMkdirPath(t *testing.T) {
 	type args struct {
 		relativePath string

@@ -15,6 +15,15 @@ var client = redis.NewClient(&redis.Options{
 	Addr: "0.0.0.0:6379",
 })
 
+// requireRedis 跳过 Redis 不可用的测试。
+func requireRedis(t *testing.T) {
+	t.Helper()
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		t.Skipf("redis unavailable: %v", err)
+	}
+}
+
+// NewWeakRocksCacheClient 创建测试用 RocksCache 客户端。
 func NewWeakRocksCacheClient(rdb *redis.Client) *rockscache.Client {
 	rc := rockscache.NewClient(rdb, rockscache.NewDefaultOptions())
 	// 常用参数设置
@@ -33,7 +42,9 @@ func NewWeakRocksCacheClient(rdb *redis.Client) *rockscache.Client {
 	return rc
 }
 
+// TestRocksCache_Fetch 验证单 key 缓存查询。
 func TestRocksCache_Fetch(t *testing.T) {
+	requireRedis(t)
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
@@ -46,7 +57,9 @@ func TestRocksCache_Fetch(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// TestRocksCache_FetchBatch 验证批量缓存查询。
 func TestRocksCache_FetchBatch(t *testing.T) {
+	requireRedis(t)
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
@@ -67,7 +80,9 @@ func TestRocksCache_FetchBatch(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// TestCache_Del 验证单 key 删除标记。
 func TestCache_Del(t *testing.T) {
+	requireRedis(t)
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
@@ -76,7 +91,9 @@ func TestCache_Del(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// TestCache_DelBatch 验证批量 key 删除标记。
 func TestCache_DelBatch(t *testing.T) {
+	requireRedis(t)
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
@@ -92,6 +109,7 @@ func TestCache_DelBatch(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+// TestCache_Key 验证缓存 key 拼接。
 func TestCache_Key(t *testing.T) {
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))

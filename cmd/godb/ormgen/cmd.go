@@ -13,7 +13,7 @@ var CmdOrmGen = &cobra.Command{
 	Use:   "ormgen",
 	Short: "Generate GORM model code",
 	Long:  "Generate GORM model code from database tables",
-	Run:   Run,
+	RunE:  Run,
 }
 
 var (
@@ -27,6 +27,7 @@ var (
 	optionRemoveGormTypeTag bool   // 选项：移除gorm tag :type (默认是 false)
 )
 
+// init 注册 ormgen 命令行参数。
 func init() {
 	CmdOrmGen.Flags().StringVarP(&db, "db", "d", "", "db: mysql postgres")
 	CmdOrmGen.Flags().StringVarP(&dsn, "dsn", "s", "", "db dsn")
@@ -38,7 +39,8 @@ func init() {
 	CmdOrmGen.Flags().BoolVarP(&optionRemoveGormTypeTag, "optionRemoveGormTypeTag", "g", false, "option: remove gorm tag :type")
 }
 
-func Run(_ *cobra.Command, _ []string) {
+// Run 执行 ORM 代码生成命令。
+func Run(_ *cobra.Command, _ []string) error {
 	dbOpts := make([]gormGen.ModelOpt, 0)
 	if optionUnderline != "" {
 		dbOpts = append(dbOpts, gen.ModelOptionUnderline(optionUnderline))
@@ -56,12 +58,17 @@ func Run(_ *cobra.Command, _ []string) {
 	if targetTables != "" {
 		tables = strings.Split(targetTables, ",")
 	}
+	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
+	if err != nil {
+		return err
+	}
 	gen.NewGenerationDB(
-		gormx.NewSimpleGormClient(db, dsn),
+		dbClient,
 		outPutPath,
 		gen.WithDataMap(gen.DataTypeMap()),
 		gen.WithTables(tables),
 		gen.WithDBNameOpts(gen.DBNameOpts()),
 		gen.WithDBOpts(dbOpts...),
 	).Do()
+	return nil
 }

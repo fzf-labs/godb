@@ -8,7 +8,7 @@ var CmdSQLDump = &cobra.Command{
 	Use:   "sqldump",
 	Short: "Export database table structure",
 	Long:  "Export database table structure",
-	Run:   Run,
+	RunE:  Run,
 }
 
 var (
@@ -19,6 +19,8 @@ var (
 	fileOverwrite bool   // 是否覆盖
 )
 
+// init 注册 sqldump 命令行参数。
+//
 //nolint:gochecknoinits
 func init() {
 	CmdSQLDump.Flags().StringVarP(&db, "db", "d", "", "db")
@@ -28,6 +30,7 @@ func init() {
 	CmdSQLDump.Flags().BoolVarP(&fileOverwrite, "fileOverwrite", "f", false, "file overwrite")
 }
 
-func Run(_ *cobra.Command, _ []string) {
-	NewSQLDump(db, dsn, outPutPath, targetTables, fileOverwrite).Run()
+// Run 执行数据库结构导出命令。
+func Run(_ *cobra.Command, _ []string) error {
+	return NewSQLDump(db, dsn, outPutPath, targetTables, fileOverwrite).Run()
 }

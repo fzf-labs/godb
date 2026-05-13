@@ -34,18 +34,21 @@ func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
 	if cfg.Tracing {
 		// 启用跟踪工具。
 		if err := redisotel.InstrumentTracing(client); err != nil {
-			panic(err)
+			_ = client.Close()
+			return nil, err
 		}
 	}
 	if cfg.Metrics {
 		// 启用度量工具。
 		if err := redisotel.InstrumentMetrics(client); err != nil {
-			panic(err)
+			_ = client.Close()
+			return nil, err
 		}
 	}
 	// ping 检测一下
 	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
+		_ = client.Close()
 		return nil, err
 	}
 	return client, nil

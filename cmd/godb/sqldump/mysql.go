@@ -2,7 +2,6 @@ package sqldump
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,30 +12,30 @@ import (
 )
 
 // DumpMySQL 导出创建语句
-func (s *SQLDump) DumpMySQL() {
-	dbClient := gormx.NewSimpleGormClient(s.db, s.dsn)
+func (s *SQLDump) DumpMySQL() error {
+	dbClient, err := gormx.NewSimpleGormClient(s.db, s.dsn)
+	if err != nil {
+		return err
+	}
 	var tables []string
-	var err error
 	if s.targetTables != "" {
 		tables = strings.Split(s.targetTables, ",")
 	} else {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
-			return
+			return err
 		}
 	}
 	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dbClient.Migrator().CurrentDatabase())
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
-		log.Println("DumpMySQL create path err:", err)
-		return
+		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
 		result := make(map[string]any)
 		err := dbClient.Raw(fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
 		if err != nil {
-			log.Println("DumpMySQL sql err:", err)
-			return
+			return fmt.Errorf("show create table %s: %w", v, err)
 		}
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
 		if !s.fileOverwrite {
@@ -48,9 +47,9 @@ func (s *SQLDump) DumpMySQL() {
 		if tableContent != "" {
 			err := fileutil.WriteContentCover(outFile, tableContent)
 			if err != nil {
-				log.Println("DumpMySQL file write err:", err)
-				return
+				return fmt.Errorf("write %s: %w", outFile, err)
 			}
 		}
 	}
+	return nil
 }
