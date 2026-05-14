@@ -1,8 +1,8 @@
 package gen
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -12,6 +12,7 @@ import (
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/iancoleman/strcase"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
@@ -107,7 +108,13 @@ func WithFieldNullable() OptionDB {
 }
 
 // Do 生成
-func (g *GenerationDB) Do() {
+func (g *GenerationDB) Do() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// gorm/gen 的 Execute 通过 panic 暴露生成失败，这里转为 error 交给调用方处理。
+			err = fmt.Errorf("generate db code panic: %v", r)
+		}
+	}()
 	// 获取数据库名
 	dbName := GetDBName(g.db, g.dbNameOpt)
 	// 文件夹目录
@@ -141,7 +148,7 @@ func (g *GenerationDB) Do() {
 	// 获取所有表
 	tables, err := g.db.Migrator().GetTables()
 	if err != nil {
-		return
+		return fmt.Errorf("get database tables: %w", err)
 	}
 	// 指定表
 	if len(g.tables) > 0 {
@@ -150,7 +157,7 @@ func (g *GenerationDB) Do() {
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.db)
 	if err != nil {
-		return
+		return fmt.Errorf("get partition table children: %w", err)
 	}
 	partitionChildTables := make([]string, 0)
 	for _, v := range partitionTableToChildTables {
@@ -183,16 +190,17 @@ func (g *GenerationDB) Do() {
 	generator.Execute()
 	// 判断是否生成repo
 	if !g.genRepo {
-		return
+		return nil
 	}
 	// 生成repo的文件夹目录文件
 	err = fileutil.MkdirPath(repoPath)
 	if err != nil {
-		log.Println("repo MkdirPath err:", err)
-		return
+		return fmt.Errorf("create repo path %q: %w", repoPath, err)
 	}
-	var wg sync.WaitGroup
-	wg.Add(len(tables))
+	var group errgroup.Group
+	// errgroup 等待并发生成任务，repoErrs 保留每个失败表的上下文并最终汇总返回。
+	var repoErrMu sync.Mutex
+	repoErrs := make([]error, 0)
 	for _, v := range tables {
 		table := v
 		// 表字段对应的类型
@@ -207,17 +215,23 @@ func (g *GenerationDB) Do() {
 			columnNameToName[vv.ColumnName] = vv.Name
 			columnNameToFieldType[vv.ColumnName] = vv.GenType()
 		}
-		go func(db *gorm.DB, table string, columnNameToDataType, columnNameToName, columnNameToFieldType map[string]string) {
-			defer wg.Done()
+		group.Go(func() error {
 			// 数据表repo代码生成
-			err2 := repo.GenerationTable(db, dbName, daoPath, modelPath, repoPath, table, partitionTableToChildTables[table], columnNameToDataType, columnNameToName, columnNameToFieldType)
-			if err2 != nil {
-				log.Println("repo GenerationTable err:", err2)
-				return
+			if err := repo.GenerationTable(g.db, dbName, daoPath, modelPath, repoPath, table, partitionTableToChildTables[table], columnNameToDataType, columnNameToName, columnNameToFieldType); err != nil {
+				err = fmt.Errorf("generate repo for table %q: %w", table, err)
+				repoErrMu.Lock()
+				repoErrs = append(repoErrs, err)
+				repoErrMu.Unlock()
+				return err
 			}
-		}(g.db, table, columnNameToDataType, columnNameToName, columnNameToFieldType)
+			return nil
+		})
 	}
-	wg.Wait()
+	err = group.Wait()
+	if len(repoErrs) > 0 {
+		return errors.Join(repoErrs...)
+	}
+	return err
 }
 
 // GetDBName 获取数据库名

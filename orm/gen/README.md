@@ -14,7 +14,8 @@
 
 ## 使用方法
 ```go
-    db, err := orm.NewGormPostgresClient(&orm.GormPostgresClientConfig{
+    db, err := gormx.NewGormClient(&gormx.ClientConfig{
+      Driver:          gormx.Postgres,
       DataSourceName:  "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai",
       MaxIdleConn:     0,
       MaxOpenConn:     0,
@@ -26,7 +27,7 @@
         return
     }
     // 生成代码
-    NewGenerationDB(
+    err = NewGenerationDB(
       db,
       "./example/postgres/",
       WithOutRepo(),
@@ -36,6 +37,9 @@
       WithDBOpts(ModelOptionRemoveDefault(), ModelOptionPgDefaultString(), ModelOptionRemoveGormTypeTag(), ModelOptionUnderline("UL")), // 设置自定义选项
       WithFieldNullable(),
     ).Do()
+    if err != nil {
+      return err
+    }
 ```
 
 ## 业界方案

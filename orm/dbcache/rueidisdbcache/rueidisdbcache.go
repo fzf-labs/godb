@@ -97,10 +97,19 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 	cacheValue := r.client.DoMultiCache(ctx, commands...)
 	miss := make([]string, 0)
 	for k, v := range cacheValue {
+		// Redis Nil 表示缓存未命中，不能继续 ToString，否则会把解析错误和未命中混在一起。
 		if rueidis.IsRedisNil(v.Error()) {
 			miss = append(miss, keys[k])
+			resp[keys[k]] = ""
+			continue
 		}
-		toString, _ := v.ToString()
+		if v.Error() != nil {
+			return nil, v.Error()
+		}
+		toString, err := v.ToString()
+		if err != nil {
+			return nil, err
+		}
 		resp[keys[k]] = toString
 	}
 	if len(miss) > 0 {
@@ -141,9 +150,16 @@ func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func
 		if err != nil {
 			return "", err
 		}
-		err = r.client.Do(ctx, r.client.B().Hset().Key(key).FieldValue().FieldValue(field, resp).Build()).Error()
-		if err != nil {
-			return "", err
+		// HSET 不会继承 TTL，写入 hash 后需要显式设置 key 的过期时间。
+		results := r.client.DoMulti(
+			ctx,
+			r.client.B().Hset().Key(key).FieldValue().FieldValue(field, resp).Build(),
+			r.client.B().Pexpire().Key(key).Milliseconds(expire.Milliseconds()).Build(),
+		)
+		for _, result := range results {
+			if err := result.Error(); err != nil {
+				return "", err
+			}
 		}
 		return resp, nil
 	})

@@ -62,7 +62,7 @@ func Run(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	gen.NewGenerationDB(
+	return gen.NewGenerationDB(
 		dbClient,
 		outPutPath,
 		gen.WithDataMap(gen.DataTypeMap()),
@@ -70,5 +70,4 @@ func Run(_ *cobra.Command, _ []string) error {
 		gen.WithDBNameOpts(gen.DBNameOpts()),
 		gen.WithDBOpts(dbOpts...),
 	).Do()
-	return nil
 }

@@ -225,20 +225,15 @@ func unique(slice []string) []string {
 	if len(slice) == 0 {
 		return slice
 	}
-	// here no use map filter. if use it, the result slice element order is random, not same as origin slice
-	var result []string
-	for i := 0; i < len(slice); i++ {
-		v := slice[i]
-		skip := true
-		for j := range result {
-			if v == result[j] {
-				skip = false
-				break
-			}
+	// 用 map 做 O(n) 去重，同时按原始遍历顺序写入结果，保持调用方顺序稳定。
+	result := make([]string, 0, len(slice))
+	seen := make(map[string]struct{}, len(slice))
+	for _, v := range slice {
+		if _, ok := seen[v]; ok {
+			continue
 		}
-		if skip {
-			result = append(result, v)
-		}
+		seen[v] = struct{}{}
+		result = append(result, v)
 	}
 	return result
 }

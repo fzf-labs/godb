@@ -16,7 +16,7 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 		return
 	}
 	// 生成代码
-	NewGenerationDB(
+	err = NewGenerationDB(
 		db,
 		"../example/gorm/postgres/",
 		WithOutRepo(),
@@ -26,6 +26,9 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 		WithDBOpts(ModelOptionRemoveDefault(), ModelOptionPgDefaultString(), ModelOptionRemoveGormTypeTag(), ModelOptionUnderline("UL")), // 设置自定义选项
 		WithFieldNullable(),
 	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 // TestGenerationPostgres 验证 PostgreSQL 模型和 repo 代码生成。
@@ -36,7 +39,7 @@ func TestGenerationPostgres(t *testing.T) {
 		return
 	}
 	// 生成代码
-	NewGenerationDB(
+	err = NewGenerationDB(
 		db,
 		"../example/gorm/postgres/",
 		WithGenerateModel(func(g *gen.Generator) map[string]any { // 设置表关联关系(1对多,多对多...)
@@ -75,6 +78,9 @@ func TestGenerationPostgres(t *testing.T) {
 		WithDataMap(DataTypeMap()), // 设置数据类型映射
 		WithDBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("UL")), // 设置自定义选项
 	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 // TestGenerationPostgresFieldNullable 验证可空字段的 PostgreSQL 代码生成。
@@ -85,7 +91,7 @@ func TestGenerationPostgresFieldNullable(t *testing.T) {
 		return
 	}
 	// 生成代码
-	NewGenerationDB(
+	err = NewGenerationDB(
 		db,
 		"../example/gorm/postgres/",
 		WithGenerateModel(func(g *gen.Generator) map[string]any { // 设置表关联关系(1对多,多对多...)
@@ -125,4 +131,7 @@ func TestGenerationPostgresFieldNullable(t *testing.T) {
 		WithDBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("UL")), // 设置自定义选项
 		WithFieldNullable(),
 	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

@@ -1,3 +1,9 @@
+# 工具安装
+
+```sh
+go install github.com/fzf-labs/godb/cmd/godb@latest
+```
+
 # 数据库备份
 
 ```sh

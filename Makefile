@@ -1,5 +1,4 @@
 SHELL = /bin/bash
-GitBranch = $(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: mod
 # make mod  golang库更新
@@ -28,18 +27,6 @@ vet:
 # make lint  golang使用最多的第三方静态程序分析工具
 lint:
 	@golangci-lint run ./... -v
-
-.PHONY: git-clean
-# make git-clean  git clean
-git-clean:
-	#清除开始
-	@git checkout --orphan latest_branch
-	@git add -A
-	@git commit -am "clean"
-	@git branch -D ${GitBranch}
-	@git branch -m ${GitBranch}
-	@git push -f origin ${GitBranch}
-	#清除结束
 
 # 创建新的 tag
 git-new-tag:
@@ -78,4 +65,3 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 .DEFAULT_GOAL := help
-

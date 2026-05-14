@@ -24,11 +24,12 @@ go get github.com/fzf-labs/godb
 package main
 
 import (
-    "github.com/fzf-labs/godb/orm"
+    "github.com/fzf-labs/godb/orm/gormx"
 )
 
 func main() {
-    db, err := orm.NewGormMySQLClient(&orm.GormMySQLClientConfig{
+    db, err := gormx.NewGormClient(&gormx.ClientConfig{
+        Driver:          gormx.MySQL,
         DataSourceName:  "user:password@tcp(localhost:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local",
         MaxIdleConn:    10,
         MaxOpenConn:    100,
@@ -37,6 +38,7 @@ func main() {
     if err != nil {
         panic(err)
     }
+    _ = db
     // 使用 db 进行数据库操作...
 }
 ```
@@ -47,11 +49,12 @@ func main() {
 package main
 
 import (
-    "github.com/fzf-labs/godb/orm"
+    "github.com/fzf-labs/godb/orm/gormx"
 )
 
 func main() {
-    db, err := orm.NewGormPostgresClient(&orm.GormPostgresClientConfig{
+    db, err := gormx.NewGormClient(&gormx.ClientConfig{
+        Driver:          gormx.Postgres,
         DataSourceName:  "host=localhost port=5432 user=postgres password=123456 dbname=test sslmode=disable",
         MaxIdleConn:    10,
         MaxOpenConn:    100,
@@ -60,6 +63,7 @@ func main() {
     if err != nil {
         panic(err)
     }
+    _ = db
     // 使用 db 进行数据库操作...
 }
 ```
@@ -67,7 +71,7 @@ func main() {
 ## 📚 工具使用文档
 ### 工具安装
 ```
-go install github.com/fzf-labs/godb/orm/cmd/godb
+go install github.com/fzf-labs/godb/cmd/godb@latest
 ```
 ### 代码生成
 
