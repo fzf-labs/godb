@@ -80,3 +80,9 @@ func TestRueidisCache_DelBatch(t *testing.T) {
 	err := rueidisCache.DelBatch(ctx, []string{"a", "b", "f"})
 	assert.NoError(t, err)
 }
+
+func TestHashFlightKey_SeparatesKeyAndField(t *testing.T) {
+	assert.Equal(t, "user:profile", hashFlightKey("user", "profile"))
+	assert.NotEqual(t, hashFlightKey("ab", "c"), hashFlightKey("a", "bc"))
+	assert.NotEqual(t, hashFlightKey("a:b", "c"), hashFlightKey("a", "b:c"))
+}

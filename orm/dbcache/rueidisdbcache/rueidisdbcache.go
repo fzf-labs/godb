@@ -4,10 +4,9 @@ package rueidisdbcache
 import (
 	"context"
 	"math/rand"
-	"strings"
 	"time"
 
-	"github.com/fzf-labs/godb/orm/utils/strutil"
+	"github.com/fzf-labs/godb/orm/dbcache"
 	"github.com/redis/rueidis"
 	"golang.org/x/sync/singleflight"
 )
@@ -48,12 +47,12 @@ func NewRueidisDBCache(client rueidis.Client, opts ...CacheOption) *Cache {
 }
 
 func (r *Cache) Key(keys ...any) string {
-	keyStr := make([]string, 0)
-	keyStr = append(keyStr, r.name)
+	parts := make([]any, 0, len(keys)+1)
+	parts = append(parts, r.name)
 	for _, v := range keys {
-		keyStr = append(keyStr, strutil.ConvToString(v))
+		parts = append(parts, v)
 	}
-	return strings.Join(keyStr, ":")
+	return dbcache.BuildKey(parts...)
 }
 
 func (r *Cache) TTL() time.Duration {
@@ -134,7 +133,7 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 }
 
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
-	do, err, _ := r.sf.Do(key+field, func() (any, error) {
+	do, err, _ := r.sf.Do(hashFlightKey(key, field), func() (any, error) {
 		cacheValue := r.client.DoCache(ctx, r.client.B().Hget().Key(key).Field(field).Cache(), expire)
 		if cacheValue.Error() != nil && !rueidis.IsRedisNil(cacheValue.Error()) {
 			return "", cacheValue.Error()
@@ -167,6 +166,10 @@ func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func
 		return "", err
 	}
 	return do.(string), nil
+}
+
+func hashFlightKey(key, field string) string {
+	return dbcache.BuildKey(key, field)
 }
 
 func (r *Cache) Del(ctx context.Context, key string) error {

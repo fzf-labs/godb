@@ -156,3 +156,9 @@ func TestGoRedisCache_FetchHash_ScopesSingleflightByField(t *testing.T) {
 	assert.Equal(t, "value2", result2.value)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestHashFlightKey_SeparatesKeyAndField(t *testing.T) {
+	assert.Equal(t, "user:profile", hashFlightKey("user", "profile"))
+	assert.NotEqual(t, hashFlightKey("ab", "c"), hashFlightKey("a", "bc"))
+	assert.NotEqual(t, hashFlightKey("a:b", "c"), hashFlightKey("a", "b:c"))
+}

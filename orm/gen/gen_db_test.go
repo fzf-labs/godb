@@ -8,6 +8,19 @@ import (
 	"gorm.io/gen/field"
 )
 
+func TestGenerationOutputPaths_PreserveAbsoluteBasePath(t *testing.T) {
+	daoPath, modelPath, repoPath := generationOutputPaths("/tmp/godb", "demo")
+	if daoPath != "/tmp/godb/demo_dao" {
+		t.Fatalf("unexpected dao path: %s", daoPath)
+	}
+	if modelPath != "/tmp/godb/demo_model" {
+		t.Fatalf("unexpected model path: %s", modelPath)
+	}
+	if repoPath != "/tmp/godb/demo_repo" {
+		t.Fatalf("unexpected repo path: %s", repoPath)
+	}
+}
+
 // TestGenerationPostgresWithOutRepo 验证不生成 repo 的 PostgreSQL 代码生成。
 func TestGenerationPostgresWithOutRepo(t *testing.T) {
 	// 初始化数据库

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/fzf-labs/godb/orm/dbcache"
@@ -48,12 +47,12 @@ func WithTTL(ttl time.Duration) CacheOption {
 }
 
 func (r *Cache) Key(keys ...interface{}) string {
-	keyStr := make([]string, 0)
-	keyStr = append(keyStr, r.name)
+	parts := make([]any, 0, len(keys)+1)
+	parts = append(parts, r.name)
 	for _, v := range keys {
-		keyStr = append(keyStr, dbcache.KeyFormat(v))
+		parts = append(parts, v)
 	}
-	return strings.Join(keyStr, ":")
+	return dbcache.BuildKey(parts...)
 }
 
 func (r *Cache) TTL() time.Duration {
@@ -128,8 +127,8 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 }
 
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
-	// Hash field 的回源需要按 key+field 去重，避免同一个 hash key 下不同 field 的请求串值。
-	do, err, _ := r.sf.Do(key+"\x00"+field, func() (interface{}, error) {
+	// Hash field 的回源需要按 key:field 去重，避免同一个 hash key 下不同 field 的请求串值。
+	do, err, _ := r.sf.Do(hashFlightKey(key, field), func() (interface{}, error) {
 		result, err := r.client.HGet(ctx, key, field).Result()
 		if err != nil && !errors.Is(err, redis.Nil) {
 			return "", err
@@ -154,6 +153,10 @@ func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func
 		return "", err
 	}
 	return do.(string), nil
+}
+
+func hashFlightKey(key, field string) string {
+	return dbcache.BuildKey(key, field)
 }
 
 func (r *Cache) Del(ctx context.Context, key string) error {

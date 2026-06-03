@@ -39,24 +39,18 @@ func (s *SQLDump) DumpPostgres() error {
 	if err != nil {
 		return err
 	}
-	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dsnParse.Dbname)
+	outPath := outputDir(s.outPutPath, dsnParse.Dbname)
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
-		cmdArgs := []string{
-			"-h", dsnParse.Host,
-			"-p", strconv.Itoa(dsnParse.Port),
-			"-U", dsnParse.User,
-			"-s", dsnParse.Dbname,
-			"-t", v,
-		}
+		cmdArgs := buildPgDumpArgs(dsnParse, v)
 		// 创建一个 Cmd 对象来表示将要执行的命令
 		cmd := exec.Command("pg_dump", cmdArgs...)
 		// 添加一个环境变量到命令中
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
+		cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
 		// 执行命令，并捕获输出和错误信息
 		output, err := cmd.Output()
 		if err != nil {
@@ -99,6 +93,17 @@ func (s *SQLDump) postgresDsnParse() (*PostgresDsn, error) {
 		Password: cfg.Password,
 		Dbname:   cfg.Database,
 	}, nil
+}
+
+func buildPgDumpArgs(dsnParse *PostgresDsn, table string) []string {
+	return []string{
+		"-h", dsnParse.Host,
+		"-p", strconv.Itoa(dsnParse.Port),
+		"-U", dsnParse.User,
+		"-d", dsnParse.Dbname,
+		"-s",
+		"-t", table,
+	}
 }
 
 // 预编译正则表达式，避免重复编译

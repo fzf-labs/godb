@@ -3,8 +3,9 @@ package keymanage
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/fzf-labs/godb/orm/dbcache"
 )
 
 type KeyManage struct {
@@ -57,7 +58,12 @@ type KeyPrefix struct {
 
 // Key 获取key
 func (p *KeyPrefix) Key(keys ...string) string {
-	return strings.Join(append([]string{p.ServerName, p.PrefixName}, keys...), ":")
+	parts := make([]any, 0, len(keys)+2)
+	parts = append(parts, p.ServerName, p.PrefixName)
+	for _, key := range keys {
+		parts = append(parts, key)
+	}
+	return dbcache.BuildKey(parts...)
 }
 
 // Keys 获取keys
@@ -65,7 +71,7 @@ func (p *KeyPrefix) Keys(keys []string) []string {
 	result := make([]string, 0)
 	if len(keys) > 0 {
 		for _, key := range keys {
-			result = append(result, strings.Join([]string{p.ServerName, p.PrefixName, key}, ":"))
+			result = append(result, p.Key(key))
 		}
 	}
 	return result

@@ -26,14 +26,14 @@ func (s *SQLDump) DumpMySQL() error {
 			return err
 		}
 	}
-	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dbClient.Migrator().CurrentDatabase())
+	outPath := outputDir(s.outPutPath, dbClient.Migrator().CurrentDatabase())
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
 		result := make(map[string]any)
-		err := dbClient.Raw(fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
+		err := dbClient.Raw(buildMySQLShowCreateTableSQL(dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
 		if err != nil {
 			return fmt.Errorf("show create table %s: %w", v, err)
 		}
@@ -52,4 +52,12 @@ func (s *SQLDump) DumpMySQL() error {
 		}
 	}
 	return nil
+}
+
+func buildMySQLShowCreateTableSQL(dbName, table string) string {
+	return fmt.Sprintf("SHOW CREATE TABLE %s.%s", quoteMySQLIdentifier(dbName), quoteMySQLIdentifier(table))
+}
+
+func quoteMySQLIdentifier(identifier string) string {
+	return "`" + strings.ReplaceAll(identifier, "`", "``") + "`"
 }

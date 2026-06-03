@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math/rand/v2"
-	"strings"
 	"time"
 
 	"github.com/dtm-labs/rockscache"
@@ -63,12 +62,12 @@ func WithBatchSize(batchSize int) CacheOption {
 
 // Key 生成带缓存名称前缀的缓存 key。
 func (r *Cache) Key(keys ...any) string {
-	keyStr := make([]string, 0)
-	keyStr = append(keyStr, r.name)
+	parts := make([]any, 0, len(keys)+1)
+	parts = append(parts, r.name)
 	for _, v := range keys {
-		keyStr = append(keyStr, dbcache.KeyFormat(v))
+		parts = append(parts, v)
 	}
-	return strings.Join(keyStr, ":")
+	return dbcache.BuildKey(parts...)
 }
 
 // TTL 返回带随机抖动的缓存过期时间。

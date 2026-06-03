@@ -3,6 +3,7 @@ package gen
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -118,10 +119,7 @@ func (g *GenerationDB) Do() (err error) {
 	// 获取数据库名
 	dbName := GetDBName(g.db, g.dbNameOpt)
 	// 文件夹目录
-	outPutPath := strings.Trim(g.outPutPath, "/")
-	daoPath := fmt.Sprintf("%s/%s_dao", outPutPath, dbName)
-	modelPath := fmt.Sprintf("%s/%s_model", outPutPath, dbName)
-	repoPath := fmt.Sprintf("%s/%s_repo", outPutPath, dbName)
+	daoPath, modelPath, repoPath := generationOutputPaths(g.outPutPath, dbName)
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{
 		OutPath:          daoPath,
@@ -232,6 +230,13 @@ func (g *GenerationDB) Do() (err error) {
 		return errors.Join(repoErrs...)
 	}
 	return err
+}
+
+func generationOutputPaths(basePath, dbName string) (string, string, string) {
+	baseDir := filepath.Clean(basePath)
+	return filepath.Join(baseDir, dbName+"_dao"),
+		filepath.Join(baseDir, dbName+"_model"),
+		filepath.Join(baseDir, dbName+"_repo")
 }
 
 // GetDBName 获取数据库名

@@ -24,3 +24,9 @@ func TestNewGoRedis(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ok", value)
 }
+
+func TestStringToKV_PreservesValueAfterFirstColon(t *testing.T) {
+	key, value := stringToKV("module:name:1.0")
+	assert.Equal(t, "module", key)
+	assert.Equal(t, "name:1.0", value)
+}

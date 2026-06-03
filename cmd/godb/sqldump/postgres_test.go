@@ -34,3 +34,28 @@ func TestPostgresDsnParse_Invalid(t *testing.T) {
 		t.Fatal("expected parse error, got nil")
 	}
 }
+
+func TestOutputDir_PreservesAbsoluteBasePath(t *testing.T) {
+	got := outputDir("/tmp/sql", "app_db")
+	if got != "/tmp/sql/app_db" {
+		t.Fatalf("unexpected output dir: %s", got)
+	}
+}
+
+func TestBuildPgDumpArgs_UsesDatabaseFlag(t *testing.T) {
+	args := buildPgDumpArgs(&PostgresDsn{
+		Host:   "127.0.0.1",
+		Port:   5432,
+		User:   "postgres",
+		Dbname: "app_db",
+	}, "users")
+	want := []string{"-h", "127.0.0.1", "-p", "5432", "-U", "postgres", "-d", "app_db", "-s", "-t", "users"}
+	if len(args) != len(want) {
+		t.Fatalf("unexpected arg len: got=%d want=%d", len(args), len(want))
+	}
+	for i := range want {
+		if args[i] != want[i] {
+			t.Fatalf("unexpected args: got=%v want=%v", args, want)
+		}
+	}
+}

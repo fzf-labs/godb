@@ -1,6 +1,9 @@
 package sqldump
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 type SQLDump struct {
 	db            string // 数据库类型 mysql postgres
@@ -25,4 +28,8 @@ func (s *SQLDump) Run() error {
 	default:
 		return fmt.Errorf("unknown database type: %s", s.db)
 	}
+}
+
+func outputDir(basePath, dbName string) string {
+	return filepath.Join(filepath.Clean(basePath), dbName)
 }

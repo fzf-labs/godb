@@ -7,7 +7,7 @@ import (
 
 func TestKeyFormat(t *testing.T) {
 	nt := time.Now()
-	ntStr := nt.Format("2006-01-02 15:04:05")
+	ntStr := EscapeKeyPart(nt.Format("2006-01-02 15:04:05"))
 	var nilTime *time.Time
 	type args struct {
 		any any
@@ -130,6 +130,20 @@ func TestKeyFormat(t *testing.T) {
 			want: "8",
 		},
 		{
+			name: "case string with colon",
+			args: args{
+				any: "a:b",
+			},
+			want: `a\:b`,
+		},
+		{
+			name: "case string with backslash",
+			args: args{
+				any: `a\b`,
+			},
+			want: `a\\b`,
+		},
+		{
 			name: "case []byte",
 			args: args{
 				any: "8",
@@ -185,5 +199,13 @@ func TestKeyFormat(t *testing.T) {
 				t.Errorf("KeyFormat() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildKey_EscapesSegmentsToAvoidCollisions(t *testing.T) {
+	got1 := BuildKey("test", "a:b", "c")
+	got2 := BuildKey("test", "a", "b:c")
+	if got1 == got2 {
+		t.Fatalf("expected different keys, got identical values %q", got1)
 	}
 }

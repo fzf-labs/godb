@@ -98,7 +98,7 @@ func DBSize(r *redis.Client) int64 {
 
 // stringToKV string拆分key和val
 func stringToKV(s string) (key, val string) {
-	ss := strings.Split(s, ":")
+	ss := strings.SplitN(s, ":", 2)
 	if len(ss) < 2 {
 		return s, ""
 	}

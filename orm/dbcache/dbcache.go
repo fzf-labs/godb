@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,8 +29,28 @@ type IDBCache interface {
 	DelHash(ctx context.Context, key string, field string) error
 }
 
-// KeyFormat 将任意类型转换为字符串
+var keyPartEscaper = strings.NewReplacer(`\`, `\\`, `:`, `\:`)
+
+// EscapeKeyPart 对单个 key 分段做转义，避免分隔符碰撞。
+func EscapeKeyPart(part string) string {
+	return keyPartEscaper.Replace(part)
+}
+
+// BuildKey 将多个 key 分段转换并拼接成最终 key。
+func BuildKey(parts ...any) string {
+	formatted := make([]string, 0, len(parts))
+	for _, part := range parts {
+		formatted = append(formatted, KeyFormat(part))
+	}
+	return strings.Join(formatted, ":")
+}
+
+// KeyFormat 将任意类型转换为字符串并转义为安全的 key 分段。
 func KeyFormat(any any) string {
+	return EscapeKeyPart(keyFormatRaw(any))
+}
+
+func keyFormatRaw(any any) string {
 	if any == nil {
 		return ""
 	}
@@ -99,7 +120,7 @@ func KeyFormat(any any) string {
 			return rv.String()
 		}
 		if kind == reflect.Ptr {
-			return KeyFormat(rv.Elem().Interface())
+			return keyFormatRaw(rv.Elem().Interface())
 		}
 		// Finally, we use json.Marshal to convert.
 		if jsonContent, err := json.Marshal(value); err != nil {
