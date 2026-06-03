@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRueidisCache_Take(t *testing.T) {
+func requireRueidis(t *testing.T) rueidis.Client {
+	t.Helper()
 	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
 		Username:    "",
 		Password:    "123456",
@@ -18,8 +19,18 @@ func TestRueidisCache_Take(t *testing.T) {
 		SelectDB:    0,
 	})
 	if err != nil {
-		return
+		t.Skipf("redis unavailable: %v", err)
 	}
+	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
+		client.Close()
+		t.Skipf("redis unavailable: %v", err)
+	}
+	t.Cleanup(client.Close)
+	return client
+}
+
+func TestRueidisCache_Take(t *testing.T) {
+	client := requireRueidis(t)
 	ctx := context.Background()
 	rueidisCache := NewRueidisDBCache(client)
 	take, err := rueidisCache.Fetch(ctx, "take_test", func() (string, error) {
@@ -31,15 +42,7 @@ func TestRueidisCache_Take(t *testing.T) {
 }
 
 func TestRueidisCache_TakeBatch(t *testing.T) {
-	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
-		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
-		SelectDB:    0,
-	})
-	if err != nil {
-		return
-	}
+	client := requireRueidis(t)
 	ctx := context.Background()
 	rueidisCache := NewRueidisDBCache(client)
 	keys := []string{
@@ -63,39 +66,17 @@ func TestRueidisCache_TakeBatch(t *testing.T) {
 }
 
 func TestRueidisCache_Del(t *testing.T) {
-	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
-		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
-		SelectDB:    0,
-	})
-	if err != nil {
-		return
-	}
+	client := requireRueidis(t)
 	ctx := context.Background()
 	rueidisCache := NewRueidisDBCache(client)
-	err = rueidisCache.Del(ctx, "a")
-	if err != nil {
-		return
-	}
-	assert.Equal(t, nil, err)
+	err := rueidisCache.Del(ctx, "a")
+	assert.NoError(t, err)
 }
 
 func TestRueidisCache_DelBatch(t *testing.T) {
-	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
-		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
-		SelectDB:    0,
-	})
-	if err != nil {
-		return
-	}
+	client := requireRueidis(t)
 	ctx := context.Background()
 	rueidisCache := NewRueidisDBCache(client)
-	err = rueidisCache.DelBatch(ctx, []string{"a", "b", "f"})
-	if err != nil {
-		return
-	}
-	assert.Equal(t, nil, err)
+	err := rueidisCache.DelBatch(ctx, []string{"a", "b", "f"})
+	assert.NoError(t, err)
 }

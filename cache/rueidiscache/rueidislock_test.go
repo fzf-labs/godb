@@ -52,8 +52,5 @@ func TestLocker_AutoLock(t *testing.T) {
 		fmt.Println("test_lock do ")
 		return nil
 	})
-	if err != nil {
-		return
-	}
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 }

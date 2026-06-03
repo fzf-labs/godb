@@ -103,10 +103,7 @@ func TestCache_DelBatch(t *testing.T) {
 		"RocksCache_FetchBatch_c",
 	}
 	err := cache.DelBatch(ctx, keys)
-	if err != nil {
-		return
-	}
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 }
 
 // TestCache_Key 验证缓存 key 拼接。

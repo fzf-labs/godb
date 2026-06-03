@@ -13,7 +13,7 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 	// 初始化数据库
 	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
 	if err != nil {
-		return
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(
@@ -36,7 +36,7 @@ func TestGenerationPostgres(t *testing.T) {
 	// 初始化数据库
 	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
 	if err != nil {
-		return
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(
@@ -88,7 +88,7 @@ func TestGenerationPostgresFieldNullable(t *testing.T) {
 	// 初始化数据库
 	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
 	if err != nil {
-		return
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(

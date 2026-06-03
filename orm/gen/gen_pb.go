@@ -1,13 +1,15 @@
 package gen
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/fzf-labs/godb/orm/gen/proto"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -54,7 +56,7 @@ func WithPBTables(tables []string) OptionPB {
 	}
 }
 
-func (g *GenerationPb) Do() {
+func (g *GenerationPb) Do() error {
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{})
 	// 使用数据库
@@ -68,7 +70,7 @@ func (g *GenerationPb) Do() {
 	// 获取所有表
 	tables, err := g.gorm.Migrator().GetTables()
 	if err != nil {
-		return
+		return fmt.Errorf("get database tables: %w", err)
 	}
 	if len(g.tables) > 0 {
 		tables = g.tables
@@ -76,7 +78,7 @@ func (g *GenerationPb) Do() {
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.gorm)
 	if err != nil {
-		return
+		return fmt.Errorf("get partition table children: %w", err)
 	}
 	partitionChildTables := make([]string, 0)
 	for _, v := range partitionTableToChildTables {
@@ -84,8 +86,9 @@ func (g *GenerationPb) Do() {
 	}
 	// 去掉tables中的partitionChildTables
 	tables = strutil.SliRemove(tables, partitionChildTables)
-	var wg sync.WaitGroup
-	wg.Add(len(tables))
+	var group errgroup.Group
+	var mu sync.Mutex
+	genErrs := make([]error, 0)
 	for _, v := range tables {
 		table := v
 		// 表字段对应的名称
@@ -97,15 +100,20 @@ func (g *GenerationPb) Do() {
 			columnNameToName[vv.ColumnName] = vv.Name
 			columnNameToDataType[vv.ColumnName] = strings.TrimLeft(vv.Type, "*")
 		}
-		go func(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) {
-			defer wg.Done()
-			// 数据表repo代码生成
-			err := proto.GenerationPB(db, outPutPath, packageStr, goPackageStr, table, columnNameToName, columnNameToDataType)
-			if err != nil {
-				log.Println("repo GenerationTable err:", err)
-				return
+		group.Go(func() error {
+			if err := proto.GenerationPB(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType); err != nil {
+				err = fmt.Errorf("generate proto for table %q: %w", table, err)
+				mu.Lock()
+				genErrs = append(genErrs, err)
+				mu.Unlock()
+				return err
 			}
-		}(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType)
+			return nil
+		})
 	}
-	wg.Wait()
+	_ = group.Wait()
+	if len(genErrs) > 0 {
+		return errors.Join(genErrs...)
+	}
+	return nil
 }

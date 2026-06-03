@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/fzf-labs/godb/orm/gormx"
@@ -15,6 +17,26 @@ func newDB(t *testing.T) *gorm.DB {
 		t.Skipf("postgres unavailable: %v", err)
 	}
 	return db
+}
+
+func TestExtractFormatErrorLine(t *testing.T) {
+	line, ok := extractFormatErrorLine(errors.New(filepath.Join("/tmp", "bad.go") + ":12:7: expected ';'"))
+	if !ok || line != 12 {
+		t.Fatalf("unexpected result: ok=%v line=%d", ok, line)
+	}
+
+	line, ok = extractFormatErrorLine(errors.New("imports failed"))
+	if ok || line != 0 {
+		t.Fatalf("expected no line, got ok=%v line=%d", ok, line)
+	}
+}
+
+func TestRepoOutput_InvalidSourceReturnsError(t *testing.T) {
+	r := &Repo{}
+	err := r.output(filepath.Join(t.TempDir(), "broken.repo.go"), []byte("package repo\nfunc (\n"))
+	if err == nil {
+		t.Fatal("expected format error, got nil")
+	}
 }
 
 // TestGenerationTable 验证表级 repo 代码生成。

@@ -2,10 +2,11 @@ package gorediscache
 
 import (
 	"context"
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGoRedis(t *testing.T) {
@@ -15,12 +16,11 @@ func TestNewGoRedis(t *testing.T) {
 		DB:       0,
 	})
 	if err != nil {
-		fmt.Println(err)
-		return
+		t.Skipf("redis unavailable: %v", err)
 	}
-	err = newGoRedis.Get(context.Background(), "test").Err()
-	if err != nil {
-		return
-	}
-	assert.Equal(t, nil, err)
+	key := "godb:gorediscache:test"
+	require.NoError(t, newGoRedis.Set(context.Background(), key, "ok", time.Minute).Err())
+	value, err := newGoRedis.Get(context.Background(), key).Result()
+	require.NoError(t, err)
+	assert.Equal(t, "ok", value)
 }

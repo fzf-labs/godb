@@ -128,7 +128,8 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 }
 
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
-	do, err, _ := r.sf.Do(key, func() (interface{}, error) {
+	// Hash field 的回源需要按 key+field 去重，避免同一个 hash key 下不同 field 的请求串值。
+	do, err, _ := r.sf.Do(key+"\x00"+field, func() (interface{}, error) {
 		result, err := r.client.HGet(ctx, key, field).Result()
 		if err != nil && !errors.Is(err, redis.Nil) {
 			return "", err

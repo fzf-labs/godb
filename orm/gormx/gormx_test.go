@@ -20,7 +20,7 @@ func TestNewGormPostgresClient(t *testing.T) {
 	_, err := NewGormClient(&config)
 	fmt.Println(err)
 	if err != nil {
-		return
+		t.Skipf("postgres unavailable: %v", err)
 	}
 	assert.Equal(t, nil, err)
 }

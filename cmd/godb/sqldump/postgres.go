@@ -12,6 +12,7 @@ import (
 
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // DumpPostgres 导出创建语句
@@ -34,7 +35,10 @@ func (s *SQLDump) DumpPostgres() error {
 			return err
 		}
 	}
-	dsnParse := s.postgresDsnParse()
+	dsnParse, err := s.postgresDsnParse()
+	if err != nil {
+		return err
+	}
 	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dsnParse.Dbname)
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
@@ -82,36 +86,19 @@ type PostgresDsn struct {
 	Dbname   string
 }
 
-// postgresDsnParse  数据库解析
-func (s *SQLDump) postgresDsnParse() *PostgresDsn {
-	result := new(PostgresDsn)
-	// 分割连接字符串
-	params := strings.Split(s.dsn, " ")
-
-	// 解析参数
-	for _, param := range params {
-		keyValue := strings.Split(param, "=")
-		if len(keyValue) != 2 {
-			continue
-		}
-		key := keyValue[0]
-		value := keyValue[1]
-		switch key {
-		case "host":
-			result.Host = value
-		case "port":
-			if p, err := strconv.Atoi(value); err == nil {
-				result.Port = p
-			}
-		case "user":
-			result.User = value
-		case "password":
-			result.Password = value
-		case "dbname":
-			result.Dbname = value
-		}
+// postgresDsnParse 数据库解析。
+func (s *SQLDump) postgresDsnParse() (*PostgresDsn, error) {
+	cfg, err := pgconn.ParseConfig(s.dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse postgres dsn: %w", err)
 	}
-	return result
+	return &PostgresDsn{
+		Host:     cfg.Host,
+		Port:     int(cfg.Port),
+		User:     cfg.User,
+		Password: cfg.Password,
+		Dbname:   cfg.Database,
+	}, nil
 }
 
 // 预编译正则表达式，避免重复编译

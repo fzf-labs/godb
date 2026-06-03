@@ -10,7 +10,7 @@ import (
 func TestNewRistretto(t *testing.T) {
 	cache, err := NewRistrettoStringCache()
 	if err != nil {
-		return
+		t.Fatal(err)
 	}
 	// set a value with a cost of 1
 	cache.Set("key", "value", 1)
@@ -21,7 +21,7 @@ func TestNewRistretto(t *testing.T) {
 	// get value from dbcache
 	value, found := cache.Get("key")
 	if !found {
-		panic("missing value")
+		t.Fatal("missing value")
 	}
 	fmt.Println(value)
 

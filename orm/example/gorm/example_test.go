@@ -16,6 +16,7 @@ import (
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -30,10 +31,18 @@ func newDB(t *testing.T) *gorm.DB {
 }
 
 // newRedis 创建示例测试用 Redis 客户端。
-func newRedis() *redis.Client {
+func newRedis(t *testing.T) *redis.Client {
+	t.Helper()
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "0.0.0.0:6379",
 		Password: "123456",
+	})
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		_ = redisClient.Close()
+		t.Skipf("redis unavailable: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = redisClient.Close()
 	})
 	return redisClient
 }
@@ -41,7 +50,7 @@ func newRedis() *redis.Client {
 // Test_DeepCopy 验证模型深拷贝逻辑。
 func Test_DeepCopy(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewAdminRoleDemoRepo(cfg)
@@ -68,15 +77,13 @@ func Test_DeepCopy(t *testing.T) {
 // Test_FindOneCacheByID 根据ID查询单条数据
 func Test_FindOneCacheByID(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindOneByID(ctx, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b")
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 	fmt.Println(result)
 	assert.Equal(t, nil, err)
 }
@@ -84,16 +91,13 @@ func Test_FindOneCacheByID(t *testing.T) {
 // Test_FindMultiCacheByUsernames 验证按用户名批量查询缓存。
 func Test_FindMultiCacheByUsernames(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindMultiCacheByUsernames(ctx, []string{"a", "b", "c", "d", "e", "f", "g"})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	fmt.Println(result)
 	assert.Equal(t, nil, err)
 }
@@ -101,29 +105,24 @@ func Test_FindMultiCacheByUsernames(t *testing.T) {
 // Test_UpdateOneCache 验证单条记录缓存更新。
 func Test_UpdateOneCache(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	data, err := repo.FindOneByID(ctx, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b")
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 	oldData := repo.DeepCopy(data)
 	data.Remark = "123"
 	err = repo.UpdateOneCache(ctx, data, oldData)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	assert.Equal(t, nil, err)
 }
 
 // Test_UpsertOneWithZeroCache 验证带零值字段的 upsert 缓存更新。
 func Test_UpsertOneWithZeroCache(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -132,17 +131,14 @@ func Test_UpsertOneWithZeroCache(t *testing.T) {
 	data.ID = "182a65a0-ee20-4fe0-a0e8-ba30edcf402b"
 	data.Remark = "123"
 	err := repo.UpsertOneCache(ctx, data)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	assert.Equal(t, nil, err)
 }
 
 // Test_UpsertOneCacheByFieldsTx 验证事务内按字段 upsert 缓存。
 func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -163,7 +159,7 @@ func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 // Test_UpdateBatchByIDS 验证按 ID 批量更新。
 func Test_UpdateBatchByIDS(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -171,25 +167,20 @@ func Test_UpdateBatchByIDS(t *testing.T) {
 	err := repo.UpdateBatchByIDS(ctx, []string{"182a65a0-ee20-4fe0-a0e8-ba30edcf402b", "2cc31ef9-7d6b-438b-874c-01d84a332b57"}, map[string]interface{}{
 		"remark": "test",
 	})
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 	assert.Equal(t, nil, err)
 }
 
 // Test_FindMultiCacheByTenantIDS 验证按租户 ID 批量查询缓存。
 func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindMultiCacheByTenantIDS(ctx, []int64{1, 2})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	fmt.Println(result)
 	assert.Equal(t, nil, err)
 }
@@ -232,10 +223,7 @@ func Test_FindMultiByCondition(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	fmt.Printf("%+v\n", result)
 	fmt.Printf("%+v\n", p)
 	assert.Equal(t, nil, err)

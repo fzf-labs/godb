@@ -33,15 +33,27 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 		columnNameToName:     columnNameToName,
 		columnNameToDataType: columnNameToDataType,
 	}
-	p.tableNameComment = p.getTableComment(table)
+	tableComment, err := p.getTableComment(table)
+	if err != nil {
+		return fmt.Errorf("get table comment: %w", err)
+	}
+	p.tableNameComment = tableComment
 	p.lowerTableName = p.lowerName(table)
 	p.upperTableName = p.upperName(table)
 	f += p.genSyntax()
 	f += p.genPackage()
 	f += p.genImport()
 	f += p.genOption()
-	f += p.genService()
-	f += p.genMessage()
+	service, err := p.genService()
+	if err != nil {
+		return fmt.Errorf("generate service: %w", err)
+	}
+	f += service
+	message, err := p.genMessage()
+	if err != nil {
+		return fmt.Errorf("generate message: %w", err)
+	}
+	f += message
 	outputFile := p.outPutPath + "/" + table + ".proto"
 	return p.output(outputFile, f)
 }
@@ -80,17 +92,17 @@ func (p *Proto) output(filePath, content string) error {
 	return err
 }
 
-func (p *Proto) getTableComment(table string) string {
+func (p *Proto) getTableComment(table string) (string, error) {
 	tableComments, err := gormx.GetTableComments(p.gorm)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	for k, v := range tableComments {
 		if k == table {
-			return v
+			return v, nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 func (p *Proto) genSyntax() string {
@@ -117,10 +129,10 @@ func (p *Proto) genOption() string {
 	return fmt.Sprintln(str.String())
 }
 
-func (p *Proto) genService() string {
+func (p *Proto) genService() (string, error) {
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	status := false
 	for _, v := range columnTypes {
@@ -137,10 +149,10 @@ func (p *Proto) genService() string {
 		"status":              status,
 		"urlPrefix":           urlPrefix,
 	})
-	return fmt.Sprintln(str.String())
+	return fmt.Sprintln(str.String()), nil
 }
 
-func (p *Proto) genMessage() string {
+func (p *Proto) genMessage() (string, error) {
 	var info string
 	var createReq string
 	var createReqRequired []string
@@ -156,12 +168,12 @@ func (p *Proto) genMessage() string {
 	var status bool
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	// 获取索引
 	indexes, err := gormx.GetIndexes(p.gorm, p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	var primaryKeyColumn string
 	for _, index := range indexes {
@@ -250,7 +262,7 @@ func (p *Proto) genMessage() string {
 		"getReqRequired":          joinWithQuotes(getReqRequired),
 		"status":                  status,
 	})
-	return fmt.Sprintln(str.String())
+	return fmt.Sprintln(str.String()), nil
 }
 
 // upperName 大写

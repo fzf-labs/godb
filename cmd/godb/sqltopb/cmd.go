@@ -46,7 +46,7 @@ func Run(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	gen.NewGenerationPB(
+	return gen.NewGenerationPB(
 		dbClient,
 		outPutPath,
 		pbPackage,
@@ -57,5 +57,4 @@ func Run(_ *cobra.Command, _ []string) error {
 		),
 		gen.WithPBTables(tables),
 	).Do()
-	return nil
 }
