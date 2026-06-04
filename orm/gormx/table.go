@@ -89,7 +89,7 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 			TableComment string `gorm:"column:table_comment"`
 		}
 		result := make([]tmp, 0)
-		sql := `SELECT c.relname AS table_name, obj_description(c.oid) AS table_comment FROM pg_class c WHERE c.relkind = 'r' AND c.relname NOT LIKE 'pg_%' AND c.relname NOT LIKE 'sql_%'`
+		sql := buildPostgresTableCommentsQuery()
 		err := db.Raw(sql).Scan(&result).Error
 		if err != nil {
 			return nil, err
@@ -101,4 +101,8 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 	default:
 		return nil, nil
 	}
+}
+
+func buildPostgresTableCommentsQuery() string {
+	return `SELECT c.relname AS table_name, obj_description(c.oid) AS table_comment FROM pg_class c WHERE c.relkind IN ('r', 'p') AND c.relname NOT LIKE 'pg_%' AND c.relname NOT LIKE 'sql_%'`
 }

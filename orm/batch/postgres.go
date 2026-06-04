@@ -51,7 +51,11 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 	updateMap := make(map[string][]string)
 	for i := 0; i < rv.Len(); i++ {
 		// 获取每个结构体实例
-		structVal := rv.Index(i).Elem()
+		item := rv.Index(i)
+		if item.IsNil() {
+			return nil, fmt.Errorf("dataList[%d] cannot be nil", i)
+		}
+		structVal := item.Elem()
 		idField := structVal.FieldByName(fields["id"].name)
 		if !idField.IsValid() {
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
@@ -117,23 +121,9 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 
 // formatPostgresFieldValue 格式化 PostgreSQL 字段值
 func formatPostgresFieldValue(field reflect.Value) (string, error) {
-	switch field.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(field.Int(), 10), nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return strconv.FormatUint(field.Uint(), 10), nil
-	case reflect.String:
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(field.String(), "'", "''")), nil
-	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(field.Float(), 'f', -1, 64), nil
-	case reflect.Bool:
-		if field.Bool() {
-			return "true", nil
-		}
-		return "false", nil
-	default:
-		return "", fmt.Errorf("unsupported field type: %v", field.Kind())
-	}
+	return formatSQLValue(field, func(s string) string {
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+	})
 }
 
 // buildPostgresBatchUpdateSQL 生成 PostgreSQL 批量更新 SQL

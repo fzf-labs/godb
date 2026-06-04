@@ -1,10 +1,14 @@
 package batch
 
 import (
+	"database/sql"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 // TestBatchUpdateToSQLArray 验证 MySQL 批量更新 SQL 生成。
@@ -78,4 +82,43 @@ func TestMysqlBatchUpdateToSQLArray_InvalidColumnIdentifier(t *testing.T) {
 	_, err := MysqlBatchUpdateToSQLArray("test_table", []*BadStruct{{ID: 1, Name: "test"}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid SQL identifier")
+}
+
+func TestMysqlBatchUpdateToSQLArray_NilElementReturnsError(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	_, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{nil})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "dataList[0] cannot be nil")
+}
+
+func TestMysqlBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) {
+	fixedTime := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	type TestStruct struct {
+		ID        int64          `gorm:"column:id"`
+		CreatedAt time.Time      `gorm:"column:created_at"`
+		DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
+		Payload   datatypes.JSON `gorm:"column:payload"`
+		Raw       []byte         `gorm:"column:raw"`
+		OptTime   sql.NullTime   `gorm:"column:opt_time"`
+	}
+
+	sqlArray, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{
+		{
+			ID:        1,
+			CreatedAt: fixedTime,
+			DeletedAt: gorm.DeletedAt{Time: fixedTime, Valid: true},
+			Payload:   datatypes.JSON([]byte(`{"mode":"test"}`)),
+			Raw:       []byte("abc"),
+			OptTime:   sql.NullTime{Time: fixedTime, Valid: true},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "'2024-01-02 03:04:05'")
+	assert.Contains(t, sqlArray[0], "'abc'")
+	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
 }

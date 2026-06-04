@@ -107,5 +107,5 @@ func buildPgIndexesQuery(table string) (string, []any) {
 }
 
 func buildPGSortIndexColumnsQuery(table string) (string, []any) {
-	return `SELECT t.relname AS table_name,i.relname AS index_name,a.attname AS column_name,ix.indisunique AS is_unique,ix.indisprimary AS PRIMARY FROM pg_class t JOIN pg_index ix ON t.oid=ix.indrelid JOIN pg_class i ON i.oid=ix.indexrelid JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=ANY(ix.indkey)WHERE t.relkind='r' AND t.relname=? ORDER BY ix.indrelid,(array_position(ix.indkey,a.attnum))`, []any{table}
+	return `SELECT t.relname AS table_name,i.relname AS index_name,a.attname AS column_name,ix.indisunique AS is_unique,ix.indisprimary AS PRIMARY FROM pg_class t JOIN pg_index ix ON t.oid=ix.indrelid JOIN pg_class i ON i.oid=ix.indexrelid JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=ANY(ix.indkey)WHERE t.relkind IN ('r','p') AND t.relname=? ORDER BY ix.indrelid,(array_position(ix.indkey,a.attnum))`, []any{table}
 }

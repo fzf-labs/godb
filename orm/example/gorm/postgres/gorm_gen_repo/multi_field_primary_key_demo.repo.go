@@ -331,6 +331,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneByFields(ctx context.Context, da
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFields fields is empty")
 	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFields data is nil")
+	}
 	columns := make([]clause.Column, 0)
 	for _, item := range fields {
 		columns = append(columns, clause.Column{Name: item})
@@ -399,6 +402,9 @@ func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneCacheByFields(ctx context.Contex
 func (m *MultiFieldPrimaryKeyDemoRepo) UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.MultiFieldPrimaryKeyDemo, fields []string) error {
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFieldsTx fields is empty")
+	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFieldsTx data is nil")
 	}
 	columns := make([]clause.Column, 0)
 	for _, item := range fields {

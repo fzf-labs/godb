@@ -173,11 +173,16 @@ func GetHealthStatus(gormDB *gorm.DB) string {
 	if err != nil {
 		return unhealthy
 	}
-	err = gormDB.Raw(`select 1`).Error
+	err = runHealthCheckQuery(gormDB, `select 1`)
 	if err != nil {
 		return unhealthy
 	}
 	return health
+}
+
+func runHealthCheckQuery(gormDB *gorm.DB, query string) error {
+	var probe int
+	return gormDB.Raw(query).Scan(&probe).Error
 }
 
 // GetState 获取目前数据库状态参数

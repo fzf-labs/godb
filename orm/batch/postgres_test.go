@@ -1,11 +1,15 @@
 package batch
 
 import (
+	"database/sql"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type testUser struct {
@@ -160,4 +164,38 @@ func TestPostgresBatchUpdateToSQLArray_InvalidColumnIdentifier(t *testing.T) {
 	_, err := PostgresBatchUpdateToSQLArray(`users`, []*BadStruct{{ID: 1, Name: "test"}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid SQL identifier")
+}
+
+func TestPostgresBatchUpdateToSQLArray_NilElementReturnsError(t *testing.T) {
+	_, err := PostgresBatchUpdateToSQLArray("users", []*testUser{nil})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "dataList[0] cannot be nil")
+}
+
+func TestPostgresBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) {
+	fixedTime := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	type TestStruct struct {
+		ID        int64          `gorm:"column:id"`
+		CreatedAt time.Time      `gorm:"column:created_at"`
+		DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
+		Payload   datatypes.JSON `gorm:"column:payload"`
+		Raw       []byte         `gorm:"column:raw"`
+		OptTime   sql.NullTime   `gorm:"column:opt_time"`
+	}
+
+	sqlArray, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{
+		{
+			ID:        1,
+			CreatedAt: fixedTime,
+			DeletedAt: gorm.DeletedAt{Time: fixedTime, Valid: true},
+			Payload:   datatypes.JSON([]byte(`{"mode":"test"}`)),
+			Raw:       []byte("abc"),
+			OptTime:   sql.NullTime{Time: fixedTime, Valid: true},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "'2024-01-02 03:04:05'")
+	assert.Contains(t, sqlArray[0], "'abc'")
+	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
 }

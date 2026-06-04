@@ -24,3 +24,10 @@ func TestBuildPGSortIndexColumnsQuery_UsesPlaceholder(t *testing.T) {
 		t.Fatalf("unexpected args: %#v", args)
 	}
 }
+
+func TestBuildPGSortIndexColumnsQuery_IncludesPartitionedTables(t *testing.T) {
+	query, _ := buildPGSortIndexColumnsQuery("users")
+	if !strings.Contains(query, "t.relkind IN ('r','p')") {
+		t.Fatalf("expected partitioned tables in query, got %q", query)
+	}
+}

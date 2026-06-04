@@ -3,6 +3,9 @@ func ({{.firstTableChar}} *{{.upperTableName}}Repo) UpsertOneCacheByFields(ctx c
 	if len(fields) == 0 {
         return errors.New("UpsertOneByFields fields is empty")
     }
+	if data == nil {
+		return errors.New("UpsertOneCacheByFields data is nil")
+	}
 	fieldNameToValue := make(map[string]interface{})
 	typ := reflect.TypeOf(data).Elem()
 	val := reflect.ValueOf(data).Elem()

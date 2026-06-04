@@ -1,11 +1,15 @@
 package batch
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"math"
+	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var identifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -71,4 +75,151 @@ func escapeQualifiedIdentifier(name string, escape func(string) string) string {
 		parts[i] = escape(part)
 	}
 	return strings.Join(parts, ".")
+}
+
+const sqlTimeLayout = "2006-01-02 15:04:05"
+
+// formatSQLValue 将字段值格式化为可直接拼入 SQL 的字面量。
+func formatSQLValue(field reflect.Value, quote func(string) string) (string, error) {
+	if !field.IsValid() {
+		return "", fmt.Errorf("unsupported field type: invalid")
+	}
+	if field.Kind() == reflect.Ptr && field.IsNil() {
+		return "NULL", nil
+	}
+
+	if field.CanInterface() {
+		switch value := field.Interface().(type) {
+		case time.Time:
+			return quote(value.Format(sqlTimeLayout)), nil
+		case *time.Time:
+			if value == nil {
+				return "NULL", nil
+			}
+			return quote(value.Format(sqlTimeLayout)), nil
+		case driver.Valuer:
+			raw, err := value.Value()
+			if err != nil {
+				return "", err
+			}
+			return formatSQLValueFromAny(raw, quote)
+		case fmt.Stringer:
+			return quote(value.String()), nil
+		}
+	}
+
+	switch field.Kind() {
+	case reflect.Int:
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Int8:
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Int16:
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Int32:
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Int64:
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Uint:
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.Uint8:
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.Uint16:
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.Uint32:
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.Uint64:
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.String:
+		return quote(field.String()), nil
+	case reflect.Float32:
+		return strconv.FormatFloat(field.Float(), 'f', -1, 32), nil
+	case reflect.Float64:
+		return strconv.FormatFloat(field.Float(), 'f', -1, 64), nil
+	case reflect.Bool:
+		return strconv.FormatBool(field.Bool()), nil
+	case reflect.Slice:
+		if field.Type().Elem().Kind() == reflect.Uint8 {
+			return quote(string(field.Bytes())), nil
+		}
+	case reflect.Ptr:
+		if field.IsNil() {
+			return "NULL", nil
+		}
+		return formatSQLValue(field.Elem(), quote)
+	}
+
+	return "", fmt.Errorf("unsupported field type: %v", field.Kind())
+}
+
+func formatSQLValueFromAny(value any, quote func(string) string) (string, error) {
+	if value == nil {
+		return "NULL", nil
+	}
+
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() {
+		return "NULL", nil
+	}
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return "NULL", nil
+	}
+
+	switch v := value.(type) {
+	case time.Time:
+		return quote(v.Format(sqlTimeLayout)), nil
+	case *time.Time:
+		if v == nil {
+			return "NULL", nil
+		}
+		return quote(v.Format(sqlTimeLayout)), nil
+	case driver.Valuer:
+		raw, err := v.Value()
+		if err != nil {
+			return "", err
+		}
+		return formatSQLValueFromAny(raw, quote)
+	case fmt.Stringer:
+		return quote(v.String()), nil
+	case string:
+		return quote(v), nil
+	case []byte:
+		return quote(string(v)), nil
+	case bool:
+		return strconv.FormatBool(v), nil
+	case int:
+		return strconv.FormatInt(int64(v), 10), nil
+	case int8:
+		return strconv.FormatInt(int64(v), 10), nil
+	case int16:
+		return strconv.FormatInt(int64(v), 10), nil
+	case int32:
+		return strconv.FormatInt(int64(v), 10), nil
+	case int64:
+		return strconv.FormatInt(v, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint64:
+		return strconv.FormatUint(v, 10), nil
+	case float32:
+		return strconv.FormatFloat(float64(v), 'f', -1, 32), nil
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), nil
+	}
+	if rv.Kind() == reflect.Ptr {
+		return formatSQLValue(rv.Elem(), quote)
+	}
+	if rv.Kind() == reflect.Slice && rv.Type().Elem().Kind() == reflect.Uint8 {
+		return quote(string(rv.Bytes())), nil
+	}
+	if stringer, ok := value.(fmt.Stringer); ok {
+		return quote(stringer.String()), nil
+	}
+
+	return "", fmt.Errorf("unsupported field type: %T", value)
 }

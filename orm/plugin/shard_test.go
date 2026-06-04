@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
@@ -11,6 +12,19 @@ import (
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
+
+func TestMonthShardingSuffix(t *testing.T) {
+	fixedTime := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	suffix, err := monthShardingSuffix("created_at", fixedTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "_202401", suffix)
+}
+
+func TestMonthShardingSuffixRejectsInvalidString(t *testing.T) {
+	_, err := monthShardingSuffix("created_at", "not-a-time")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a valid time")
+}
 
 // TestNewMonthShardingPlugin 验证按月分片插件配置。
 func TestNewMonthShardingPlugin(t *testing.T) {

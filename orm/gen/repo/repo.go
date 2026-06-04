@@ -175,7 +175,7 @@ func (r *Repo) processIndex() ([]DBIndex, error) {
 		columns := sortIndexColumns[v.IndexName]
 		tmp = append(tmp, DBIndex{
 			Name:       v.IndexName,
-			ColumnKey:  strings.Join(columns, "_"),
+			ColumnKey:  joinIndexColumnKey(columns),
 			PrimaryKey: v.Primary,
 			Unique:     v.IsUnique,
 			Columns:    columns,
@@ -219,7 +219,7 @@ func (r *Repo) processIndex() ([]DBIndex, error) {
 	for _, v := range tmp {
 		if !v.PrimaryKey && len(v.Columns) > 1 {
 			for i := len(v.Columns); i > 0; i-- {
-				columnKey := strings.Join(v.Columns[0:i], "_")
+				columnKey := joinIndexColumnKey(v.Columns[0:i])
 				_, ok := repeat[columnKey]
 				if !ok {
 					repeat[columnKey] = struct{}{}
@@ -235,6 +235,10 @@ func (r *Repo) processIndex() ([]DBIndex, error) {
 		}
 	}
 	return result, nil
+}
+
+func joinIndexColumnKey(columns []string) string {
+	return strings.Join(columns, ":")
 }
 
 // output 导出文件

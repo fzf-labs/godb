@@ -3,9 +3,11 @@ package repo
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/fzf-labs/godb/orm/gormx"
+	tpl "github.com/fzf-labs/godb/orm/utils/template"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +38,36 @@ func TestRepoOutput_InvalidSourceReturnsError(t *testing.T) {
 	err := r.output(filepath.Join(t.TempDir(), "broken.repo.go"), []byte("package repo\nfunc (\n"))
 	if err == nil {
 		t.Fatal("expected format error, got nil")
+	}
+}
+
+func TestUpsertOneCacheByFieldsTemplatesGuardNilData(t *testing.T) {
+	params := map[string]any{
+		"firstTableChar": "u",
+		"dbName":         "gorm_gen",
+		"upperTableName": "UserDemo",
+	}
+	rendered, err := tpl.NewTemplate().Parse(UpsertOneCacheByFields).Execute(params)
+	if err != nil {
+		t.Fatalf("unexpected render error: %v", err)
+	}
+	if !strings.Contains(rendered.String(), "if data == nil {") {
+		t.Fatalf("template missing nil guard: %s", rendered.String())
+	}
+
+	rendered, err = tpl.NewTemplate().Parse(UpsertOneCacheByFieldsTx).Execute(params)
+	if err != nil {
+		t.Fatalf("unexpected render error: %v", err)
+	}
+	if !strings.Contains(rendered.String(), "if data == nil {") {
+		t.Fatalf("template missing nil guard: %s", rendered.String())
+	}
+}
+
+func TestJoinIndexColumnKeyUsesColons(t *testing.T) {
+	got := joinIndexColumnKey([]string{"a", "b", "c"})
+	if got != "a:b:c" {
+		t.Fatalf("unexpected key: %s", got)
 	}
 }
 
