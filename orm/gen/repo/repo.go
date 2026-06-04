@@ -22,6 +22,7 @@ import (
 
 var formatErrorLinePattern = regexp.MustCompile(`:(\d+)(?::\d+)?:`)
 
+// KeyWords 定义生成 repo 代码时需要避让的局部变量名。
 var KeyWords = []string{
 	"dao",
 	"parameters",
@@ -35,6 +36,7 @@ var KeyWords = []string{
 	"item",
 }
 
+// GenerationTable 为单张表生成 repo 层代码文件。
 func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table string, partitionTables []string, columnNameToDataType, columnNameToName, columnNameToFieldType map[string]string) error {
 	var file string
 	g := Repo{
@@ -123,6 +125,7 @@ func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table st
 	return nil
 }
 
+// Repo 保存单表 repo 代码生成过程中的模板上下文。
 type Repo struct {
 	gorm                  *gorm.DB          // 数据库
 	daoPath               string            // dao所在的路径
@@ -143,6 +146,7 @@ type Repo struct {
 	haveDeletedAt         bool              // 是否有删除标记
 }
 
+// DBIndex 描述生成 repo 方法时使用的数据库索引信息。
 type DBIndex struct {
 	Name       string   // 索引名称
 	ColumnKey  string   // 索引字段KEY

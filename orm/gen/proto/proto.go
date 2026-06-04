@@ -58,6 +58,7 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 	return p.output(outputFile, f)
 }
 
+// Proto 保存单表 proto 文件生成过程中的模板上下文。
 type Proto struct {
 	gorm                 *gorm.DB          // 数据库
 	outPutPath           string            // 生成文件路径

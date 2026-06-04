@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 )
 
+// SQLDump 保存数据库结构导出命令的运行参数。
 type SQLDump struct {
 	db            string // 数据库类型 mysql postgres
 	dsn           string // 数据库连接

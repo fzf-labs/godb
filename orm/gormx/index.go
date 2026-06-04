@@ -2,6 +2,7 @@ package gormx
 
 import "gorm.io/gorm"
 
+// Index 描述数据库索引及其字段属性。
 type Index struct {
 	TableName  string `json:"table_name" gorm:"column:table_name"`
 	IndexName  string `json:"index_name" gorm:"column:index_name"`

@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// UserTest 是动态条件测试使用的示例模型。
 type UserTest struct {
 	ID       string `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid();comment:ID" json:"id"`    // ID
 	UID      string `gorm:"column:uid;type:character varying(64);not null;comment:uid" json:"uid"`            // uid

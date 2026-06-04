@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CmdSQLDump 是导出数据库表结构 SQL 的 cobra 子命令。
 var CmdSQLDump = &cobra.Command{
 	Use:   "sqldump",
 	Short: "Export database table structure",

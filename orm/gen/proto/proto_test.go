@@ -31,6 +31,7 @@ type protoExample struct {
 	DeletedAt gorm.DeletedAt
 }
 
+// TableName 返回 proto 生成测试模型表名。
 func (protoExample) TableName() string {
 	return "proto_examples"
 }

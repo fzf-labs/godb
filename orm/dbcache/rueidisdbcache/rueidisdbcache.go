@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// Cache 是基于 rueidis 的数据库查询缓存实现。
 type Cache struct {
 	name   string
 	client rueidis.Client
@@ -18,20 +19,24 @@ type Cache struct {
 	sf     singleflight.Group
 }
 
+// CacheOption 配置 rueidis 数据库查询缓存。
 type CacheOption func(cache *Cache)
 
+// WithName 设置缓存 key 的命名前缀。
 func WithName(name string) CacheOption {
 	return func(r *Cache) {
 		r.name = name
 	}
 }
 
+// WithTTL 设置默认缓存过期时间。
 func WithTTL(ttl time.Duration) CacheOption {
 	return func(r *Cache) {
 		r.ttl = ttl
 	}
 }
 
+// NewRueidisDBCache 创建 rueidis 数据库查询缓存。
 func NewRueidisDBCache(client rueidis.Client, opts ...CacheOption) *Cache {
 	r := &Cache{
 		name:   "GormCache",
@@ -46,6 +51,7 @@ func NewRueidisDBCache(client rueidis.Client, opts ...CacheOption) *Cache {
 	return r
 }
 
+// Key 生成带缓存名称前缀的缓存 key。
 func (r *Cache) Key(keys ...any) string {
 	parts := make([]any, 0, len(keys)+1)
 	parts = append(parts, r.name)
@@ -55,10 +61,12 @@ func (r *Cache) Key(keys ...any) string {
 	return dbcache.BuildKey(parts...)
 }
 
+// TTL 返回带随机抖动的默认缓存过期时间。
 func (r *Cache) TTL() time.Duration {
 	return r.ttl - time.Duration(rand.Float64()*0.1*float64(r.ttl))
 }
 
+// Fetch 查询单个缓存值，未命中时调用回源函数并写入缓存。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
 	do, err, _ := r.sf.Do(key, func() (any, error) {
 		cacheValue := r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), expire)
@@ -87,6 +95,8 @@ func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error)
 	}
 	return do.(string), nil
 }
+
+// FetchBatch 批量查询缓存值，未命中时按缺失 key 回源并写入缓存。
 func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []string) (map[string]string, error), expire time.Duration) (map[string]string, error) {
 	resp := make(map[string]string)
 	commands := make([]rueidis.CacheableTTL, 0)
@@ -132,6 +142,7 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 	return resp, nil
 }
 
+// FetchHash 查询哈希字段缓存，未命中时回源并设置 hash key 过期时间。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
 	do, err, _ := r.sf.Do(hashFlightKey(key, field), func() (any, error) {
 		cacheValue := r.client.DoCache(ctx, r.client.B().Hget().Key(key).Field(field).Cache(), expire)
@@ -172,9 +183,12 @@ func hashFlightKey(key, field string) string {
 	return dbcache.BuildKey(key, field)
 }
 
+// Del 删除单个缓存 key。
 func (r *Cache) Del(ctx context.Context, key string) error {
 	return r.client.Do(ctx, r.client.B().Del().Key(key).Build()).Error()
 }
+
+// DelBatch 批量删除缓存 key。
 func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 	completes := make([]rueidis.Completed, 0)
 	for _, v := range keys {
@@ -189,6 +203,8 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 	}
 	return nil
 }
+
+// DelHash 删除 hash key 下的指定字段。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
 	return r.client.Do(ctx, r.client.B().Hdel().Key(key).Field(field).Build()).Error()
 }

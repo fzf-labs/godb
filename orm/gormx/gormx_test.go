@@ -233,6 +233,7 @@ type namedDialector struct {
 	name string
 }
 
+// Name 返回测试包装后的方言名称。
 func (d namedDialector) Name() string {
 	return d.name
 }

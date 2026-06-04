@@ -20,7 +20,9 @@ const (
 )
 
 const (
-	MySQL    = "mysql"
+	// MySQL 表示 MySQL 数据库驱动名称。
+	MySQL = "mysql"
+	// Postgres 表示 PostgreSQL 数据库驱动名称。
 	Postgres = "postgres"
 )
 

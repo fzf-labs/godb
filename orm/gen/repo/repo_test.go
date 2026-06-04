@@ -570,6 +570,7 @@ type repoIndexModel struct {
 	Status   bool   `gorm:"index"`
 }
 
+// TableName 返回 repo 索引测试模型表名。
 func (repoIndexModel) TableName() string {
 	return "repo_index_models"
 }
@@ -641,6 +642,7 @@ type namedRepoDialector struct {
 	name string
 }
 
+// Name 返回测试包装后的 repo 方言名称。
 func (d namedRepoDialector) Name() string {
 	return d.name
 }
@@ -653,6 +655,7 @@ type repoGenerationModel struct {
 	Deleted  gorm.DeletedAt
 }
 
+// TableName 返回 repo 生成测试模型表名。
 func (repoGenerationModel) TableName() string {
 	return "repo_generation_models"
 }

@@ -9,6 +9,7 @@ import (
 	gormGen "gorm.io/gen"
 )
 
+// CmdOrmGen 是生成 ORM model、dao 和 repo 代码的 cobra 子命令。
 var CmdOrmGen = &cobra.Command{
 	Use:   "ormgen",
 	Short: "Generate GORM model code",

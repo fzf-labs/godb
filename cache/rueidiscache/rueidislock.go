@@ -8,10 +8,12 @@ import (
 	"github.com/redis/rueidis/rueidislock"
 )
 
+// NewLocker 创建基于 rueidislock 的分布式锁封装。
 func NewLocker(option rueidislock.LockerOption) *Locker {
 	return &Locker{option: option}
 }
 
+// NewDefaultLockerOption 使用已有 rueidis 客户端构造默认锁配置。
 func NewDefaultLockerOption(client rueidis.Client) rueidislock.LockerOption {
 	return rueidislock.LockerOption{
 		ClientBuilder: func(_ rueidis.ClientOption) (rueidis.Client, error) {
@@ -20,6 +22,7 @@ func NewDefaultLockerOption(client rueidis.Client) rueidislock.LockerOption {
 	}
 }
 
+// Locker 封装 rueidis 分布式锁的常用加锁流程。
 type Locker struct {
 	option rueidislock.LockerOption
 }

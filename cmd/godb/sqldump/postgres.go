@@ -71,6 +71,7 @@ func (s *SQLDump) DumpPostgres() error {
 	return nil
 }
 
+// PostgresDsn 保存 pgconn 解析出的 PostgreSQL 连接参数。
 type PostgresDsn struct {
 	Host     string
 	Port     int

@@ -24,10 +24,13 @@ import (
 // NewGenerationDB SQL 生成 dao,model,repo
 // //////////////////////////////////////
 const (
+	// SQLNullTime 表示 database/sql 的可空时间类型。
 	SQLNullTime = "sql.NullTime"
-	TimeTime    = "time.Time"
+	// TimeTime 表示标准库 time.Time 类型。
+	TimeTime = "time.Time"
 )
 
+// GenerationDB 保存 ORM model、dao 和 repo 代码生成所需配置。
 type GenerationDB struct {
 	db               *gorm.DB                                                      // 数据库
 	outPutPath       string                                                        // 文件生成路径
@@ -40,6 +43,7 @@ type GenerationDB struct {
 	fieldNullable    bool                                                          // 字段是否可空
 }
 
+// NewGenerationDB 创建 ORM 代码生成器。
 func NewGenerationDB(db *gorm.DB, outPutPath string, opts ...OptionDB) *GenerationDB {
 	g := &GenerationDB{
 		db:         db,
@@ -57,6 +61,7 @@ func NewGenerationDB(db *gorm.DB, outPutPath string, opts ...OptionDB) *Generati
 	return g
 }
 
+// OptionDB 配置 ORM 代码生成器。
 type OptionDB func(gen *GenerationDB)
 
 // WithOutRepo 选项函数-不生成repo

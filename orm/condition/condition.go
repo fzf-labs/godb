@@ -13,6 +13,7 @@ import (
 
 type Exp string // 操作
 
+// 查询表达式操作符。
 const (
 	RAW       Exp = "RAW" // 原始表达式
 	EQ        Exp = "="
@@ -31,6 +32,7 @@ const (
 
 type Logic string // 逻辑关系
 
+// 查询条件逻辑连接符。
 const (
 	AND Logic = "AND" // 逻辑关系 and
 	OR  Logic = "OR"  // 逻辑关系 or
@@ -38,6 +40,7 @@ const (
 
 type Order string // 排序
 
+// 排序方向。
 const (
 	ASC  Order = "ASC"  // 升序
 	DESC Order = "DESC" // 降序

@@ -31,6 +31,7 @@ func NewGenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr string, o
 	return g
 }
 
+// GenerationPb 保存 SQL 生成 proto 文件所需配置。
 type GenerationPb struct {
 	gorm         *gorm.DB       // 数据库
 	tables       []string       // 指定表
@@ -40,6 +41,7 @@ type GenerationPb struct {
 	goPackageStr string         // 包路径
 }
 
+// OptionPB 配置 proto 文件生成器。
 type OptionPB func(gen *GenerationPb)
 
 // WithPBOpts 选项函数-自定义特殊设置
@@ -56,6 +58,7 @@ func WithPBTables(tables []string) OptionPB {
 	}
 }
 
+// Do 执行 proto 文件生成。
 func (g *GenerationPb) Do() error {
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{})

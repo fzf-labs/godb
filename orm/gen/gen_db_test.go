@@ -21,24 +21,48 @@ type fakeColumnType struct {
 	nullable bool
 }
 
-func (f fakeColumnType) Name() string                      { return f.name }
-func (f fakeColumnType) DatabaseTypeName() string          { return "" }
-func (f fakeColumnType) ColumnType() (string, bool)        { return "", false }
-func (f fakeColumnType) PrimaryKey() (bool, bool)          { return false, false }
-func (f fakeColumnType) AutoIncrement() (bool, bool)       { return false, false }
-func (f fakeColumnType) Length() (int64, bool)             { return 0, false }
+// Name 返回测试列名。
+func (f fakeColumnType) Name() string { return f.name }
+
+// DatabaseTypeName 返回测试数据库类型名。
+func (f fakeColumnType) DatabaseTypeName() string { return "" }
+
+// ColumnType 返回测试列类型。
+func (f fakeColumnType) ColumnType() (string, bool) { return "", false }
+
+// PrimaryKey 返回测试主键信息。
+func (f fakeColumnType) PrimaryKey() (bool, bool) { return false, false }
+
+// AutoIncrement 返回测试自增信息。
+func (f fakeColumnType) AutoIncrement() (bool, bool) { return false, false }
+
+// Length 返回测试列长度。
+func (f fakeColumnType) Length() (int64, bool) { return 0, false }
+
+// DecimalSize 返回测试小数精度。
 func (f fakeColumnType) DecimalSize() (int64, int64, bool) { return 0, 0, false }
-func (f fakeColumnType) Nullable() (bool, bool)            { return f.nullable, true }
-func (f fakeColumnType) Unique() (bool, bool)              { return false, false }
-func (f fakeColumnType) ScanType() reflect.Type            { return nil }
-func (f fakeColumnType) Comment() (string, bool)           { return "", false }
-func (f fakeColumnType) DefaultValue() (string, bool)      { return "", false }
+
+// Nullable 返回测试列可空信息。
+func (f fakeColumnType) Nullable() (bool, bool) { return f.nullable, true }
+
+// Unique 返回测试唯一约束信息。
+func (f fakeColumnType) Unique() (bool, bool) { return false, false }
+
+// ScanType 返回测试扫描类型。
+func (f fakeColumnType) ScanType() reflect.Type { return nil }
+
+// Comment 返回测试列注释。
+func (f fakeColumnType) Comment() (string, bool) { return "", false }
+
+// DefaultValue 返回测试默认值。
+func (f fakeColumnType) DefaultValue() (string, bool) { return "", false }
 
 type generationDBExample struct {
 	ID   int64  `gorm:"primaryKey"`
 	Name string `gorm:"size:64"`
 }
 
+// TableName 返回测试模型表名。
 func (generationDBExample) TableName() string {
 	return "generation_db_examples"
 }
@@ -367,6 +391,7 @@ type generationNamedDialector struct {
 	name string
 }
 
+// Name 返回测试包装后的方言名称。
 func (d generationNamedDialector) Name() string {
 	return d.name
 }

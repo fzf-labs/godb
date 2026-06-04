@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// IDBCache 定义数据库查询缓存需要实现的 key、读取和失效接口。
 type IDBCache interface {
 	// Key 返回给定字段的字符串键
 	Key(fields ...any) string

@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Cache 是基于 RocksCache 的数据库查询缓存实现。
 type Cache struct {
 	name             string // 缓存名称
 	redisClient      *redis.Client
@@ -37,6 +38,7 @@ func NewRocksDBCache(redisClient *redis.Client, rocksCacheClient *rockscache.Cli
 	return r
 }
 
+// CacheOption 配置 RocksCache 数据库查询缓存。
 type CacheOption func(cache *Cache)
 
 // WithName 设置缓存名称

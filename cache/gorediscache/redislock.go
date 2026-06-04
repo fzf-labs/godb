@@ -24,6 +24,7 @@ func classifyObtainErr(err error) error {
 	return err
 }
 
+// NewLocker 创建基于 go-redis 的分布式锁封装。
 func NewLocker(rd *redis.Client) *Locker {
 	return &Locker{
 		locker: redislock.New(rd),

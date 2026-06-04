@@ -8,6 +8,7 @@ import (
 	"github.com/fzf-labs/godb/orm/dbcache"
 )
 
+// KeyManage 管理服务内缓存 key 前缀及其过期时间说明。
 type KeyManage struct {
 	ServerName string
 	List       map[string]KeyPrefix

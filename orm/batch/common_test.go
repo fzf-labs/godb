@@ -14,12 +14,14 @@ type sqlValueValuer struct {
 	err   error
 }
 
+// Value 返回测试用 driver.Value 或预设错误。
 func (v sqlValueValuer) Value() (driver.Value, error) {
 	return v.value, v.err
 }
 
 type sqlValueStringer string
 
+// String 返回测试用 SQL 字符串值。
 func (s sqlValueStringer) String() string {
 	return string(s)
 }

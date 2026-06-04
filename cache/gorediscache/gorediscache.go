@@ -10,6 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// GoRedisConfig 定义 go-redis 客户端连接、超时和可观测性配置。
 type GoRedisConfig struct {
 	Addr         string        `json:"addr"`
 	Password     string        `json:"password"`
