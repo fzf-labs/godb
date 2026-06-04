@@ -29,3 +29,21 @@ func TestNewRistretto(t *testing.T) {
 	cache.Del("key")
 	assert.Equal(t, nil, err)
 }
+
+func TestNewRistrettoAnyCache(t *testing.T) {
+	cache, err := NewRistrettoAnyCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.Set("key", map[string]int{"value": 1}, 1)
+	cache.Wait()
+
+	value, found := cache.Get("key")
+	if !found {
+		t.Fatal("missing value")
+	}
+	got, ok := value.(map[string]int)
+	if !ok || got["value"] != 1 {
+		t.Fatalf("unexpected value: %#v", value)
+	}
+}

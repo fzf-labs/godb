@@ -24,6 +24,62 @@ func TestLockerOptionWithTTL(t *testing.T) {
 	assert.Equal(t, defaultTTL, option.KeyValidity)
 }
 
+func TestNewLockerAndDefaultOption(t *testing.T) {
+	option := NewDefaultLockerOption(nil)
+	client, err := option.ClientBuilder(rueidis.ClientOption{})
+	assert.NoError(t, err)
+	assert.Nil(t, client)
+
+	locker := NewLocker(option)
+	assert.NotNil(t, locker)
+	assert.NotNil(t, locker.option.ClientBuilder)
+}
+
+func TestLockerMethodsReturnBuilderError(t *testing.T) {
+	builderErr := assert.AnError
+	locker := NewLocker(rueidislock.LockerOption{
+		ClientBuilder: func(rueidis.ClientOption) (rueidis.Client, error) {
+			return nil, builderErr
+		},
+	})
+
+	tests := []struct {
+		name string
+		fn   func(func() error) error
+	}{
+		{
+			name: "once",
+			fn: func(callback func() error) error {
+				return locker.LockOnce(context.Background(), "lock-key", time.Second, callback)
+			},
+		},
+		{
+			name: "retry",
+			fn: func(callback func() error) error {
+				return locker.LockRetry(context.Background(), "lock-key", time.Second, callback)
+			},
+		},
+		{
+			name: "not release",
+			fn: func(callback func() error) error {
+				return locker.LockOnceNotRelease(context.Background(), "lock-key", time.Second, callback)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			err := tt.fn(func() error {
+				called = true
+				return nil
+			})
+			assert.ErrorIs(t, err, builderErr)
+			assert.False(t, called)
+		})
+	}
+}
+
 // rueidislockOption 构造带 TTL 的 rueidis 分布式锁配置。
 func rueidislockOption(ttl time.Duration) rueidislock.LockerOption {
 	return rueidislock.LockerOption{

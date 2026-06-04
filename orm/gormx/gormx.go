@@ -24,6 +24,8 @@ const (
 	Postgres = "postgres"
 )
 
+var sqlOpen = sql.Open
+
 // ClientConfig 配置
 type ClientConfig struct {
 	Driver          string        `json:"driver"`          // 数据库类型 mysql/postgres
@@ -92,7 +94,7 @@ func NewMySQLGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("client config cannot be nil")
 	}
-	sqlDB, err := sql.Open("mysql", cfg.DataSourceName)
+	sqlDB, err := sqlOpen("mysql", cfg.DataSourceName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open mysql connection")
 	}
@@ -130,7 +132,7 @@ func NewPostgresGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("client config cannot be nil")
 	}
-	sqlDB, err := sql.Open("pgx", cfg.DataSourceName)
+	sqlDB, err := sqlOpen("pgx", cfg.DataSourceName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open postgres connection")
 	}

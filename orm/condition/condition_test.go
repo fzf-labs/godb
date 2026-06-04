@@ -349,6 +349,131 @@ func TestPaginatorReq_ConvertToGormExpression(t *testing.T) {
 	}
 }
 
+func TestReqToInterfaceSliceBranches(t *testing.T) {
+	req := &Req{}
+
+	values, err := req.ToInterfaceSlice([]interface{}{"a", 1})
+	if err != nil {
+		t.Fatalf("unexpected []interface{} error: %v", err)
+	}
+	if !reflect.DeepEqual(values, []interface{}{"a", 1}) {
+		t.Fatalf("unexpected []interface{} values: %#v", values)
+	}
+
+	source := []string{"a", "b"}
+	values, err = req.ToInterfaceSlice(&source)
+	if err != nil {
+		t.Fatalf("unexpected pointer slice error: %v", err)
+	}
+	if !reflect.DeepEqual(values, []interface{}{"a", "b"}) {
+		t.Fatalf("unexpected pointer slice values: %#v", values)
+	}
+
+	values, err = req.ToInterfaceSlice([2]int{1, 2})
+	if err != nil {
+		t.Fatalf("unexpected array error: %v", err)
+	}
+	if !reflect.DeepEqual(values, []interface{}{1, 2}) {
+		t.Fatalf("unexpected array values: %#v", values)
+	}
+
+	var nilSlice *[]string
+	if _, err := req.ToInterfaceSlice(nilSlice); err == nil {
+		t.Fatal("expected nil pointer error")
+	}
+	if _, err := req.ToInterfaceSlice(1); err == nil {
+		t.Fatal("expected non-slice error")
+	}
+}
+
+func TestReqConvertToCacheField(t *testing.T) {
+	req := &Req{
+		Page:     1,
+		PageSize: 20,
+		Query: []*QueryParam{{
+			Field: "id",
+			Value: "42",
+			Exp:   EQ,
+			Logic: AND,
+		}},
+		Order: []*OrderParam{{
+			Field: "id",
+			Order: ASC,
+		}},
+	}
+
+	got := req.ConvertToCacheField()
+	if len(got) != 64 {
+		t.Fatalf("expected sha256 hex string, got %q", got)
+	}
+	if got != req.ConvertToCacheField() {
+		t.Fatal("cache field should be deterministic")
+	}
+
+	other := *req
+	other.Page = 2
+	if got == other.ConvertToCacheField() {
+		t.Fatal("different request should produce a different cache field")
+	}
+
+	bad := (&Req{Query: []*QueryParam{{Field: "id", Value: make(chan int)}}}).ConvertToCacheField()
+	if bad != "" {
+		t.Fatalf("marshal failure should return empty cache field, got %q", bad)
+	}
+}
+
+func TestReqConvertToGormExpressionAdditionalBranches(t *testing.T) {
+	if where, order, err := (*Req)(nil).ConvertToGormExpression(UserTest{}); err != nil || len(where) != 0 || len(order) != 0 {
+		t.Fatalf("nil request should return empty expressions, got where=%v order=%v err=%v", where, order, err)
+	}
+
+	req := &Req{
+		Query: []*QueryParam{
+			{Field: "id", Exp: ISNULL, Logic: AND},
+			{Field: "uid", Exp: ISNOTNULL, Logic: OR},
+			{Field: "username", Exp: RAW, Value: clause.Expr{SQL: "username <> ?", Vars: []any{"root"}}, Logic: AND},
+		},
+		Order: []*OrderParam{{Field: "id", Order: DESC}},
+	}
+	where, order, err := req.ConvertToGormExpression(UserTest{})
+	if err != nil {
+		t.Fatalf("unexpected expression error: %v", err)
+	}
+	if len(where) != 3 || len(order) != 1 {
+		t.Fatalf("unexpected expression counts: where=%d order=%d", len(where), len(order))
+	}
+
+	badRaw := &Req{Query: []*QueryParam{{Field: "id", Exp: RAW, Value: "id = 1"}}}
+	if _, _, err := badRaw.ConvertToGormExpression(UserTest{}); err == nil {
+		t.Fatal("expected RAW value type error")
+	}
+	nilQuery := &Req{Query: []*QueryParam{nil}}
+	if _, _, err := nilQuery.ConvertToGormExpression(UserTest{}); err == nil {
+		t.Fatal("expected nil query error")
+	}
+	nilOrder := &Req{Order: []*OrderParam{nil}}
+	if _, _, err := nilOrder.ConvertToGormExpression(UserTest{}); err == nil {
+		t.Fatal("expected nil order error")
+	}
+}
+
+func TestFieldToColumnBranches(t *testing.T) {
+	if got := fieldToColumn(nil); len(got) != 0 {
+		t.Fatalf("nil model should return empty map: %#v", got)
+	}
+	if got := fieldToColumn(1); len(got) != 0 {
+		t.Fatalf("non-struct model should return empty map: %#v", got)
+	}
+	type mixedTags struct {
+		ID   int    `gorm:"column:id;primaryKey"`
+		Name string `json:"name"`
+	}
+	got := fieldToColumn(&mixedTags{})
+	if !reflect.DeepEqual(got, map[string]string{"id": "id"}) {
+		t.Fatalf("unexpected field map: %#v", got)
+	}
+}
+
 func TestReq_ConvertToGormExpressionPointerModel(t *testing.T) {
 	p := &Req{
 		Query: []*QueryParam{

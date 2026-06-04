@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dtm-labs/rockscache"
+	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
@@ -112,4 +113,211 @@ func TestCache_Key(t *testing.T) {
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	key := cache.Key("a", "b", "c")
 	assert.Equal(t, key, "test:a:b:c")
+}
+
+func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithName("custom"), WithTTL(time.Minute), WithBatchSize(2))
+
+	assert.Equal(t, "custom", cache.name)
+	assert.Equal(t, rdb, cache.redisClient)
+	assert.Equal(t, rocksCacheClient, cache.rocksCacheClient)
+	assert.Equal(t, time.Minute, cache.ttl)
+	assert.Equal(t, 2, cache.batchSize)
+
+	ttl := cache.TTL()
+	assert.LessOrEqual(t, ttl, time.Minute)
+	assert.GreaterOrEqual(t, ttl, 54*time.Second)
+}
+
+func TestUniquePreservesOrder(t *testing.T) {
+	assert.Nil(t, unique(nil))
+	assert.Equal(t, []string{"a", "b", "c"}, unique([]string{"a", "b", "a", "c", "b"}))
+}
+
+func TestChunkSplitsAndRejectsInvalidSize(t *testing.T) {
+	got, err := chunk([]string{"a", "b", "c"}, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, [][]string{{"a", "b"}, {"c"}}, got)
+
+	got, err = chunk(nil, 2)
+	assert.NoError(t, err)
+	assert.Empty(t, got)
+
+	_, err = chunk([]string{"a"}, 0)
+	assert.Error(t, err)
+}
+
+func TestFetchBatchAndDelBatchRejectInvalidBatchSize(t *testing.T) {
+	cache := NewRocksDBCache(nil, nil, WithBatchSize(0))
+
+	_, err := cache.FetchBatch(context.Background(), []string{"a"}, func([]string) (map[string]string, error) {
+		t.Fatal("fetch callback should not run when batch size is invalid")
+		return nil, nil
+	}, time.Minute)
+	assert.Error(t, err)
+
+	err = cache.DelBatch(context.Background(), []string{"a"})
+	assert.Error(t, err)
+}
+
+func TestFetchUsesRocksCacheClient(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheRead = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient)
+
+	got, err := cache.Fetch(context.Background(), "key", func() (string, error) {
+		return "loaded", nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "loaded", got)
+}
+
+func TestFetchReturnsLoaderError(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheRead = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient)
+
+	_, err := cache.Fetch(context.Background(), "key", func() (string, error) {
+		return "", context.Canceled
+	}, time.Minute)
+
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestFetchBatchUsesRocksCacheClient(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheRead = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
+
+	got, err := cache.FetchBatch(context.Background(), []string{"a", "b", "a"}, func(miss []string) (map[string]string, error) {
+		assert.Equal(t, []string{"a", "b"}, miss)
+		return map[string]string{"a": "loaded-a", "b": "loaded-b"}, nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"a": "loaded-a", "b": "loaded-b"}, got)
+}
+
+func TestFetchBatchReturnsLoaderError(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheRead = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
+
+	_, err := cache.FetchBatch(context.Background(), []string{"a", "b"}, func([]string) (map[string]string, error) {
+		return nil, context.Canceled
+	}, time.Minute)
+
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestDelAndDelBatchUseRocksCacheClient(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheDelete = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
+
+	assert.NoError(t, cache.Del(context.Background(), "key"))
+	assert.NoError(t, cache.DelBatch(context.Background(), []string{"a", "b", "a"}))
+}
+
+func TestFetchHashCacheHit(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewRocksDBCache(rdb, nil)
+
+	mock.ExpectHGet("hash", "field").SetVal("cached")
+
+	got, err := cache.FetchHash(context.Background(), "hash", "field", func() (string, error) {
+		t.Fatal("loader should not run on cache hit")
+		return "", nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "cached", got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestFetchHashCacheMissStoresValue(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewRocksDBCache(rdb, nil)
+
+	mock.ExpectHGet("hash", "field").RedisNil()
+	mock.ExpectHSet("hash", "field", "loaded").SetVal(1)
+	mock.ExpectExpire("hash", time.Minute).SetVal(true)
+
+	got, err := cache.FetchHash(context.Background(), "hash", "field", func() (string, error) {
+		return "loaded", nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "loaded", got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestFetchHashReturnsErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(redismock.ClientMock)
+		fn    func() (string, error)
+	}{
+		{
+			name: "hget error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "unused", nil },
+		},
+		{
+			name: "loader error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+			},
+			fn: func() (string, error) { return "", context.Canceled },
+		},
+		{
+			name: "hset error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+				mock.ExpectHSet("hash", "field", "loaded").SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "loaded", nil },
+		},
+		{
+			name: "expire error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+				mock.ExpectHSet("hash", "field", "loaded").SetVal(1)
+				mock.ExpectExpire("hash", time.Minute).SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "loaded", nil },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rdb, mock := redismock.NewClientMock()
+			cache := NewRocksDBCache(rdb, nil)
+			tt.setup(mock)
+
+			_, err := cache.FetchHash(context.Background(), "hash", "field", tt.fn, time.Minute)
+
+			assert.Error(t, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestDelHash(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewRocksDBCache(rdb, nil)
+	mock.ExpectHDel("hash", "field").SetVal(1)
+
+	assert.NoError(t, cache.DelHash(context.Background(), "hash", "field"))
+	assert.NoError(t, mock.ExpectationsWereMet())
 }

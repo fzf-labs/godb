@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -22,7 +21,7 @@ func (s *SQLDump) DumpPostgres() error {
 	if err != nil {
 		return fmt.Errorf("command pg_dump not found, please install: %w", err)
 	}
-	dbClient, err := gormx.NewSimpleGormClient(s.db, s.dsn)
+	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
 		return err
 	}

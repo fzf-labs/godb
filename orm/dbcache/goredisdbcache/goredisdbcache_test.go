@@ -87,6 +87,250 @@ func TestCache_Key(t *testing.T) {
 	assert.Equal(t, key, "test:a:b:c")
 }
 
+func TestGoRedisCacheOptionsAndTTL(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb, WithName("custom"), WithTTL(time.Minute))
+
+	assert.Equal(t, "custom:a", cache.Key("a"))
+	ttl := cache.TTL()
+	assert.LessOrEqual(t, ttl, time.Minute)
+	assert.GreaterOrEqual(t, ttl, 54*time.Second)
+}
+
+func TestGoRedisCacheFetchHit(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+	mock.ExpectGet("key").SetVal("cached")
+
+	got, err := cache.Fetch(context.Background(), "key", func() (string, error) {
+		t.Fatal("loader should not run on cache hit")
+		return "", nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "cached", got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheFetchMissStoresValue(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+	mock.ExpectGet("key").RedisNil()
+	mock.ExpectSet("key", "loaded", time.Minute).SetVal("OK")
+
+	got, err := cache.Fetch(context.Background(), "key", func() (string, error) {
+		return "loaded", nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "loaded", got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheFetchErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(redismock.ClientMock)
+		fn    func() (string, error)
+	}{
+		{
+			name: "get error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("key").SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "unused", nil },
+		},
+		{
+			name: "loader error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("key").RedisNil()
+			},
+			fn: func() (string, error) { return "", context.Canceled },
+		},
+		{
+			name: "set error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("key").RedisNil()
+				mock.ExpectSet("key", "loaded", time.Minute).SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "loaded", nil },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rdb, mock := redismock.NewClientMock()
+			cache := NewGoRedisDBCache(rdb)
+			tt.setup(mock)
+
+			_, err := cache.Fetch(context.Background(), "key", tt.fn, time.Minute)
+
+			assert.Error(t, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGoRedisCacheFetchBatchHitsWithMock(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+	mock.ExpectGet("a").SetVal("cached-a")
+	mock.ExpectGet("b").SetVal("cached-b")
+
+	got, err := cache.FetchBatch(context.Background(), []string{"a", "b"}, func(miss []string) (map[string]string, error) {
+		t.Fatalf("loader should not run on cache hit: %#v", miss)
+		return nil, nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"a": "cached-a", "b": "cached-b"}, got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheFetchBatchMissStoresValue(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+	mock.ExpectGet("a").RedisNil()
+	mock.ExpectSet("a", "loaded-a", time.Minute).SetVal("OK")
+
+	got, err := cache.FetchBatch(context.Background(), []string{"a"}, func(miss []string) (map[string]string, error) {
+		assert.Equal(t, []string{"a"}, miss)
+		return map[string]string{"a": "loaded-a"}, nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"a": "loaded-a"}, got)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheFetchBatchErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(redismock.ClientMock)
+		fn    func([]string) (map[string]string, error)
+	}{
+		{
+			name: "get error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("a").SetErr(context.Canceled)
+			},
+			fn: func([]string) (map[string]string, error) { return nil, nil },
+		},
+		{
+			name: "loader error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("a").RedisNil()
+			},
+			fn: func([]string) (map[string]string, error) { return nil, context.Canceled },
+		},
+		{
+			name: "set error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectGet("a").RedisNil()
+				mock.ExpectSet("a", "loaded-a", time.Minute).SetErr(context.Canceled)
+			},
+			fn: func([]string) (map[string]string, error) { return map[string]string{"a": "loaded-a"}, nil },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rdb, mock := redismock.NewClientMock()
+			cache := NewGoRedisDBCache(rdb)
+			tt.setup(mock)
+
+			_, err := cache.FetchBatch(context.Background(), []string{"a"}, tt.fn, time.Minute)
+
+			assert.Error(t, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGoRedisCacheFetchHashHitAndErrors(t *testing.T) {
+	t.Run("hit", func(t *testing.T) {
+		rdb, mock := redismock.NewClientMock()
+		cache := NewGoRedisDBCache(rdb)
+		mock.ExpectHGet("hash", "field").SetVal("cached")
+
+		got, err := cache.FetchHash(context.Background(), "hash", "field", func() (string, error) {
+			t.Fatal("loader should not run on cache hit")
+			return "", nil
+		}, time.Minute)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "cached", got)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	tests := []struct {
+		name  string
+		setup func(redismock.ClientMock)
+		fn    func() (string, error)
+	}{
+		{
+			name: "hget error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "unused", nil },
+		},
+		{
+			name: "loader error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+			},
+			fn: func() (string, error) { return "", context.Canceled },
+		},
+		{
+			name: "hset error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+				mock.ExpectHSet("hash", "field", "loaded").SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "loaded", nil },
+		},
+		{
+			name: "expire error",
+			setup: func(mock redismock.ClientMock) {
+				mock.ExpectHGet("hash", "field").RedisNil()
+				mock.ExpectHSet("hash", "field", "loaded").SetVal(1)
+				mock.ExpectExpire("hash", time.Minute).SetErr(context.Canceled)
+			},
+			fn: func() (string, error) { return "loaded", nil },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rdb, mock := redismock.NewClientMock()
+			cache := NewGoRedisDBCache(rdb)
+			tt.setup(mock)
+
+			_, err := cache.FetchHash(context.Background(), "hash", "field", tt.fn, time.Minute)
+
+			assert.Error(t, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGoRedisCacheDeletesWithMock(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+
+	mock.ExpectDel("key").SetVal(1)
+	assert.NoError(t, cache.Del(context.Background(), "key"))
+
+	mock.ExpectDel("a", "b").SetVal(2)
+	assert.NoError(t, cache.DelBatch(context.Background(), []string{"a", "b"}))
+
+	mock.ExpectHDel("hash", "field").SetVal(1)
+	assert.NoError(t, cache.DelHash(context.Background(), "hash", "field"))
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestGoRedisCache_FetchHash_ScopesSingleflightByField(t *testing.T) {
 	client, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)

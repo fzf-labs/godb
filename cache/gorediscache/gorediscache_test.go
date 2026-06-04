@@ -2,9 +2,12 @@ package gorediscache
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,8 +28,92 @@ func TestNewGoRedis(t *testing.T) {
 	assert.Equal(t, "ok", value)
 }
 
+func TestNewGoRedisWithInstrumentation(t *testing.T) {
+	server, err := miniredis.Run()
+	require.NoError(t, err)
+	defer server.Close()
+
+	client, err := NewGoRedis(GoRedisConfig{
+		Addr:    server.Addr(),
+		Tracing: true,
+		Metrics: true,
+	})
+	require.NoError(t, err)
+	defer client.Close()
+}
+
+func TestNewGoRedisReturnsPingError(t *testing.T) {
+	server, err := miniredis.Run()
+	require.NoError(t, err)
+	addr := server.Addr()
+	server.Close()
+
+	client, err := NewGoRedis(GoRedisConfig{
+		Addr:         addr,
+		DialTimeout:  time.Millisecond,
+		ReadTimeout:  time.Millisecond,
+		WriteTimeout: time.Millisecond,
+	})
+	assert.Nil(t, client)
+	assert.Error(t, err)
+}
+
 func TestStringToKV_PreservesValueAfterFirstColon(t *testing.T) {
 	key, value := stringToKV("module:name:1.0")
 	assert.Equal(t, "module", key)
 	assert.Equal(t, "name:1.0", value)
+}
+
+func TestRedisInfoParsesInfo(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	mock.ExpectInfo("server").SetVal("# Server\r\nredis_version:7.2.0\r\nconnected_clients:3\r\n\r\n")
+
+	info := RedisInfo(client, "server")
+	assert.Equal(t, "7.2.0", info["redis_version"])
+	assert.Equal(t, "3", info["connected_clients"])
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestRedisInfoReturnsEmptyOnError(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	mock.ExpectInfo().SetErr(context.Canceled)
+
+	info := RedisInfo(client)
+	assert.Empty(t, info)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestRedisInfoReturnsEmptyOnScannerError(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	mock.ExpectInfo().SetVal(strings.Repeat("x", 70*1024))
+
+	info := RedisInfo(client)
+	assert.Empty(t, info)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStringToLines(t *testing.T) {
+	lines, err := stringToLines("a\nb\n")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, lines)
+}
+
+func TestDBSize(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	mock.ExpectDBSize().SetVal(12)
+	assert.Equal(t, int64(12), DBSize(client))
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDBSizeReturnsZeroOnError(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	mock.ExpectDBSize().SetErr(context.Canceled)
+	assert.Equal(t, int64(0), DBSize(client))
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStringToKVWithoutSeparator(t *testing.T) {
+	key, value := stringToKV("standalone")
+	assert.Equal(t, "standalone", key)
+	assert.Equal(t, "", value)
 }

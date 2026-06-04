@@ -209,3 +209,34 @@ func TestBuildKey_EscapesSegmentsToAvoidCollisions(t *testing.T) {
 		t.Fatalf("expected different keys, got identical values %q", got1)
 	}
 }
+
+func TestKeyFormatReflectBranches(t *testing.T) {
+	type namedString string
+
+	var nilMap map[string]string
+	var nilSlice []string
+	value := 7
+
+	tests := []struct {
+		name  string
+		value any
+		want  string
+	}{
+		{name: "nil map", value: nilMap, want: ""},
+		{name: "nil slice", value: nilSlice, want: ""},
+		{name: "pointer", value: &value, want: "7"},
+		{name: "named string", value: namedString("alias"), want: "alias"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := KeyFormat(tt.value); got != tt.want {
+				t.Fatalf("got %q want %q", got, tt.want)
+			}
+		})
+	}
+
+	if got := KeyFormat(make(chan int)); got == "" {
+		t.Fatal("json marshal fallback should return fmt string for unsupported values")
+	}
+}

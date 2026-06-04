@@ -11,9 +11,11 @@ import (
 	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
+var newSimpleGormClient = gormx.NewSimpleGormClient
+
 // DumpMySQL 导出创建语句
 func (s *SQLDump) DumpMySQL() error {
-	dbClient, err := gormx.NewSimpleGormClient(s.db, s.dsn)
+	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
 		return err
 	}

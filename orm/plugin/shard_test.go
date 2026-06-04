@@ -26,6 +26,29 @@ func TestMonthShardingSuffixRejectsInvalidString(t *testing.T) {
 	assert.Contains(t, err.Error(), "must be a valid time")
 }
 
+func TestMonthShardingSuffixCoversPointerNilAndString(t *testing.T) {
+	fixedTime := time.Date(2024, 2, 3, 4, 5, 6, 0, time.UTC)
+	suffix, err := monthShardingSuffix("created_at", &fixedTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "_202402", suffix)
+
+	suffix, err = monthShardingSuffix("created_at", "2024-03-04 05:06:07")
+	assert.NoError(t, err)
+	assert.Equal(t, "_202403", suffix)
+
+	var nilTime *time.Time
+	_, err = monthShardingSuffix("created_at", nilTime)
+	assert.Error(t, err)
+
+	_, err = monthShardingSuffix("created_at", nil)
+	assert.Error(t, err)
+}
+
+func TestShardingPluginConstructors(t *testing.T) {
+	assert.NotNil(t, NewShardingPlugin("orders", "user_id", 8))
+	assert.NotNil(t, NewMonthShardingPlugin("orders", "created_at"))
+}
+
 // TestNewMonthShardingPlugin 验证按月分片插件配置。
 func TestNewMonthShardingPlugin(t *testing.T) {
 	sqlDB, err := sql.Open("pgx", "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=fkratos_sys sslmode=disable TimeZone=Asia/Shanghai")

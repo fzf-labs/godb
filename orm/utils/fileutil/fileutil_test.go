@@ -1,6 +1,9 @@
 package fileutil
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -31,6 +34,12 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
+func TestExistsMissingPath(t *testing.T) {
+	if Exists(filepath.Join(t.TempDir(), "missing")) {
+		t.Fatal("missing path should not exist")
+	}
+}
+
 // TestMkdirPath 验证目录创建工具函数。
 func TestMkdirPath(t *testing.T) {
 	type args struct {
@@ -55,5 +64,59 @@ func TestMkdirPath(t *testing.T) {
 				t.Errorf("MkdirPath() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestWriteContentCover(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "nested", "file.txt")
+	if err := WriteContentCover(file, "first"); err != nil {
+		t.Fatalf("write content: %v", err)
+	}
+	content, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("read content: %v", err)
+	}
+	if string(content) != "first" {
+		t.Fatalf("unexpected content: %q", string(content))
+	}
+	if err := WriteContentCover(file, "second"); err != nil {
+		t.Fatalf("overwrite content: %v", err)
+	}
+	content, err = os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("read overwritten content: %v", err)
+	}
+	if string(content) != "second" {
+		t.Fatalf("unexpected overwritten content: %q", string(content))
+	}
+}
+
+func TestWriteContentCoverReturnsPathErrors(t *testing.T) {
+	parentFile := filepath.Join(t.TempDir(), "parent")
+	if err := os.WriteFile(parentFile, []byte("file"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteContentCover(filepath.Join(parentFile, "child.txt"), "content"); err == nil {
+		t.Fatal("expected mkdir error when parent is a file")
+	}
+
+	dirPath := filepath.Join(t.TempDir(), "dir-as-file")
+	if err := os.MkdirAll(dirPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteContentCover(dirPath, "content"); err == nil {
+		t.Fatal("expected open error when target is a directory")
+	}
+}
+
+func TestFillModelPkgPath(t *testing.T) {
+	if got := FillModelPkgPath("."); !strings.HasSuffix(got, "/orm/utils/fileutil") {
+		t.Fatalf("unexpected package path: %s", got)
+	}
+	if got := FillModelPkgPath(filepath.Join(t.TempDir(), "missing")); got != "" {
+		t.Fatalf("missing package should return empty path, got %s", got)
+	}
+	if got := FillModelPkgPath(t.TempDir()); got != "" {
+		t.Fatalf("empty package dir should return empty path, got %s", got)
 	}
 }

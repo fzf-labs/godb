@@ -71,3 +71,57 @@ func TestNewGenerationPb_ReturnsGenerationErrors(t *testing.T) {
 		t.Fatalf("expected error to mention table %q, got %v", tables[0], err)
 	}
 }
+
+func TestNewGenerationPbWithSQLiteSuccess(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type protoSuccessExample struct {
+		ID   uint `gorm:"primaryKey"`
+		Name string
+	}
+	if err := db.AutoMigrate(&protoSuccessExample{}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.demo.v1",
+		"api/demo/v1;v1",
+		WithPBOpts(ModelOptionRemoveDefault()),
+		WithPBTables([]string{"proto_success_examples"}),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewGenerationPbPartitionError(t *testing.T) {
+	db, err := gorm.Open(generationNamedDialector{Dialector: sqlite.Open(":memory:"), name: gormx.Postgres}, &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type protoPartitionExample struct {
+		ID uint `gorm:"primaryKey"`
+	}
+	if err := db.AutoMigrate(&protoPartitionExample{}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.demo.v1",
+		"api/demo/v1;v1",
+		WithPBTables([]string{"proto_partition_examples"}),
+	).Do()
+	if err == nil {
+		t.Fatal("expected partition query error")
+	}
+	if !strings.Contains(err.Error(), "get partition table children") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

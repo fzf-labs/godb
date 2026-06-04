@@ -1,6 +1,15 @@
 package sqldump
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
 
 func TestPostgresDsnParse_KeywordValue(t *testing.T) {
 	s := &SQLDump{
@@ -58,4 +67,266 @@ func TestBuildPgDumpArgs_UsesDatabaseFlag(t *testing.T) {
 			t.Fatalf("unexpected args: got=%v want=%v", args, want)
 		}
 	}
+}
+
+func TestShouldSkipLine(t *testing.T) {
+	dump := &SQLDump{}
+	tests := []struct {
+		line string
+		want bool
+	}{
+		{line: "", want: true},
+		{line: "-- comment", want: true},
+		{line: "SELECT pg_catalog.set_config('search_path', '', false);", want: true},
+		{line: "SET statement_timeout = 0;", want: true},
+		{line: `\restrict abc`, want: true},
+		{line: `\unrestrict abc`, want: true},
+		{line: "ALTER TABLE public.users OWNER TO postgres;", want: true},
+		{line: "CREATE TABLE public.users (id bigint);", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.line, func(t *testing.T) {
+			if got := dump.shouldSkipLine(tt.line); got != tt.want {
+				t.Fatalf("got %v want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPostgresRemoveFiltersAndFlattensStatements(t *testing.T) {
+	dump := &SQLDump{}
+	input := `-- dumped by pg_dump
+SET statement_timeout = 0;
+
+CREATE TABLE public.users (
+    id bigint NOT NULL
+);
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+ALTER TABLE public.users OWNER TO postgres;
+SELECT pg_catalog.set_config('search_path', '', false);
+`
+
+	got := dump.postgresRemove(input)
+	for _, forbidden := range []string{"dumped by", "SET statement_timeout", "OWNER TO postgres", "SELECT pg_catalog"} {
+		if strings.Contains(got, forbidden) {
+			t.Fatalf("expected %q to be removed from:\n%s", forbidden, got)
+		}
+	}
+	wantAlter := "ALTER TABLE ONLY public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+	if !strings.Contains(got, wantAlter) {
+		t.Fatalf("expected flattened alter statement %q in:\n%s", wantAlter, got)
+	}
+	if !strings.Contains(got, "CREATE TABLE public.users") {
+		t.Fatalf("expected create table to remain:\n%s", got)
+	}
+}
+
+func TestPostgresRemoveEmpty(t *testing.T) {
+	if got := (&SQLDump{}).postgresRemove(""); got != "" {
+		t.Fatalf("got %q want empty", got)
+	}
+}
+
+func TestDumpPostgresWritesAndSkipsExistingFiles(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(driver, dsn string) (*gorm.DB, error) {
+		if driver != "postgres" || !strings.Contains(dsn, "dbname=app") {
+			t.Fatalf("unexpected connection args: %s %s", driver, dsn)
+		}
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	binDir := t.TempDir()
+	pgDump := filepath.Join(binDir, "pg_dump")
+	script := `#!/bin/sh
+cat <<'SQL'
+-- comment
+SET statement_timeout = 0;
+CREATE TABLE public.users (id bigint);
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+ALTER TABLE public.users OWNER TO postgres;
+SQL
+`
+	if err := os.WriteFile(pgDump, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	outDir := t.TempDir()
+	existingDir := filepath.Join(outDir, "app")
+	if err := os.MkdirAll(existingDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	existingFile := filepath.Join(existingDir, "users.sql")
+	if err := os.WriteFile(existingFile, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	if err := NewSQLDump("postgres", dsn, outDir, "users,roles", false).DumpPostgres(); err != nil {
+		t.Fatal(err)
+	}
+
+	existingContent, err := os.ReadFile(existingFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(existingContent) != "keep" {
+		t.Fatalf("existing file should not be overwritten: %s", string(existingContent))
+	}
+
+	content, err := os.ReadFile(filepath.Join(existingDir, "roles.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	if strings.Contains(got, "OWNER TO postgres") || strings.Contains(got, "SET statement_timeout") {
+		t.Fatalf("dump content was not cleaned:\n%s", got)
+	}
+	if !strings.Contains(got, "ALTER TABLE ONLY public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);") {
+		t.Fatalf("expected flattened alter statement:\n%s", got)
+	}
+}
+
+func TestDumpPostgresReturnsMissingCommand(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	err := NewSQLDump("postgres", "host=127.0.0.1 dbname=app", t.TempDir(), "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "pg_dump not found") {
+		t.Fatalf("expected pg_dump lookup error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsClientError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	clientErr := errors.New("client failed")
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return nil, clientErr
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	err := NewSQLDump("postgres", "host=127.0.0.1 dbname=app", t.TempDir(), "users", true).DumpPostgres()
+	if !errors.Is(err, clientErr) {
+		t.Fatalf("expected client error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsGetTablesError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err = NewSQLDump("postgres", dsn, t.TempDir(), "", true).DumpPostgres()
+	if err == nil {
+		t.Fatal("expected get tables error")
+	}
+}
+
+func TestDumpPostgresReturnsDSNParseError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+
+	err := NewSQLDump("postgres", ":::bad dsn:::", t.TempDir(), "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "parse postgres dsn") {
+		t.Fatalf("expected dsn parse error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsMkdirError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+
+	outDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outDir, "app"), []byte("file"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err := NewSQLDump("postgres", dsn, outDir, "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "create output path") {
+		t.Fatalf("expected mkdir error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsCommandError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 3\n")
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err := NewSQLDump("postgres", dsn, t.TempDir(), "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "pg_dump table users") {
+		t.Fatalf("expected command error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsWriteError(t *testing.T) {
+	installPgDump(t, `#!/bin/sh
+cat <<'SQL'
+CREATE TABLE public.users (id bigint);
+SQL
+`)
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+
+	outDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(outDir, "app", "users.sql"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err := NewSQLDump("postgres", dsn, outDir, "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "write") {
+		t.Fatalf("expected write error, got %v", err)
+	}
+}
+
+func installPgDump(t *testing.T, script string) {
+	t.Helper()
+	binDir := t.TempDir()
+	pgDump := filepath.Join(binDir, "pg_dump")
+	if err := os.WriteFile(pgDump, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func replacePostgresDumpClient(t *testing.T) func() {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(driver, dsn string) (*gorm.DB, error) {
+		if driver != "postgres" {
+			t.Fatalf("unexpected driver: %s", driver)
+		}
+		return db, nil
+	}
+	return func() { newSimpleGormClient = oldNewSimple }
 }
