@@ -91,3 +91,54 @@ func TestLockerLockMethodsWithMockedLua(t *testing.T) {
 		})
 	}
 }
+
+func TestLockerLockMethodsReturnObtainErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*Locker, context.Context, func() error) error
+	}{
+		{
+			name: "lock once",
+			run: func(locker *Locker, ctx context.Context, fn func() error) error {
+				return locker.LockOnce(ctx, "lock:key", time.Minute, fn)
+			},
+		},
+		{
+			name: "lock retry",
+			run: func(locker *Locker, ctx context.Context, fn func() error) error {
+				return locker.LockRetry(ctx, "lock:key", time.Minute, fn)
+			},
+		},
+		{
+			name: "lock custom",
+			run: func(locker *Locker, ctx context.Context, fn func() error) error {
+				return locker.LockWithCustom(ctx, "lock:key", time.Minute, time.Millisecond, 0, fn)
+			},
+		},
+		{
+			name: "lock once not release",
+			run: func(locker *Locker, ctx context.Context, fn func() error) error {
+				return locker.LockOnceNotRelease(ctx, "lock:key", time.Minute, fn)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, mock := redismock.NewClientMock()
+			locker := NewLocker(client)
+			called := false
+
+			mock.Regexp().ExpectEvalSha("[0-9a-f]+", []string{"lock:key"}, ".+", 22, "60000").SetErr(context.Canceled)
+
+			err := tt.run(locker, context.Background(), func() error {
+				called = true
+				return nil
+			})
+
+			assert.ErrorIs(t, err, context.Canceled)
+			assert.False(t, called)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

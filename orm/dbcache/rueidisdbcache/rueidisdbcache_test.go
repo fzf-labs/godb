@@ -3,6 +3,7 @@ package rueidisdbcache
 import (
 	"context"
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
@@ -104,7 +105,13 @@ func newMiniRueidisClient(t *testing.T) (*miniredis.Miniredis, rueidis.Client) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := rueidis.NewClient(rueidis.ClientOption{InitAddress: []string{server.Addr()}, DisableCache: true})
+	client, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress:      []string{server.Addr()},
+		Dialer:           net.Dialer{Timeout: time.Millisecond},
+		ConnWriteTimeout: time.Millisecond,
+		DisableRetry:     true,
+		DisableCache:     true,
+	})
 	if err != nil {
 		server.Close()
 		t.Fatal(err)
@@ -189,4 +196,32 @@ func TestRueidisCacheHitAndLoaderErrorsWithMiniredis(t *testing.T) {
 		return "", context.Canceled
 	}, time.Minute)
 	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestRueidisCacheReturnsBackendErrorsWithMiniredis(t *testing.T) {
+	server, client := newMiniRueidisClient(t)
+	cache := NewRueidisDBCache(client)
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	server.Close()
+
+	_, err := cache.Fetch(ctx, "fetch:backend-error", func() (string, error) {
+		t.Fatal("loader should not run when redis returns a backend error")
+		return "", nil
+	}, time.Minute)
+	assert.Error(t, err)
+
+	_, err = cache.FetchBatch(ctx, []string{"batch:backend-error"}, func([]string) (map[string]string, error) {
+		t.Fatal("loader should not run when redis returns a backend error")
+		return nil, nil
+	}, time.Minute)
+	assert.Error(t, err)
+
+	_, err = cache.FetchHash(ctx, "hash:backend-error", "field", func() (string, error) {
+		t.Fatal("loader should not run when redis returns a backend error")
+		return "", nil
+	}, time.Minute)
+	assert.Error(t, err)
+
+	assert.Error(t, cache.DelBatch(ctx, []string{"delete:backend-error"}))
 }

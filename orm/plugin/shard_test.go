@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -47,6 +49,24 @@ func TestMonthShardingSuffixCoversPointerNilAndString(t *testing.T) {
 func TestShardingPluginConstructors(t *testing.T) {
 	assert.NotNil(t, NewShardingPlugin("orders", "user_id", 8))
 	assert.NotNil(t, NewMonthShardingPlugin("orders", "created_at"))
+}
+
+func TestMonthShardingPluginRoutesSQLiteQueries(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.Exec(`CREATE TABLE orders_202401 (id integer, created_at datetime, name text)`).Error)
+	require.NoError(t, db.Use(NewMonthShardingPlugin("orders", "created_at")))
+
+	err = db.Exec(`INSERT INTO orders (created_at, name) VALUES (?, ?)`, "2024-01-02 03:04:05", "new-year").Error
+	require.NoError(t, err)
+
+	var count int64
+	err = db.Table("orders_202401").Where("id = ? AND name = ?", 202401, "new-year").Count(&count).Error
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+
+	err = db.Exec(`SELECT * FROM orders WHERE created_at = ?`, "2024-01-02 03:04:05").Error
+	assert.NoError(t, err)
 }
 
 // TestNewMonthShardingPlugin 验证按月分片插件配置。

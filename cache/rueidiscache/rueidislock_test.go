@@ -6,9 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestLockerOptionWithTTL 验证自定义锁 TTL 配置。
@@ -76,6 +78,62 @@ func TestLockerMethodsReturnBuilderError(t *testing.T) {
 			})
 			assert.ErrorIs(t, err, builderErr)
 			assert.False(t, called)
+		})
+	}
+}
+
+func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
+	server, err := miniredis.Run()
+	require.NoError(t, err)
+	defer server.Close()
+
+	client, err := rueidis.NewClient(rueidis.ClientOption{InitAddress: []string{server.Addr()}, DisableCache: true})
+	require.NoError(t, err)
+	defer client.Close()
+
+	option := NewDefaultLockerOption(client)
+	option.ClientOption.DisableCache = true
+	option.FallbackSETPX = true
+	option.KeyMajority = 1
+	option.TryNextAfter = time.Millisecond
+	locker := NewLocker(option)
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		key        string
+		wantExists bool
+		fn         func(func() error) error
+	}{
+		{
+			name:       "retry",
+			key:        "lock:retry",
+			wantExists: false,
+			fn: func(callback func() error) error {
+				return locker.LockRetry(ctx, "lock:retry", 10*time.Second, callback)
+			},
+		},
+		{
+			name:       "not release",
+			key:        "lock:not-release",
+			wantExists: true,
+			fn: func(callback func() error) error {
+				return locker.LockOnceNotRelease(ctx, "lock:not-release", 10*time.Second, callback)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			err := tt.fn(func() error {
+				called = true
+				return nil
+			})
+
+			assert.NoError(t, err)
+			assert.True(t, called)
+			assert.Equal(t, tt.wantExists, server.Exists("rueidislock:0:"+tt.key))
 		})
 	}
 }

@@ -13,6 +13,8 @@ import (
 // version 可在发布构建时通过 -ldflags "-X main.version=vX.Y.Z" 注入。
 var version = "dev"
 
+var logFatal = log.Fatal
+
 var rootCmd = &cobra.Command{
 	Use:     "godb",
 	Short:   "godb: an db toolkit",
@@ -39,7 +41,11 @@ func commandVersion() string {
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+	runMain(rootCmd.Execute)
+}
+
+func runMain(execute func() error) {
+	if err := execute(); err != nil {
+		logFatal(err)
 	}
 }
