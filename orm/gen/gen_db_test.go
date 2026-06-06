@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -424,9 +425,9 @@ func TestGenerationDBDoWithSQLiteRepo(t *testing.T) {
 // TestGenerationPostgresWithOutRepo 验证不生成 repo 的 PostgreSQL 代码生成。
 func TestGenerationPostgresWithOutRepo(t *testing.T) {
 	// 初始化数据库
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(
@@ -447,9 +448,9 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 // TestGenerationPostgres 验证 PostgreSQL 模型和 repo 代码生成。
 func TestGenerationPostgres(t *testing.T) {
 	// 初始化数据库
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(
@@ -499,9 +500,9 @@ func TestGenerationPostgres(t *testing.T) {
 // TestGenerationPostgresFieldNullable 验证可空字段的 PostgreSQL 代码生成。
 func TestGenerationPostgresFieldNullable(t *testing.T) {
 	// 初始化数据库
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	// 生成代码
 	err = NewGenerationDB(

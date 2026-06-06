@@ -9,6 +9,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/fzf-labs/godb/cache/rueidiscache"
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,16 +18,16 @@ func requireRueidis(t *testing.T) rueidis.Client {
 	t.Helper()
 	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
 		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
+		Password:    testenv.RedisPassword(),
+		InitAddress: []string{testenv.RedisAddr()},
 		SelectDB:    0,
 	})
 	if err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
 		client.Close()
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	t.Cleanup(client.Close)
 	return client
@@ -107,8 +108,8 @@ func newMiniRueidisClient(t *testing.T) (*miniredis.Miniredis, rueidis.Client) {
 	}
 	client, err := rueidis.NewClient(rueidis.ClientOption{
 		InitAddress:      []string{server.Addr()},
-		Dialer:           net.Dialer{Timeout: time.Millisecond},
-		ConnWriteTimeout: time.Millisecond,
+		Dialer:           net.Dialer{Timeout: time.Second},
+		ConnWriteTimeout: time.Second,
 		DisableRetry:     true,
 		DisableCache:     true,
 	})

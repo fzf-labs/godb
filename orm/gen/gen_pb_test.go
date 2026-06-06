@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -13,9 +14,9 @@ import (
 
 // TestNewGenerationPb 验证 proto 文件生成。
 func TestNewGenerationPb(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	err = NewGenerationPB(
 		db,

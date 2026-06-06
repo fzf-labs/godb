@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 	"github.com/stretchr/testify/assert"
@@ -110,7 +111,7 @@ func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
 			key:        "lock:retry",
 			wantExists: false,
 			fn: func(callback func() error) error {
-				return locker.LockRetry(ctx, "lock:retry", 10*time.Second, callback)
+				return locker.LockRetry(ctx, "lock:retry", 2*time.Second, callback)
 			},
 		},
 		{
@@ -118,7 +119,7 @@ func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
 			key:        "lock:not-release",
 			wantExists: true,
 			fn: func(callback func() error) error {
-				return locker.LockOnceNotRelease(ctx, "lock:not-release", 10*time.Second, callback)
+				return locker.LockOnceNotRelease(ctx, "lock:not-release", 2*time.Second, callback)
 			},
 		},
 	}
@@ -149,20 +150,28 @@ func rueidislockOption(ttl time.Duration) rueidislock.LockerOption {
 func TestLocker_AutoLock(t *testing.T) {
 	client, err := NewRueidisClient(&rueidis.ClientOption{
 		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
+		Password:    testenv.RedisPassword(),
+		InitAddress: []string{testenv.RedisAddr()},
 		SelectDB:    0,
 	})
 	if err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	defer client.Close()
 	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
-	locker := NewLocker(NewDefaultLockerOption(client))
+	option := NewDefaultLockerOption(client)
+	option.FallbackSETPX = true
+	option.KeyMajority = 1
+	option.TryNextAfter = time.Second
+	locker := NewLocker(option)
+	key := fmt.Sprintf("test_lock:%d", time.Now().UnixNano())
+	defer func() {
+		_ = client.Do(context.Background(), client.B().Del().Key("rueidislock:0:"+key).Build()).Error()
+	}()
 	ctx := context.Background()
-	err = locker.LockOnce(ctx, "test_lock", 10*time.Second, func() error {
+	err = locker.LockOnce(ctx, key, 10*time.Second, func() error {
 		fmt.Println("test_lock do ")
 		return nil
 	})

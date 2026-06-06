@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,16 +15,16 @@ import (
 func TestNewRueiis(t *testing.T) {
 	client, err := NewRueidisClient(&rueidis.ClientOption{
 		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
+		Password:    testenv.RedisPassword(),
+		InitAddress: []string{testenv.RedisAddr()},
 		SelectDB:    0,
 	})
 	if err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	defer client.Close()
 	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	client.DoMulti(
 		context.Background(),
@@ -52,23 +53,23 @@ func TestNewRueidisAside(t *testing.T) {
 	ctx := context.Background()
 	client, err := NewRueidisAsideClient(&rueidis.ClientOption{
 		Username:    "",
-		Password:    "123456",
-		InitAddress: []string{"127.0.0.1:6379"},
+		Password:    testenv.RedisPassword(),
+		InitAddress: []string{testenv.RedisAddr()},
 		SelectDB:    0,
 	})
 	if err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	defer client.Close()
 	redisClient := client.Client()
 	if err := redisClient.Do(ctx, redisClient.B().Ping().Build()).Error(); err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 
 	key := fmt.Sprintf("godb:rueidisaside:%d", time.Now().UnixNano())
 	defer client.Del(context.Background(), key)
 	if err := client.Del(ctx, key); err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 
 	probeKey := key + ":probe"
@@ -76,7 +77,7 @@ func TestNewRueidisAside(t *testing.T) {
 	if _, err := client.Get(ctx, time.Minute, probeKey, func(_ context.Context, _ string) (val string, err error) {
 		return "probe", nil
 	}); err != nil {
-		t.Skipf("redis cache-aside unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis cache-aside unavailable: %v", err)
 	}
 
 	loaderCalls := 0

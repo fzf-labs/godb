@@ -371,7 +371,9 @@ Repo 生成器会读取数据库索引并按以下优先级生成方法：
 ```bash
 make fmt
 make vet
-go test ./...
+make test
+make cover
+make ci
 ```
 
 手动安装并检查 CLI：
@@ -381,7 +383,16 @@ go install ./cmd/godb
 godb --help
 ```
 
-本仓库包含依赖 Redis/PostgreSQL 的示例测试；如果本机没有对应服务，相关测试会跳过或使用 mock。
+本仓库的 PostgreSQL/Redis 示例测试在 CI 中会自动准备服务和种子数据；本地可通过 `GODB_TEST_POSTGRES_DSN`、`GODB_TEST_REDIS_ADDR` 和 `GODB_TEST_REDIS_PASSWORD` 覆盖默认地址与凭据。如果本机没有对应服务，相关测试会跳过或使用 mock；在 CI 环境中，服务不可用会让测试失败，避免误把集成测试跳过当成通过。
+
+发布流程：
+
+```bash
+make release-snapshot
+make release-tag
+```
+
+`make release-tag` 会创建并推送下一个 patch tag；所有 `v*` tag 会触发 GitHub Actions 的 release workflow，并由 GoReleaser 产出跨平台二进制、校验和和 GitHub Release。
 
 ## Design Notes
 

@@ -1,4 +1,6 @@
 SHELL = /bin/bash
+TEST_PKGS := ./...
+COVER_PKGS := $(shell go list ./... | grep -v '/orm/example/gorm/postgres/gorm_gen_')
 
 .PHONY: mod
 # make mod  golang库更新
@@ -23,13 +25,33 @@ gci:
 vet:
 	@go vet ./...
 
-.PHONY: lint
-# make lint  golang使用最多的第三方静态程序分析工具
-lint:
-	@golangci-lint run ./... -v
+.PHONY: test
+# make test 运行全量测试
+test:
+	@go test $(TEST_PKGS)
 
-# 创建新的 tag
-git-new-tag:
+.PHONY: cover
+# make cover 运行覆盖率并排除生成示例包
+cover:
+	@go test $(COVER_PKGS) -coverprofile=/tmp/godb.cover
+	@go tool cover -func=/tmp/godb.cover | tail -n 1
+
+.PHONY: ci
+# make ci 运行格式检查、vet、测试和覆盖率
+ci:
+	@test -z "$$(gofmt -l .)"
+	@$(MAKE) vet
+	@$(MAKE) test
+	@$(MAKE) cover
+
+.PHONY: release-snapshot
+# make release-snapshot 预览发布产物
+release-snapshot:
+	@go run github.com/goreleaser/goreleaser/v2@v2.16.0 release --snapshot --clean --skip=publish
+
+.PHONY: release-tag
+# make release-tag 创建并推送下一个 patch tag
+release-tag:
 	# 获取当前最新的 tag
 	$(eval LATEST_TAG := $(shell git tag -l | sort -V | tail -n 1))
 	@echo "当前最新的 tag: ${LATEST_TAG}"
@@ -46,6 +68,14 @@ git-new-tag:
 	@git tag -a ${NEW_VERSION} -m "release ${NEW_VERSION}"
 	# 推送新的 tag
 	@git push origin ${NEW_VERSION}
+
+.PHONY: lint
+# make lint  golang使用最多的第三方静态程序分析工具
+lint:
+	@golangci-lint run ./... -v
+
+# 创建新的 tag
+git-new-tag: release-tag
 
 # show help
 help:

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -19,7 +20,7 @@ import (
 func TestNewGormPostgresClient(t *testing.T) {
 	config := ClientConfig{
 		Driver:          "postgres",
-		DataSourceName:  "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=user sslmode=disable TimeZone=Asia/Shanghai",
+		DataSourceName:  testenv.PostgresDSN("user"),
 		MaxIdleConn:     0,
 		MaxOpenConn:     0,
 		ConnMaxLifeTime: 0,
@@ -29,7 +30,7 @@ func TestNewGormPostgresClient(t *testing.T) {
 	_, err := NewGormClient(&config)
 	fmt.Println(err)
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	assert.Equal(t, nil, err)
 }
@@ -61,9 +62,9 @@ func TestNewDirectGormClientKnownDriversRejectBadDSN(t *testing.T) {
 }
 
 func TestNewDirectGormClientPostgresSuccess(t *testing.T) {
-	db, err := newDirectGormClient(Postgres, "host=localhost user=postgres dbname=godb sslmode=disable", logger.Silent)
+	db, err := newDirectGormClient(Postgres, testenv.PostgresDSN("gorm_gen"), logger.Silent)
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	assert.NotNil(t, db)
 }

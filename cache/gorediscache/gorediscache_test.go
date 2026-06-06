@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,12 +15,12 @@ import (
 
 func TestNewGoRedis(t *testing.T) {
 	newGoRedis, err := NewGoRedis(GoRedisConfig{
-		Addr:     "127.0.0.1:6379",
-		Password: "123456",
+		Addr:     testenv.RedisAddr(),
+		Password: testenv.RedisPassword(),
 		DB:       0,
 	})
 	if err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	key := "godb:gorediscache:test"
 	require.NoError(t, newGoRedis.Set(context.Background(), key, "ok", time.Minute).Err())

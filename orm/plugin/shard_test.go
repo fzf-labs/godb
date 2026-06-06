@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
@@ -71,9 +72,9 @@ func TestMonthShardingPluginRoutesSQLiteQueries(t *testing.T) {
 
 // TestNewMonthShardingPlugin 验证按月分片插件配置。
 func TestNewMonthShardingPlugin(t *testing.T) {
-	sqlDB, err := sql.Open("pgx", "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=fkratos_sys sslmode=disable TimeZone=Asia/Shanghai")
+	sqlDB, err := sql.Open("pgx", testenv.PostgresDSN("fkratos_sys"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	defer sqlDB.Close()
 	gormConfig := gorm.Config{
@@ -82,7 +83,7 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 	gormConfig.Logger = logger.Default.LogMode(logger.Info)
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gormConfig)
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	err = db.Use(NewMonthShardingPlugin("sys_admin", "created_at"))
@@ -99,9 +100,9 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 
 // TestNewShardingPlugin 验证通用分片插件配置。
 func TestNewShardingPlugin(t *testing.T) {
-	sqlDB, err := sql.Open("pgx", "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=fkratos_sys sslmode=disable TimeZone=Asia/Shanghai")
+	sqlDB, err := sql.Open("pgx", testenv.PostgresDSN("fkratos_sys"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	defer sqlDB.Close()
 	gormConfig := gorm.Config{
@@ -110,7 +111,7 @@ func TestNewShardingPlugin(t *testing.T) {
 	gormConfig.Logger = logger.Default.LogMode(logger.Info)
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gormConfig)
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	err = db.Use(NewShardingPlugin("sys_admin", "created_at", 64))

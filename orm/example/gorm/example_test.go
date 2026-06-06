@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/condition"
 	"github.com/fzf-labs/godb/orm/dbcache/goredisdbcache"
 	"github.com/fzf-labs/godb/orm/encoding"
@@ -23,9 +24,9 @@ import (
 // newDB 创建示例测试用 PostgreSQL 连接。
 func newDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gormx.NewDebugGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewDebugGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	return db
 }
@@ -34,12 +35,12 @@ func newDB(t *testing.T) *gorm.DB {
 func newRedis(t *testing.T) *redis.Client {
 	t.Helper()
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "0.0.0.0:6379",
-		Password: "123456",
+		Addr:     testenv.RedisAddr(),
+		Password: testenv.RedisPassword(),
 	})
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		_ = redisClient.Close()
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 	t.Cleanup(func() {
 		_ = redisClient.Close()
@@ -231,9 +232,9 @@ func Test_FindMultiByCondition(t *testing.T) {
 
 // Test_Tx 使用事务
 func Test_Tx(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	client, _ := redismock.NewClientMock()
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)

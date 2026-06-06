@@ -7,20 +7,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
 var client = redis.NewClient(&redis.Options{
-	Addr:     "0.0.0.0:6379",
-	Password: "123456",
+	Addr:     testenv.RedisAddr(),
+	Password: testenv.RedisPassword(),
 })
 
 func requireRedis(t *testing.T) {
 	t.Helper()
 	if err := client.Ping(context.Background()).Err(); err != nil {
-		t.Skipf("redis unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
 	}
 }
 

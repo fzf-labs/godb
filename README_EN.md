@@ -371,7 +371,9 @@ Common commands:
 ```bash
 make fmt
 make vet
-go test ./...
+make test
+make cover
+make ci
 ```
 
 Install and inspect the CLI locally:
@@ -381,7 +383,16 @@ go install ./cmd/godb
 godb --help
 ```
 
-This repository includes example tests that may depend on Redis/PostgreSQL. When the required service is unavailable, related tests skip or use mocks where available.
+This repository's PostgreSQL/Redis example tests are bootstrapped in CI with seeded databases and a password-protected Redis instance. Locally, you can override the defaults with `GODB_TEST_POSTGRES_DSN`, `GODB_TEST_REDIS_ADDR`, and `GODB_TEST_REDIS_PASSWORD`. When the required service is unavailable locally, related tests skip or use mocks where available; in CI, unavailable services fail the tests so integration coverage is not silently skipped.
+
+Release flow:
+
+```bash
+make release-snapshot
+make release-tag
+```
+
+`make release-tag` creates and pushes the next patch tag; every `v*` tag triggers the GitHub Actions release workflow, which uses GoReleaser to publish cross-platform binaries, checksums, and the GitHub Release.
 
 ## Design Notes
 
