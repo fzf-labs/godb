@@ -16,7 +16,7 @@
 ```go
     db, err := gormx.NewGormClient(&gormx.ClientConfig{
       Driver:          gormx.Postgres,
-      DataSourceName:  "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai",
+      DataSourceName:  "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai",
       MaxIdleConn:     0,
       MaxOpenConn:     0,
       ConnMaxLifeTime: 0,

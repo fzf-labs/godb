@@ -370,6 +370,7 @@ Common commands:
 
 ```bash
 make fmt
+make lint
 make vet
 make test
 make cover

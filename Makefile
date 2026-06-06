@@ -40,6 +40,7 @@ cover:
 # make ci 运行格式检查、vet、测试和覆盖率
 ci:
 	@test -z "$$(gofmt -l .)"
+	@$(MAKE) lint
 	@$(MAKE) vet
 	@$(MAKE) test
 	@$(MAKE) cover

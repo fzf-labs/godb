@@ -370,6 +370,7 @@ Repo 生成器会读取数据库索引并按以下优先级生成方法：
 
 ```bash
 make fmt
+make lint
 make vet
 make test
 make cover
