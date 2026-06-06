@@ -85,6 +85,24 @@ func TestRueidisCache_DelBatch(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRueidisCacheDelayedDelete(t *testing.T) {
+	_, client := newMiniRueidisClient(t)
+	cache := NewRueidisDBCache(client, WithDelayedDelete(time.Millisecond))
+	oldAfterFunc := delayedDeleteAfterFunc
+	t.Cleanup(func() {
+		delayedDeleteAfterFunc = oldAfterFunc
+	})
+	delayedDeleteAfterFunc = func(_ time.Duration, fn func()) *time.Timer {
+		fn()
+		return nil
+	}
+
+	ctx := context.Background()
+	assert.NoError(t, cache.Del(ctx, "del:key"))
+	assert.NoError(t, cache.DelBatch(ctx, []string{"del:a", "del:b"}))
+	assert.NoError(t, cache.DelHash(ctx, "hash:key", "field"))
+}
+
 func TestHashFlightKey_SeparatesKeyAndField(t *testing.T) {
 	assert.Equal(t, "user:profile", hashFlightKey("user", "profile"))
 	assert.NotEqual(t, hashFlightKey("ab", "c"), hashFlightKey("a", "bc"))

@@ -13,11 +13,14 @@ import (
 
 // Cache 是基于 rueidis 的数据库查询缓存实现。
 type Cache struct {
-	name   string
-	client rueidis.Client
-	ttl    time.Duration
-	sf     singleflight.Group
+	name          string
+	client        rueidis.Client
+	ttl           time.Duration
+	delayedDelete time.Duration
+	sf            singleflight.Group
 }
+
+var delayedDeleteAfterFunc = time.AfterFunc
 
 // CacheOption 配置 rueidis 数据库查询缓存。
 type CacheOption func(cache *Cache)
@@ -33,6 +36,13 @@ func WithName(name string) CacheOption {
 func WithTTL(ttl time.Duration) CacheOption {
 	return func(r *Cache) {
 		r.ttl = ttl
+	}
+}
+
+// WithDelayedDelete enables best-effort delayed double delete after the given delay.
+func WithDelayedDelete(delay time.Duration) CacheOption {
+	return func(r *Cache) {
+		r.delayedDelete = delay
 	}
 }
 
@@ -185,7 +195,16 @@ func hashFlightKey(key, field string) string {
 
 // Del 删除单个缓存 key。
 func (r *Cache) Del(ctx context.Context, key string) error {
-	return r.client.Do(ctx, r.client.B().Del().Key(key).Build()).Error()
+	err := r.client.Do(ctx, r.client.B().Del().Key(key).Build()).Error()
+	if err != nil {
+		return err
+	}
+	if r.delayedDelete > 0 {
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			_ = r.client.Do(context.Background(), r.client.B().Del().Key(key).Build()).Error()
+		})
+	}
+	return nil
 }
 
 // DelBatch 批量删除缓存 key。
@@ -201,10 +220,32 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 			return err
 		}
 	}
+	if r.delayedDelete > 0 {
+		delayedKeys := append([]string(nil), keys...)
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			completes := make([]rueidis.Completed, 0, len(delayedKeys))
+			for _, v := range delayedKeys {
+				completes = append(completes, r.client.B().Del().Key(v).Build())
+			}
+			multi := r.client.DoMulti(context.Background(), completes...)
+			for _, result := range multi {
+				_ = result.Error()
+			}
+		})
+	}
 	return nil
 }
 
 // DelHash 删除 hash key 下的指定字段。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
-	return r.client.Do(ctx, r.client.B().Hdel().Key(key).Field(field).Build()).Error()
+	err := r.client.Do(ctx, r.client.B().Hdel().Key(key).Field(field).Build()).Error()
+	if err != nil {
+		return err
+	}
+	if r.delayedDelete > 0 {
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			_ = r.client.Do(context.Background(), r.client.B().Hdel().Key(key).Field(field).Build()).Error()
+		})
+	}
+	return nil
 }

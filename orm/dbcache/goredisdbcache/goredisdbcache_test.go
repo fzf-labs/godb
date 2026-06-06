@@ -332,6 +332,33 @@ func TestGoRedisCacheDeletesWithMock(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestGoRedisCacheDelayedDelete(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb, WithDelayedDelete(time.Millisecond))
+	oldAfterFunc := delayedDeleteAfterFunc
+	t.Cleanup(func() {
+		delayedDeleteAfterFunc = oldAfterFunc
+	})
+	delayedDeleteAfterFunc = func(_ time.Duration, fn func()) *time.Timer {
+		fn()
+		return nil
+	}
+
+	mock.ExpectDel("key").SetVal(1)
+	mock.ExpectDel("key").SetVal(1)
+	assert.NoError(t, cache.Del(context.Background(), "key"))
+
+	mock.ExpectDel("a", "b").SetVal(2)
+	mock.ExpectDel("a", "b").SetVal(2)
+	assert.NoError(t, cache.DelBatch(context.Background(), []string{"a", "b"}))
+
+	mock.ExpectHDel("hash", "field").SetVal(1)
+	mock.ExpectHDel("hash", "field").SetVal(1)
+	assert.NoError(t, cache.DelHash(context.Background(), "hash", "field"))
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestGoRedisCache_FetchHash_ScopesSingleflightByField(t *testing.T) {
 	client, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)

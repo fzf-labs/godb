@@ -13,11 +13,14 @@ import (
 
 // Cache 是基于 go-redis 的数据库查询缓存实现。
 type Cache struct {
-	name   string
-	client *redis.Client
-	ttl    time.Duration
-	sf     singleflight.Group
+	name          string
+	client        *redis.Client
+	ttl           time.Duration
+	delayedDelete time.Duration
+	sf            singleflight.Group
 }
+
+var delayedDeleteAfterFunc = time.AfterFunc
 
 // NewGoRedisDBCache 创建 go-redis 数据库查询缓存。
 func NewGoRedisDBCache(client *redis.Client, opts ...CacheOption) *Cache {
@@ -48,6 +51,13 @@ func WithName(name string) CacheOption {
 func WithTTL(ttl time.Duration) CacheOption {
 	return func(r *Cache) {
 		r.ttl = ttl
+	}
+}
+
+// WithDelayedDelete enables best-effort delayed double delete after the given delay.
+func WithDelayedDelete(delay time.Duration) CacheOption {
+	return func(r *Cache) {
+		r.delayedDelete = delay
 	}
 }
 
@@ -171,15 +181,43 @@ func hashFlightKey(key, field string) string {
 
 // Del 删除单个缓存 key。
 func (r *Cache) Del(ctx context.Context, key string) error {
-	return r.client.Del(ctx, key).Err()
+	err := r.client.Del(ctx, key).Err()
+	if err != nil {
+		return err
+	}
+	if r.delayedDelete > 0 {
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			_ = r.client.Del(context.Background(), key).Err()
+		})
+	}
+	return nil
 }
 
 // DelBatch 批量删除缓存 key。
 func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
-	return r.client.Del(ctx, keys...).Err()
+	err := r.client.Del(ctx, keys...).Err()
+	if err != nil {
+		return err
+	}
+	if r.delayedDelete > 0 {
+		delayedKeys := append([]string(nil), keys...)
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			_ = r.client.Del(context.Background(), delayedKeys...).Err()
+		})
+	}
+	return nil
 }
 
 // DelHash 删除 hash key 下的指定字段。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
-	return r.client.HDel(ctx, key, field).Err()
+	err := r.client.HDel(ctx, key, field).Err()
+	if err != nil {
+		return err
+	}
+	if r.delayedDelete > 0 {
+		delayedDeleteAfterFunc(r.delayedDelete, func() {
+			_ = r.client.HDel(context.Background(), key, field).Err()
+		})
+	}
+	return nil
 }
