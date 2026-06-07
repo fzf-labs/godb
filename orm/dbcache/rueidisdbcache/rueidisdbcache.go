@@ -75,6 +75,9 @@ func (r *Cache) Key(keys ...any) string {
 
 // TTL 返回带随机抖动的默认缓存过期时间。
 func (r *Cache) TTL() time.Duration {
+	if r.ttl <= 0 {
+		return 0
+	}
 	return r.ttl - time.Duration(rand.Float64()*0.1*float64(r.ttl))
 }
 
@@ -236,6 +239,9 @@ func (r *Cache) Del(ctx context.Context, key string) error {
 
 // DelBatch 批量删除缓存 key。
 func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
 	completes := make([]rueidis.Completed, 0)
 	for _, v := range keys {
 		completes = append(completes, r.client.B().Del().Key(v).Build())

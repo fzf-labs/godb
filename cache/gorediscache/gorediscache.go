@@ -10,6 +10,22 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var (
+	instrumentTracing = func(client redis.UniversalClient, opts ...redisotel.TracingOption) error {
+		return redisotel.InstrumentTracing(client, opts...)
+	}
+	instrumentMetrics = func(client redis.UniversalClient, opts ...redisotel.MetricsOption) error {
+		return redisotel.InstrumentMetrics(client, opts...)
+	}
+	pingRedisClient = func(client *redis.Client) error {
+		_, err := client.Ping(context.Background()).Result()
+		return err
+	}
+	closeRedisClient = func(client *redis.Client) error {
+		return client.Close()
+	}
+)
+
 // GoRedisConfig 定义 go-redis 客户端连接、超时和可观测性配置。
 type GoRedisConfig struct {
 	Addr         string        `json:"addr"`
@@ -34,22 +50,21 @@ func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
 	})
 	if cfg.Tracing {
 		// 启用跟踪工具。
-		if err := redisotel.InstrumentTracing(client); err != nil {
-			_ = client.Close()
+		if err := instrumentTracing(client); err != nil {
+			_ = closeRedisClient(client)
 			return nil, err
 		}
 	}
 	if cfg.Metrics {
 		// 启用度量工具。
-		if err := redisotel.InstrumentMetrics(client); err != nil {
-			_ = client.Close()
+		if err := instrumentMetrics(client); err != nil {
+			_ = closeRedisClient(client)
 			return nil, err
 		}
 	}
 	// ping 检测一下
-	_, err := client.Ping(context.Background()).Result()
-	if err != nil {
-		_ = client.Close()
+	if err := pingRedisClient(client); err != nil {
+		_ = closeRedisClient(client)
 		return nil, err
 	}
 	return client, nil

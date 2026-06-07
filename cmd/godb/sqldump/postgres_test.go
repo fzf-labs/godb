@@ -130,6 +130,19 @@ func TestPostgresRemoveEmpty(t *testing.T) {
 	}
 }
 
+func TestPostgresRemovePreservesLongLines(t *testing.T) {
+	longDefault := strings.Repeat("x", 70*1024)
+	input := "CREATE TABLE public.big_defaults (\n    payload text DEFAULT '" + longDefault + "'\n);\n"
+
+	got := (&SQLDump{}).postgresRemove(input)
+	if !strings.Contains(got, longDefault) {
+		t.Fatalf("expected long line to be preserved, got length %d", len(got))
+	}
+	if !strings.Contains(got, "CREATE TABLE public.big_defaults") {
+		t.Fatalf("expected create table statement to remain:\n%s", got)
+	}
+}
+
 func TestDumpPostgresWritesAndSkipsExistingFiles(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {

@@ -268,6 +268,9 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 		NextPage:  0,
 		TotalPage: 0,
 	}
+	if p == nil {
+		return resp, nil
+	}
 	if p.Page < 0 {
 		return resp, fmt.Errorf("page cannot be less than 0")
 	}

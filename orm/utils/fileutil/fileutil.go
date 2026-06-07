@@ -17,6 +17,9 @@ func FillModelPkgPath(dir string) string {
 		return ""
 	}
 	if len(pkg) > 0 {
+		if pkg[0].PkgPath == "." {
+			return ""
+		}
 		return pkg[0].PkgPath
 	}
 	return ""

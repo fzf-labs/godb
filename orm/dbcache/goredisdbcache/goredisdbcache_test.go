@@ -102,6 +102,13 @@ func TestGoRedisCacheOptionsAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestGoRedisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+
+	assert.Equal(t, time.Duration(0), NewGoRedisDBCache(rdb, WithTTL(0)).TTL())
+	assert.Equal(t, time.Duration(0), NewGoRedisDBCache(rdb, WithTTL(-time.Minute)).TTL())
+}
+
 func TestGoRedisCacheFetchHit(t *testing.T) {
 	rdb, mock := redismock.NewClientMock()
 	cache := NewGoRedisDBCache(rdb)
@@ -368,6 +375,15 @@ func TestGoRedisCacheDeletesWithMock(t *testing.T) {
 	mock.ExpectHDel("hash", "field").SetVal(1)
 	assert.NoError(t, cache.DelHash(context.Background(), "hash", "field"))
 
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheDelBatchEmptyIsNoop(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+
+	assert.NoError(t, cache.DelBatch(context.Background(), nil))
+	assert.NoError(t, cache.DelBatch(context.Background(), []string{}))
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

@@ -27,6 +27,12 @@ const (
 )
 
 var sqlOpen = sql.Open
+var useTracingPlugin = func(db *gorm.DB) error {
+	return db.Use(tracing.NewPlugin())
+}
+var closeSQLDB = func(db *sql.DB) error {
+	return db.Close()
+}
 
 // ClientConfig 配置
 type ClientConfig struct {
@@ -121,9 +127,8 @@ func NewMySQLGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	if cfg.Tracing {
-		if err := db.Use(tracing.NewPlugin()); err != nil {
-			_ = sqlDB.Close()
-			return nil, errors.Wrap(err, "failed to enable tracing")
+		if err := enableTracing(db, sqlDB); err != nil {
+			return nil, err
 		}
 	}
 	return db, nil
@@ -158,12 +163,19 @@ func NewPostgresGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 		return nil, errors.Wrap(err, "failed to open postgres connection")
 	}
 	if cfg.Tracing {
-		if err := db.Use(tracing.NewPlugin()); err != nil {
-			_ = sqlDB.Close()
-			return nil, errors.Wrap(err, "failed to enable tracing")
+		if err := enableTracing(db, sqlDB); err != nil {
+			return nil, err
 		}
 	}
 	return db, nil
+}
+
+func enableTracing(db *gorm.DB, sqlDB *sql.DB) error {
+	if err := useTracingPlugin(db); err != nil {
+		_ = closeSQLDB(sqlDB)
+		return errors.Wrap(err, "failed to enable tracing")
+	}
+	return nil
 }
 
 // GetHealthStatus 检查链接是否健康

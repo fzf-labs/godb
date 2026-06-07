@@ -678,6 +678,24 @@ func TestPaginatorReq_ConvertToPage(t *testing.T) {
 	}
 }
 
+func TestReqConvertToPageNilRequest(t *testing.T) {
+	got, err := (*Req)(nil).ConvertToPage(10)
+	if err != nil {
+		t.Fatalf("nil request should not error, got %v", err)
+	}
+	want := &Reply{
+		Page:      0,
+		PageSize:  0,
+		Total:     10,
+		PrevPage:  0,
+		NextPage:  0,
+		TotalPage: 0,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected nil request page: got=%#v want=%#v", got, want)
+	}
+}
+
 func Test_jsonToColumn(t *testing.T) {
 	type args struct {
 		model any

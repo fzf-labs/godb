@@ -116,6 +116,12 @@ func WithFieldNullable() OptionDB {
 
 // Do 生成
 func (g *GenerationDB) Do() (err error) {
+	if g == nil || g.db == nil {
+		return fmt.Errorf("db cannot be nil")
+	}
+	if strings.TrimSpace(g.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			// gorm/gen 的 Execute 通过 panic 暴露生成失败，这里转为 error 交给调用方处理。

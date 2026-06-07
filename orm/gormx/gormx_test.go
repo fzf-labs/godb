@@ -165,6 +165,36 @@ func TestNewGormClientPostgresWithMock(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestEnableTracingClosesSQLDBWhenTracingFails(t *testing.T) {
+	sqlDB, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
+
+	restoreTracing := replaceTracingPlugin(t, func(*gorm.DB) error {
+		return context.Canceled
+	})
+	defer restoreTracing()
+
+	closed := 0
+	restoreClose := replaceCloseSQLDB(t, func(*sql.DB) error {
+		closed++
+		return nil
+	})
+	defer restoreClose()
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = enableTracing(db, sqlDB)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.ErrorContains(t, err, "failed to enable tracing")
+	assert.Equal(t, 1, closed)
+}
+
 func TestDriverSpecificClientsReturnSQLOpenErrors(t *testing.T) {
 	restore := replaceSQLOpen(t, func(string, string) (*sql.DB, error) {
 		return nil, context.Canceled
@@ -257,6 +287,20 @@ func replaceSQLOpen(t *testing.T, fn func(string, string) (*sql.DB, error)) func
 	old := sqlOpen
 	sqlOpen = fn
 	return func() { sqlOpen = old }
+}
+
+func replaceTracingPlugin(t *testing.T, fn func(*gorm.DB) error) func() {
+	t.Helper()
+	old := useTracingPlugin
+	useTracingPlugin = fn
+	return func() { useTracingPlugin = old }
+}
+
+func replaceCloseSQLDB(t *testing.T, fn func(*sql.DB) error) func() {
+	t.Helper()
+	old := closeSQLDB
+	closeSQLDB = fn
+	return func() { closeSQLDB = old }
 }
 
 func openMockMySQL(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {

@@ -126,6 +126,22 @@ func TestRueidisCacheOptionsKeyAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestRueidisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
+	assert.Equal(t, time.Duration(0), NewRueidisDBCache(nil, WithTTL(0)).TTL())
+	assert.Equal(t, time.Duration(0), NewRueidisDBCache(nil, WithTTL(-time.Minute)).TTL())
+}
+
+func TestRueidisCacheDelBatchEmptyIsNoop(t *testing.T) {
+	cache := NewRueidisDBCache(nil)
+
+	assert.NotPanics(t, func() {
+		assert.NoError(t, cache.DelBatch(context.Background(), nil))
+	})
+	assert.NotPanics(t, func() {
+		assert.NoError(t, cache.DelBatch(context.Background(), []string{}))
+	})
+}
+
 func newMiniRueidisClient(t *testing.T) (*miniredis.Miniredis, rueidis.Client) {
 	t.Helper()
 	server, err := miniredis.Run()

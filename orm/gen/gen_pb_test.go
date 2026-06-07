@@ -51,6 +51,25 @@ func TestNewGenerationPbRejectsBlankPackage(t *testing.T) {
 	}
 }
 
+func TestNewGenerationPbRejectsBlankTables(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.gorm_gen.v1",
+		"api/gorm_gen/v1;v1",
+		WithPBTables([]string{"users", " \t\n"}),
+	).Do()
+	if err == nil || !strings.Contains(err.Error(), "table name cannot be empty") {
+		t.Fatalf("expected empty table error, got %v", err)
+	}
+}
+
 func TestNewGenerationPb_ReturnsGenerationErrors(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})

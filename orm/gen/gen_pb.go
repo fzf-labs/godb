@@ -97,6 +97,10 @@ func (g *GenerationPb) Do() (err error) {
 	if len(g.tables) > 0 {
 		tables = g.tables
 	}
+	tables, err = normalizeTableNames(tables)
+	if err != nil {
+		return err
+	}
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.gorm)
 	if err != nil {

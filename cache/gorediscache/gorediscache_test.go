@@ -2,12 +2,15 @@ package gorediscache
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redismock/v9"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -58,6 +61,99 @@ func TestNewGoRedisReturnsPingError(t *testing.T) {
 	})
 	assert.Nil(t, client)
 	assert.Error(t, err)
+}
+
+func TestNewGoRedisClosesClientWhenTracingFails(t *testing.T) {
+	oldTracing, oldMetrics, oldPing, oldClose := instrumentTracing, instrumentMetrics, pingRedisClient, closeRedisClient
+	t.Cleanup(func() {
+		instrumentTracing = oldTracing
+		instrumentMetrics = oldMetrics
+		pingRedisClient = oldPing
+		closeRedisClient = oldClose
+	})
+
+	closed := 0
+	instrumentTracing = func(redis.UniversalClient, ...redisotel.TracingOption) error {
+		return errors.New("tracing failed")
+	}
+	instrumentMetrics = func(redis.UniversalClient, ...redisotel.MetricsOption) error {
+		t.Fatal("metrics should not run after tracing failure")
+		return nil
+	}
+	pingRedisClient = func(*redis.Client) error {
+		t.Fatal("ping should not run after tracing failure")
+		return nil
+	}
+	closeRedisClient = func(*redis.Client) error {
+		closed++
+		return nil
+	}
+
+	client, err := NewGoRedis(GoRedisConfig{Addr: "127.0.0.1:1", Tracing: true})
+	assert.Nil(t, client)
+	assert.Error(t, err)
+	assert.Equal(t, 1, closed)
+}
+
+func TestNewGoRedisClosesClientWhenMetricsFail(t *testing.T) {
+	oldTracing, oldMetrics, oldPing, oldClose := instrumentTracing, instrumentMetrics, pingRedisClient, closeRedisClient
+	t.Cleanup(func() {
+		instrumentTracing = oldTracing
+		instrumentMetrics = oldMetrics
+		pingRedisClient = oldPing
+		closeRedisClient = oldClose
+	})
+
+	closed := 0
+	instrumentTracing = func(redis.UniversalClient, ...redisotel.TracingOption) error {
+		return nil
+	}
+	instrumentMetrics = func(redis.UniversalClient, ...redisotel.MetricsOption) error {
+		return errors.New("metrics failed")
+	}
+	pingRedisClient = func(*redis.Client) error {
+		t.Fatal("ping should not run after metrics failure")
+		return nil
+	}
+	closeRedisClient = func(*redis.Client) error {
+		closed++
+		return nil
+	}
+
+	client, err := NewGoRedis(GoRedisConfig{Addr: "127.0.0.1:1", Tracing: true, Metrics: true})
+	assert.Nil(t, client)
+	assert.Error(t, err)
+	assert.Equal(t, 1, closed)
+}
+
+func TestNewGoRedisClosesClientWhenPingFails(t *testing.T) {
+	oldTracing, oldMetrics, oldPing, oldClose := instrumentTracing, instrumentMetrics, pingRedisClient, closeRedisClient
+	t.Cleanup(func() {
+		instrumentTracing = oldTracing
+		instrumentMetrics = oldMetrics
+		pingRedisClient = oldPing
+		closeRedisClient = oldClose
+	})
+
+	closed := 0
+	instrumentTracing = func(redis.UniversalClient, ...redisotel.TracingOption) error {
+		return nil
+	}
+	instrumentMetrics = func(redis.UniversalClient, ...redisotel.MetricsOption) error {
+		return nil
+	}
+	pingRedisClient = func(*redis.Client) error {
+		return errors.New("ping failed")
+	}
+	closeRedisClient = func(*redis.Client) error {
+		closed++
+		return nil
+	}
+
+	client, err := NewGoRedis(GoRedisConfig{Addr: "127.0.0.1:1", Tracing: true, Metrics: true})
+	assert.Nil(t, client)
+	assert.Error(t, err)
+	assert.Equal(t, 1, closed)
 }
 
 func TestStringToKV_PreservesValueAfterFirstColon(t *testing.T) {

@@ -130,3 +130,17 @@ func TestFillModelPkgPath(t *testing.T) {
 		t.Fatalf("empty package dir should return empty path, got %s", got)
 	}
 }
+
+func TestFillModelPkgPathRejectsEmptyResolvedPackage(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/test\n\ngo 1.24\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	emptyPkgDir := filepath.Join(dir, "dao")
+	if err := os.MkdirAll(emptyPkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if got := FillModelPkgPath(emptyPkgDir); got != "" {
+		t.Fatalf("empty package dir should not resolve to %q", got)
+	}
+}

@@ -142,6 +142,23 @@ func TestGenerationDBRejectsBlankTables(t *testing.T) {
 	}
 }
 
+func TestGenerationDBDoRejectsMissingRequiredConfig(t *testing.T) {
+	t.Run("nil db", func(t *testing.T) {
+		err := NewGenerationDB(nil, t.TempDir()).Do()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "db cannot be nil")
+	})
+
+	t.Run("empty output path", func(t *testing.T) {
+		db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+		require.NoError(t, err)
+
+		err = NewGenerationDB(db, " \t\n").Do()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "output path cannot be empty")
+	})
+}
+
 func TestGetDBNameAppliesOverrideAndTablePrefix(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{TablePrefix: "tenant_"},
@@ -359,9 +376,9 @@ func TestGenerationDBDoWithSQLiteWithoutRepo(t *testing.T) {
 
 func TestGenerationDBDoErrorBranches(t *testing.T) {
 	t.Run("panic is returned as error", func(t *testing.T) {
-		err := NewGenerationDB(nil, t.TempDir()).Do()
+		err := NewGenerationDB(nil, t.TempDir(), WithOutRepo()).Do()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "generate db code panic")
+		require.Contains(t, err.Error(), "db cannot be nil")
 	})
 
 	t.Run("partition query error", func(t *testing.T) {

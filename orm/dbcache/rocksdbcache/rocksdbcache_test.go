@@ -133,6 +133,11 @@ func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestRocksDBCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
+	assert.Equal(t, time.Duration(0), NewRocksDBCache(nil, nil, WithTTL(0)).TTL())
+	assert.Equal(t, time.Duration(0), NewRocksDBCache(nil, nil, WithTTL(-time.Minute)).TTL())
+}
+
 func TestUniquePreservesOrder(t *testing.T) {
 	assert.Nil(t, unique(nil))
 	assert.Equal(t, []string{"a", "b", "c"}, unique([]string{"a", "b", "a", "c", "b"}))
@@ -162,6 +167,13 @@ func TestFetchBatchAndDelBatchRejectInvalidBatchSize(t *testing.T) {
 
 	err = cache.DelBatch(context.Background(), []string{"a"})
 	assert.Error(t, err)
+}
+
+func TestRocksDBCacheDelBatchEmptyIsNoop(t *testing.T) {
+	cache := NewRocksDBCache(nil, nil, WithBatchSize(0))
+
+	assert.NoError(t, cache.DelBatch(context.Background(), nil))
+	assert.NoError(t, cache.DelBatch(context.Background(), []string{}))
 }
 
 func TestFetchUsesRocksCacheClient(t *testing.T) {

@@ -2,7 +2,9 @@ package sqldump
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -120,12 +122,14 @@ func (s *SQLDump) postgresRemove(str string) string {
 	var result strings.Builder
 	// 预估结果大小，减少内存重分配
 	result.Grow(len(str))
-	reader := strings.NewReader(str)
-	scanner := bufio.NewScanner(reader)
+	reader := bufio.NewReader(strings.NewReader(str))
 	var currentStatement strings.Builder
 	var inAlterStatement bool
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := readDumpLine(reader)
+		if err != nil {
+			break
+		}
 		// 跳过需要过滤的行 - 优化条件判断顺序
 		if s.shouldSkipLine(line) {
 			continue
@@ -154,6 +158,17 @@ func (s *SQLDump) postgresRemove(str string) string {
 		}
 	}
 	return result.String()
+}
+
+func readDumpLine(reader *bufio.Reader) (string, error) {
+	line, err := reader.ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
+	}
+	if err == io.EOF && line == "" {
+		return "", err
+	}
+	return strings.TrimSuffix(line, "\n"), nil
 }
 
 // shouldSkipLine 判断是否应该跳过该行
