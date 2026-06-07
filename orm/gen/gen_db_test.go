@@ -348,7 +348,7 @@ func TestGenerationDBDoWithSQLiteWithoutRepo(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&generationDBExample{}))
-	outDir := t.TempDir()
+	outDir := newModuleDir(t)
 
 	err = NewGenerationDB(
 		db,
@@ -464,6 +464,7 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	// 生成代码
 	err = NewGenerationDB(
 		db,
@@ -487,6 +488,7 @@ func TestGenerationPostgres(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	// 生成代码
 	err = NewGenerationDB(
 		db,
@@ -539,6 +541,7 @@ func TestGenerationPostgresFieldNullable(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	// 生成代码
 	err = NewGenerationDB(
 		db,

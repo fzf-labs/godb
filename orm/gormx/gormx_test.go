@@ -27,10 +27,11 @@ func TestNewGormPostgresClient(t *testing.T) {
 		ShowLog:         false,
 		Tracing:         false,
 	}
-	_, err := NewGormClient(&config)
+	db, err := NewGormClient(&config)
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	assert.NoError(t, err)
 }
 
@@ -65,6 +66,7 @@ func TestNewDirectGormClientPostgresSuccess(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	assert.NotNil(t, db)
 }
 

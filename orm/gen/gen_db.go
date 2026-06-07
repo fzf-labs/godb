@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -214,8 +213,9 @@ func (g *GenerationDB) Do() (err error) {
 	var group errgroup.Group
 	// errgroup 等待并发生成任务，repoErrs 保留每个失败表的上下文并最终汇总返回。
 	var repoErrMu sync.Mutex
-	repoErrs := make([]error, 0)
-	for _, v := range tables {
+	repoErrs := make([]error, len(tables))
+	for i, v := range tables {
+		idx := i
 		table := v
 		// 表字段对应的类型
 		columnNameToDataType := make(map[string]string)
@@ -234,7 +234,7 @@ func (g *GenerationDB) Do() (err error) {
 			if err := repo.GenerationTable(g.db, dbName, daoPath, modelPath, repoPath, table, partitionTableToChildTables[table], columnNameToDataType, columnNameToName, columnNameToFieldType); err != nil {
 				err = fmt.Errorf("generate repo for table %q: %w", table, err)
 				repoErrMu.Lock()
-				repoErrs = append(repoErrs, err)
+				recordGenerationError(repoErrs, idx, err)
 				repoErrMu.Unlock()
 				return err
 			}
@@ -242,10 +242,7 @@ func (g *GenerationDB) Do() (err error) {
 		})
 	}
 	err = group.Wait()
-	if len(repoErrs) > 0 {
-		return errors.Join(repoErrs...)
-	}
-	return err
+	return joinGenerationErrors(err, repoErrs)
 }
 
 func generationOutputPaths(basePath, dbName string) (string, string, string) {

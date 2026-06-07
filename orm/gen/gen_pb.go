@@ -67,7 +67,7 @@ func (g *GenerationPb) Do() (err error) {
 			err = fmt.Errorf("generate pb code panic: %v", r)
 		}
 	}()
-	if g.gorm == nil {
+	if g == nil || g.gorm == nil {
 		return fmt.Errorf("db cannot be nil")
 	}
 	if strings.TrimSpace(g.outPutPath) == "" {
@@ -114,8 +114,9 @@ func (g *GenerationPb) Do() (err error) {
 	tables = strutil.SliRemove(tables, partitionChildTables)
 	var group errgroup.Group
 	var mu sync.Mutex
-	genErrs := make([]error, 0)
-	for _, v := range tables {
+	genErrs := make([]error, len(tables))
+	for i, v := range tables {
+		idx := i
 		table := v
 		// 表字段对应的名称
 		columnNameToName := make(map[string]string)
@@ -130,16 +131,24 @@ func (g *GenerationPb) Do() (err error) {
 			if err := proto.GenerationPB(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType); err != nil {
 				err = fmt.Errorf("generate proto for table %q: %w", table, err)
 				mu.Lock()
-				genErrs = append(genErrs, err)
+				recordGenerationError(genErrs, idx, err)
 				mu.Unlock()
 				return err
 			}
 			return nil
 		})
 	}
-	_ = group.Wait()
-	if len(genErrs) > 0 {
-		return errors.Join(genErrs...)
+	err = group.Wait()
+	return joinGenerationErrors(err, genErrs)
+}
+
+func joinGenerationErrors(waitErr error, contextualErrs []error) error {
+	if err := errors.Join(contextualErrs...); err != nil {
+		return err
 	}
-	return nil
+	return waitErr
+}
+
+func recordGenerationError(errs []error, idx int, err error) {
+	errs[idx] = err
 }

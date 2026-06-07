@@ -17,6 +17,7 @@ func TestGenerationPBGoldenMatchesExampleUserDemo(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 
 	outDir := t.TempDir()
 	err = ormgen.NewGenerationPB(

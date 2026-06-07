@@ -1,12 +1,17 @@
 package sqldump
 
 import (
+	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -277,6 +282,33 @@ func TestDumpPostgresReturnsDSNParseError(t *testing.T) {
 	}
 }
 
+func TestDumpPostgresClosesClientAfterDSNParseError(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	sqlDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
+	mock.ExpectClose()
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	err = NewSQLDump("postgres", ":::bad dsn:::", t.TempDir(), "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "parse postgres dsn") {
+		t.Fatalf("expected dsn parse error, got %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDumpPostgresReturnsMkdirError(t *testing.T) {
 	installPgDump(t, "#!/bin/sh\nexit 0\n")
 	restore := replacePostgresDumpClient(t)
@@ -294,14 +326,44 @@ func TestDumpPostgresReturnsMkdirError(t *testing.T) {
 }
 
 func TestDumpPostgresReturnsCommandError(t *testing.T) {
-	installPgDump(t, "#!/bin/sh\nexit 3\n")
+	installPgDump(t, "#!/bin/sh\necho broken dump >&2\nexit 3\n")
 	restore := replacePostgresDumpClient(t)
 	defer restore()
 
 	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
 	err := NewSQLDump("postgres", dsn, t.TempDir(), "users", true).DumpPostgres()
-	if err == nil || !strings.Contains(err.Error(), "pg_dump table users") {
+	if err == nil || !strings.Contains(err.Error(), "pg_dump table users") || !strings.Contains(err.Error(), "broken dump") {
 		t.Fatalf("expected command error, got %v", err)
+	}
+}
+
+func TestDumpPostgresReturnsCommandTimeout(t *testing.T) {
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+	oldPgDumpTimeout := pgDumpTimeout
+	pgDumpTimeout = time.Nanosecond
+	defer func() { pgDumpTimeout = oldPgDumpTimeout }()
+
+	oldExec := execPgDumpCommand
+	execPgDumpCommand = func(ctx context.Context, _ *PostgresDsn, _ string) ([]byte, []byte, error) {
+		<-ctx.Done()
+		return nil, []byte("still running"), ctx.Err()
+	}
+	defer func() { execPgDumpCommand = oldExec }()
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err := NewSQLDump("postgres", dsn, t.TempDir(), "users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "timed out") || !strings.Contains(err.Error(), "still running") {
+		t.Fatalf("expected timeout error with stderr, got %v", err)
+	}
+}
+
+func TestExecPgDumpCommandBuildsCommandWithPassword(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, _, err := execPgDumpCommand(ctx, &PostgresDsn{Host: "127.0.0.1", Port: 5432, User: "pg", Password: "secret", Dbname: "app"}, "users")
+	if !errors.Is(err, context.Canceled) && !errors.Is(err, exec.ErrNotFound) {
+		t.Fatalf("expected canceled or missing command error, got %v", err)
 	}
 }
 

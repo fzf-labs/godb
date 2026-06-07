@@ -2,6 +2,7 @@ package sqldump
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,11 +12,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
+)
+
+var (
+	pgDumpTimeout     = 2 * time.Minute
+	execPgDumpCommand = runPgDumpCommand
 )
 
 // DumpPostgres 导出创建语句
@@ -33,6 +40,7 @@ func (s *SQLDump) DumpPostgres() error {
 	if err != nil {
 		return err
 	}
+	defer closeGormDB(dbClient)
 	if len(tables) == 0 {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
@@ -55,15 +63,11 @@ func (s *SQLDump) DumpPostgres() error {
 				continue
 			}
 		}
-		cmdArgs := buildPgDumpArgs(dsnParse, v)
-		// 创建一个 Cmd 对象来表示将要执行的命令
-		cmd := exec.Command("pg_dump", cmdArgs...)
-		// 添加一个环境变量到命令中
-		cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
-		// 执行命令，并捕获输出和错误信息
-		output, err := cmd.Output()
+		ctx, cancel := context.WithTimeout(context.Background(), pgDumpTimeout)
+		output, stderr, err := execPgDumpCommand(ctx, dsnParse, v)
+		cancel()
 		if err != nil {
-			return fmt.Errorf("pg_dump table %s: %w", v, err)
+			return formatPgDumpError(v, stderr, err)
 		}
 		tableContent := s.postgresRemove(string(output))
 		if tableContent != "" {
@@ -74,6 +78,37 @@ func (s *SQLDump) DumpPostgres() error {
 		}
 	}
 	return nil
+}
+
+func runPgDumpCommand(ctx context.Context, dsnParse *PostgresDsn, table string) ([]byte, []byte, error) {
+	cmdArgs := buildPgDumpArgs(dsnParse, table)
+	// 创建一个 Cmd 对象来表示将要执行的命令
+	cmd := exec.CommandContext(ctx, "pg_dump", cmdArgs...)
+	// 添加一个环境变量到命令中
+	cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
+	output, err := cmd.Output()
+	if err == nil {
+		return output, nil, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return output, exitErr.Stderr, err
+	}
+	return output, nil, err
+}
+
+func formatPgDumpError(table string, stderr []byte, err error) error {
+	detail := strings.TrimSpace(string(stderr))
+	if errors.Is(err, context.DeadlineExceeded) {
+		if detail != "" {
+			return fmt.Errorf("pg_dump table %s timed out: %w: %s", table, err, detail)
+		}
+		return fmt.Errorf("pg_dump table %s timed out: %w", table, err)
+	}
+	if detail != "" {
+		return fmt.Errorf("pg_dump table %s: %w: %s", table, err, detail)
+	}
+	return fmt.Errorf("pg_dump table %s: %w", table, err)
 }
 
 // PostgresDsn 保存 pgconn 解析出的 PostgreSQL 连接参数。

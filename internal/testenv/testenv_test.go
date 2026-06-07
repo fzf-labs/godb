@@ -1,15 +1,19 @@
 package testenv
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestPostgresDSNUsesDefaultWhenUnset(t *testing.T) {
 	t.Setenv("GODB_TEST_POSTGRES_DSN", "")
 
 	got := PostgresDSN("gorm_gen")
-	want := "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai"
+	want := "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable connect_timeout=1 TimeZone=Asia/Shanghai"
 	if got != want {
 		t.Fatalf("unexpected postgres dsn: got %q want %q", got, want)
 	}
@@ -105,6 +109,30 @@ func TestSkipIfUnavailableUsesEnvironmentDecision(t *testing.T) {
 
 	if !called {
 		t.Fatal("expected local skip subtest to run")
+	}
+}
+
+func TestCleanupGormDBClosesUnderlyingSQLDB(t *testing.T) {
+	var sqlDB *sql.DB
+
+	t.Run("register cleanup", func(t *testing.T) {
+		db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sqlDB, err = db.DB()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		CleanupGormDB(t, db)
+		if err := sqlDB.Ping(); err != nil {
+			t.Fatalf("expected db to remain open during test: %v", err)
+		}
+	})
+
+	if err := sqlDB.Ping(); err == nil {
+		t.Fatal("expected cleanup to close db")
 	}
 }
 

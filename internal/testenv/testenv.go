@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -16,7 +18,7 @@ func PostgresDSN(dbname string) string {
 	if dsn := os.Getenv("GODB_TEST_POSTGRES_DSN"); dsn != "" {
 		return dsn
 	}
-	return fmt.Sprintf("host=127.0.0.1 port=5432 user=postgres password=123456 dbname=%s sslmode=disable TimeZone=Asia/Shanghai", dbname)
+	return fmt.Sprintf("host=127.0.0.1 port=5432 user=postgres password=123456 dbname=%s sslmode=disable connect_timeout=1 TimeZone=Asia/Shanghai", dbname)
 }
 
 // RedisAddr returns the Redis address used by tests, honoring GODB_TEST_REDIS_ADDR when set.
@@ -39,6 +41,21 @@ func RedisPassword() string {
 func SkipIfUnavailable(t testing.TB, format string, args ...any) {
 	t.Helper()
 	skipIfUnavailable(t, ciEnabled(), format, args...)
+}
+
+// CleanupGormDB closes a test GORM connection through testing cleanup.
+func CleanupGormDB(t testing.TB, db *gorm.DB) {
+	t.Helper()
+	if db == nil {
+		return
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return
+	}
+	t.Cleanup(func() {
+		_ = sqlDB.Close()
+	})
 }
 
 type unavailableReporter interface {

@@ -59,6 +59,7 @@ func TestDumpMySQLWritesCreateTable(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).
 		WillReturnRows(sqlmock.NewRows([]string{"Table", "Create Table"}).
 			AddRow("users", "CREATE TABLE users (id bigint)"))
+	mock.ExpectClose()
 
 	outDir := t.TempDir()
 	if err := NewSQLDump("mysql", "dsn", outDir, "users", true).DumpMySQL(); err != nil {

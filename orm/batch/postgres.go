@@ -21,6 +21,9 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 
 	// 检查 dataList 是否为切片
 	rv := reflect.ValueOf(dataList)
+	if !rv.IsValid() {
+		return nil, errors.New("dataList must be a slice")
+	}
 	if rv.Kind() != reflect.Slice {
 		return nil, errors.New("dataList must be a slice")
 	}

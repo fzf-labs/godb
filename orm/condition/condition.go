@@ -216,7 +216,7 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			case RAW:
 				expression, ok = v.Value.(clause.Expr)
 				if !ok {
-					return nil, nil, fmt.Errorf("CUSTOM value is not a clause.Expr")
+					return nil, nil, fmt.Errorf("RAW value is not a clause.Expr")
 				}
 			}
 			if v.Logic == AND {

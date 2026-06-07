@@ -2,6 +2,7 @@ package condition
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"gorm.io/gorm/clause"
@@ -445,7 +446,7 @@ func TestReqConvertToGormExpressionAdditionalBranches(t *testing.T) {
 	}
 
 	badRaw := &Req{Query: []*QueryParam{{Field: "id", Exp: RAW, Value: "id = 1"}}}
-	if _, _, err := badRaw.ConvertToGormExpression(UserTest{}); err == nil {
+	if _, _, err := badRaw.ConvertToGormExpression(UserTest{}); err == nil || !strings.Contains(err.Error(), "RAW value is not a clause.Expr") {
 		t.Fatal("expected RAW value type error")
 	}
 	nilQuery := &Req{Query: []*QueryParam{nil}}

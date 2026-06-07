@@ -84,6 +84,30 @@ func TestLockerMethodsReturnBuilderError(t *testing.T) {
 	}
 }
 
+func TestLockerMethodsRejectNilCallback(t *testing.T) {
+	locker := NewLocker(rueidislock.LockerOption{
+		ClientBuilder: func(rueidis.ClientOption) (rueidis.Client, error) {
+			t.Fatal("expected nil callback validation before locker creation")
+			return nil, nil
+		},
+	})
+
+	tests := []struct {
+		name string
+		run  func() error
+	}{
+		{name: "once", run: func() error { return locker.LockOnce(context.Background(), "lock-key", time.Second, nil) }},
+		{name: "retry", run: func() error { return locker.LockRetry(context.Background(), "lock-key", time.Second, nil) }},
+		{name: "not release", run: func() error { return locker.LockOnceNotRelease(context.Background(), "lock-key", time.Second, nil) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.ErrorContains(t, tt.run(), "lock callback cannot be nil")
+		})
+	}
+}
+
 func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
 	server, err := miniredis.Run()
 	require.NoError(t, err)

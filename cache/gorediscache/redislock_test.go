@@ -142,3 +142,28 @@ func TestLockerLockMethodsReturnObtainErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestLockerLockMethodsRejectNilCallback(t *testing.T) {
+	client, mock := redismock.NewClientMock()
+	locker := NewLocker(client)
+
+	tests := []struct {
+		name string
+		run  func() error
+	}{
+		{name: "lock once", run: func() error { return locker.LockOnce(context.Background(), "lock:key", time.Minute, nil) }},
+		{name: "lock retry", run: func() error { return locker.LockRetry(context.Background(), "lock:key", time.Minute, nil) }},
+		{name: "lock custom", run: func() error {
+			return locker.LockWithCustom(context.Background(), "lock:key", time.Minute, time.Millisecond, 1, nil)
+		}},
+		{name: "lock once not release", run: func() error { return locker.LockOnceNotRelease(context.Background(), "lock:key", time.Minute, nil) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.run()
+			assert.ErrorContains(t, err, "lock callback cannot be nil")
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

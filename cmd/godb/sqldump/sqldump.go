@@ -3,6 +3,8 @@ package sqldump
 import (
 	"fmt"
 	"path/filepath"
+
+	"gorm.io/gorm"
 )
 
 // SQLDump 保存数据库结构导出命令的运行参数。
@@ -33,4 +35,15 @@ func (s *SQLDump) Run() error {
 
 func outputDir(basePath, dbName string) string {
 	return filepath.Join(filepath.Clean(basePath), dbName)
+}
+
+func closeGormDB(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return
+	}
+	_ = sqlDB.Close()
 }

@@ -76,6 +76,7 @@ func TestBatchUpdateValidationErrors(t *testing.T) {
 		mysqlErr    bool
 		postgresErr bool
 	}{
+		{name: "nil", data: nil, mysqlErr: true, postgresErr: true},
 		{name: "not slice", data: batchNoID{}, mysqlErr: true, postgresErr: true},
 		{name: "empty slice", data: []*batchNoID{}, mysqlErr: true, postgresErr: true},
 		{name: "not pointer slice", data: []batchNoID{{Name: "a"}}, mysqlErr: true, postgresErr: true},

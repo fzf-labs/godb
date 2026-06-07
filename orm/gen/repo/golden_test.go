@@ -17,6 +17,7 @@ func TestGenerationDBGoldenMatchesExampleUserDemoRepo(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 
 	workspace := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(workspace, "go.mod"), []byte("module github.com/fzf-labs/godb\ngo 1.24\n"), 0600))

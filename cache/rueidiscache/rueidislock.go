@@ -2,11 +2,14 @@ package rueidiscache
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 )
+
+var errNilLockCallback = errors.New("lock callback cannot be nil")
 
 // NewLocker 创建基于 rueidislock 的分布式锁封装。
 func NewLocker(option rueidislock.LockerOption) *Locker {
@@ -40,6 +43,9 @@ func (l *Locker) optionWithTTL(ttl time.Duration) rueidislock.LockerOption {
 // LockOnce 自动锁-一次
 // 自动加锁与释放
 func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
@@ -56,6 +62,9 @@ func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn
 // LockRetry 自动锁-重试
 // 自动加锁与释放，间隔100ms 重试3次
 func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
@@ -71,6 +80,9 @@ func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 
 // LockOnceNotRelease 自动锁-一次-不释放
 func (l *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err

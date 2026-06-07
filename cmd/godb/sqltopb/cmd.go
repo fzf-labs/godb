@@ -1,7 +1,11 @@
 package sqltopb
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
+	"gorm.io/gorm"
 
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
@@ -25,6 +29,20 @@ var (
 	outPutPath   string // 输出路径
 )
 
+var (
+	newSimpleGormClient = gormx.NewSimpleGormClient
+	generatePBDo        = (*gen.GenerationPb).Do
+)
+
+type runOptions struct {
+	db           string
+	dsn          string
+	targetTables string
+	pbPackage    string
+	pbGoPackage  string
+	outPutPath   string
+}
+
 // init 注册 sqltopb 命令行参数。
 //
 //nolint:gochecknoinits
@@ -39,23 +57,72 @@ func init() {
 
 // Run 执行 SQL 转 proto 命令。
 func Run(_ *cobra.Command, _ []string) error {
-	tables, err := tablelist.ParseCSV(targetTables)
+	return runWithOptions(snapshotRunOptions())
+}
+
+func snapshotRunOptions() runOptions {
+	return runOptions{
+		db:           db,
+		dsn:          dsn,
+		targetTables: targetTables,
+		pbPackage:    pbPackage,
+		pbGoPackage:  pbGoPackage,
+		outPutPath:   outPutPath,
+	}
+}
+
+func runWithOptions(opts runOptions) error {
+	if err := opts.validate(); err != nil {
+		return err
+	}
+	tables, err := tablelist.ParseCSV(opts.targetTables)
 	if err != nil {
 		return err
 	}
-	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
+	dbClient, err := newSimpleGormClient(opts.db, opts.dsn)
 	if err != nil {
 		return err
 	}
-	return gen.NewGenerationPB(
+	defer closeGormDB(dbClient)
+	return generatePBDo(gen.NewGenerationPB(
 		dbClient,
-		outPutPath,
-		pbPackage,
-		pbGoPackage,
+		opts.outPutPath,
+		opts.pbPackage,
+		opts.pbGoPackage,
 		gen.WithPBOpts(
 			gen.ModelOptionRemoveDefault(),
 			gen.ModelOptionUnderline("UL"),
 		),
 		gen.WithPBTables(tables),
-	).Do()
+	))
+}
+
+func (o runOptions) validate() error {
+	if strings.TrimSpace(o.db) == "" {
+		return fmt.Errorf("db cannot be empty")
+	}
+	if strings.TrimSpace(o.dsn) == "" {
+		return fmt.Errorf("dsn cannot be empty")
+	}
+	if strings.TrimSpace(o.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
+	if strings.TrimSpace(o.pbPackage) == "" {
+		return fmt.Errorf("pb package cannot be empty")
+	}
+	if strings.TrimSpace(o.pbGoPackage) == "" {
+		return fmt.Errorf("pb go package cannot be empty")
+	}
+	return nil
+}
+
+func closeGormDB(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return
+	}
+	_ = sqlDB.Close()
 }
