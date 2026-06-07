@@ -47,6 +47,11 @@ func (s *SQLDump) DumpPostgres() error {
 	}
 	for _, v := range tables {
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
+		if !s.fileOverwrite {
+			if fileutil.Exists(outFile) {
+				continue
+			}
+		}
 		cmdArgs := buildPgDumpArgs(dsnParse, v)
 		// 创建一个 Cmd 对象来表示将要执行的命令
 		cmd := exec.Command("pg_dump", cmdArgs...)
@@ -56,11 +61,6 @@ func (s *SQLDump) DumpPostgres() error {
 		output, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("pg_dump table %s: %w", v, err)
-		}
-		if !s.fileOverwrite {
-			if fileutil.Exists(outFile) {
-				continue
-			}
 		}
 		tableContent := s.postgresRemove(string(output))
 		if tableContent != "" {

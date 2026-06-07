@@ -113,6 +113,51 @@ func TestGenerationTableRejectsEmptyTable(t *testing.T) {
 	}
 }
 
+func TestGenerationTableRejectsMissingPackagePaths(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = GenerationTable(db, "gorm_gen", t.TempDir(), t.TempDir(), t.TempDir(), "users", nil, map[string]string{}, map[string]string{}, map[string]string{})
+	if err == nil || !strings.Contains(err.Error(), "cannot resolve dao/model package path") {
+		t.Fatalf("expected package path error, got %v", err)
+	}
+}
+
+type emptySchemaNamer struct {
+	schema.NamingStrategy
+}
+
+func (emptySchemaNamer) SchemaName(string) string {
+	return ""
+}
+
+type emptyNameExample struct {
+	ID int64 `gorm:"primaryKey"`
+}
+
+func (emptyNameExample) TableName() string {
+	return "empty_name_examples"
+}
+
+func TestGenerationTableRejectsEmptyGoIdentifier(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		NamingStrategy: emptySchemaNamer{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&emptyNameExample{}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = GenerationTable(db, "gorm_gen", ".", ".", t.TempDir(), "empty_name_examples", nil, map[string]string{"id": "int64"}, map[string]string{"id": "ID"}, map[string]string{"id": "Int64"})
+	if err == nil || !strings.Contains(err.Error(), "cannot convert table") {
+		t.Fatalf("expected empty identifier error, got %v", err)
+	}
+}
+
 func TestUpsertOneCacheByFieldsTemplatesGuardNilData(t *testing.T) {
 	params := map[string]any{
 		"firstTableChar": "u",

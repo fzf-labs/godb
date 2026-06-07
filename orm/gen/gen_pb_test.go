@@ -30,6 +30,26 @@ func TestNewGenerationPb(t *testing.T) {
 	}
 }
 
+func TestNewGenerationPbRejectsNilDB(t *testing.T) {
+	err := NewGenerationPB(nil, t.TempDir(), "api.gorm_gen.v1", "api/gorm_gen/v1;v1").Do()
+	if err == nil || !strings.Contains(err.Error(), "db cannot be nil") {
+		t.Fatalf("expected nil db error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsBlankPackage(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(db, t.TempDir(), "", "api/gorm_gen/v1;v1").Do()
+	if err == nil || !strings.Contains(err.Error(), "package cannot be empty") {
+		t.Fatalf("expected blank package error, got %v", err)
+	}
+}
+
 func TestNewGenerationPb_ReturnsGenerationErrors(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})

@@ -34,6 +34,9 @@ func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table st
 		index:                 make([]DBIndex, 0),
 		haveDeletedAt:         hasDeletedAt(columnNameToDataType),
 	}
+	if strings.TrimSpace(g.daoPkgPath) == "" || strings.TrimSpace(g.modelPkgPath) == "" {
+		return fmt.Errorf("cannot resolve dao/model package path from %q and %q", daoPath, modelPath)
+	}
 	// 查询当前db的索引
 	index, err := g.processIndex()
 	if err != nil {
@@ -42,6 +45,9 @@ func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table st
 	g.index = index
 	g.lowerTableName = g.lowerName(table)
 	g.upperTableName = g.upperName(table)
+	if g.lowerTableName == "" {
+		return fmt.Errorf("cannot convert table %q to a Go identifier", table)
+	}
 	g.firstTableChar = g.lowerTableName[0:1]
 	generatePkg, err := g.generatePkg()
 	if err != nil {

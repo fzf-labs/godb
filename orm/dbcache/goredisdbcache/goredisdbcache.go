@@ -104,6 +104,10 @@ func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error)
 
 // FetchBatch 批量查询缓存值，未命中时按缺失 key 回源并写入缓存。
 func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []string) (map[string]string, error), expire time.Duration) (map[string]string, error) {
+	keys = uniqueStrings(keys)
+	if len(keys) == 0 {
+		return map[string]string{}, nil
+	}
 	resp := make(map[string]string)
 	miss := make([]string, 0)
 	pipelined, err := r.client.Pipelined(ctx, func(p redis.Pipeliner) error {
@@ -149,6 +153,22 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 		}
 	}
 	return resp, nil
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return values
+	}
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 // FetchHash 查询哈希字段缓存，未命中时回源并设置 hash key 过期时间。

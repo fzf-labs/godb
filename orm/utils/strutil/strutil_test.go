@@ -31,6 +31,19 @@ func TestSliRemoveRemovesAllMatchingValues(t *testing.T) {
 	}
 }
 
+func TestSliRemoveDoesNotMutateInput(t *testing.T) {
+	collection := []string{"a", "b", "c"}
+	original := append([]string(nil), collection...)
+
+	got := SliRemove(collection, []string{"b"})
+	if strings.Join(got, ",") != "a,c" {
+		t.Fatalf("unexpected result: %#v", got)
+	}
+	if strings.Join(collection, ",") != strings.Join(original, ",") {
+		t.Fatalf("input slice was mutated: before=%#v after=%#v", original, collection)
+	}
+}
+
 func TestConvToString(t *testing.T) {
 	now := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
 	intPtr := 7

@@ -147,6 +147,12 @@ func TestDumpPostgresWritesAndSkipsExistingFiles(t *testing.T) {
 	binDir := t.TempDir()
 	pgDump := filepath.Join(binDir, "pg_dump")
 	script := `#!/bin/sh
+case " $* " in
+  *" -t users "*)
+    echo "unexpected pg_dump invocation for existing users file" >&2
+    exit 99
+    ;;
+esac
 cat <<'SQL'
 -- comment
 SET statement_timeout = 0;

@@ -11,6 +11,7 @@ import (
 	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func requireRueidis(t *testing.T) rueidis.Client {
@@ -232,6 +233,22 @@ func TestRueidisCacheFetchBatchRejectsMissingLoaderValues(t *testing.T) {
 	}, time.Minute)
 
 	assert.Error(t, err)
+}
+
+func TestRueidisCacheFetchBatchDeduplicatesKeys(t *testing.T) {
+	client := requireRueidis(t)
+	cache := NewRueidisDBCache(client)
+
+	got, err := cache.FetchBatch(context.Background(), []string{"batch:dup", "batch:dup", "batch:other"}, func(miss []string) (map[string]string, error) {
+		require.Equal(t, []string{"batch:dup", "batch:other"}, miss)
+		return map[string]string{
+			"batch:dup":   "loaded-dup",
+			"batch:other": "loaded-other",
+		}, nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"batch:dup": "loaded-dup", "batch:other": "loaded-other"}, got)
 }
 
 func TestRueidisCacheReturnsBackendErrorsWithMiniredis(t *testing.T) {

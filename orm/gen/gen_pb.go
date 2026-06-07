@@ -59,7 +59,25 @@ func WithPBTables(tables []string) OptionPB {
 }
 
 // Do 执行 proto 文件生成。
-func (g *GenerationPb) Do() error {
+func (g *GenerationPb) Do() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// gorm/gen 的生成过程可能通过 panic 暴露失败，这里统一转为 error。
+			err = fmt.Errorf("generate pb code panic: %v", r)
+		}
+	}()
+	if g.gorm == nil {
+		return fmt.Errorf("db cannot be nil")
+	}
+	if strings.TrimSpace(g.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
+	if strings.TrimSpace(g.packageStr) == "" {
+		return fmt.Errorf("package cannot be empty")
+	}
+	if strings.TrimSpace(g.goPackageStr) == "" {
+		return fmt.Errorf("go package cannot be empty")
+	}
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{})
 	// 使用数据库

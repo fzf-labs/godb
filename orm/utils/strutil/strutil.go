@@ -20,14 +20,17 @@ func StrSliFind(collection []string, element string) bool {
 
 // SliRemove 删除字符串切片中的某个元素
 func SliRemove(collection, element []string) []string {
-	if len(collection) == 0 || len(element) == 0 {
+	if len(collection) == 0 {
 		return collection
+	}
+	if len(element) == 0 {
+		return append([]string(nil), collection...)
 	}
 	remove := make(map[string]struct{}, len(element))
 	for _, s := range element {
 		remove[s] = struct{}{}
 	}
-	result := collection[:0]
+	result := make([]string, 0, len(collection))
 	for _, v := range collection {
 		if _, ok := remove[v]; ok {
 			continue

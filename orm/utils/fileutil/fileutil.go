@@ -25,7 +25,7 @@ func FillModelPkgPath(dir string) string {
 // Exists 判断文件是否存在
 func Exists(path string) bool {
 	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 // MkdirPath 生成文件夹

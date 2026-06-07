@@ -37,16 +37,16 @@ func (s *SQLDump) DumpMySQL() error {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
-		result := make(map[string]any)
-		err := dbClient.Raw(buildMySQLShowCreateTableSQL(dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
-		if err != nil {
-			return fmt.Errorf("show create table %s: %w", v, err)
-		}
 		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
 		if !s.fileOverwrite {
 			if fileutil.Exists(outFile) {
 				continue
 			}
+		}
+		result := make(map[string]any)
+		err := dbClient.Raw(buildMySQLShowCreateTableSQL(dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
+		if err != nil {
+			return fmt.Errorf("show create table %s: %w", v, err)
 		}
 		tableContent := strutil.ConvToString(result["Create Table"])
 		if tableContent != "" {

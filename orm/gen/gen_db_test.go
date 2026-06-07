@@ -383,7 +383,7 @@ func TestGenerationDBDoErrorBranches(t *testing.T) {
 		db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 		require.NoError(t, err)
 		require.NoError(t, db.AutoMigrate(&generationDBExample{}))
-		outDir := t.TempDir()
+		outDir := newModuleDir(t)
 		require.NoError(t, os.WriteFile(filepath.Join(outDir, "demo_repo"), []byte("not a directory"), 0600))
 
 		err = NewGenerationDB(
@@ -411,7 +411,7 @@ func TestGenerationDBDoWithSQLiteRepo(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&generationDBExample{}))
-	outDir := t.TempDir()
+	outDir := newModuleDir(t)
 
 	err = NewGenerationDB(
 		db,
@@ -430,6 +430,13 @@ func TestGenerationDBDoWithSQLiteRepo(t *testing.T) {
 			t.Fatalf("expected generated file %s: %v", path, err)
 		}
 	}
+}
+
+func newModuleDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/godb-test\n\ngo 1.24\n"), 0600))
+	return dir
 }
 
 // TestGenerationPostgresWithOutRepo 验证不生成 repo 的 PostgreSQL 代码生成。

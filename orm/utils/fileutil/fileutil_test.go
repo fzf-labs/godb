@@ -40,6 +40,16 @@ func TestExistsMissingPath(t *testing.T) {
 	}
 }
 
+func TestExistsRejectsNonDirectoryLookupErrors(t *testing.T) {
+	parentFile := filepath.Join(t.TempDir(), "parent")
+	if err := os.WriteFile(parentFile, []byte("file"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if Exists(filepath.Join(parentFile, "child")) {
+		t.Fatal("child path under a regular file should not count as existing")
+	}
+}
+
 // TestMkdirPath 验证目录创建工具函数。
 func TestMkdirPath(t *testing.T) {
 	type args struct {

@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var client = redis.NewClient(&redis.Options{
@@ -204,6 +205,24 @@ func TestGoRedisCacheFetchBatchMissStoresValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]string{"a": "loaded-a"}, got)
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGoRedisCacheFetchBatchDeduplicatesKeys(t *testing.T) {
+	server, err := miniredis.Run()
+	require.NoError(t, err)
+	t.Cleanup(server.Close)
+
+	rdb := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	t.Cleanup(func() { _ = rdb.Close() })
+	cache := NewGoRedisDBCache(rdb)
+
+	got, err := cache.FetchBatch(context.Background(), []string{"a", "a", "b"}, func(miss []string) (map[string]string, error) {
+		assert.Equal(t, []string{"a", "b"}, miss)
+		return map[string]string{"a": "loaded-a", "b": "loaded-b"}, nil
+	}, time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"a": "loaded-a", "b": "loaded-b"}, got)
 }
 
 func TestGoRedisCacheFetchBatchErrors(t *testing.T) {

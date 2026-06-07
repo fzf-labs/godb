@@ -125,10 +125,6 @@ func TestDumpMySQLSkipsExistingFile(t *testing.T) {
 	restore := replaceDumpClient(t, db)
 	defer restore()
 	expectDumpCurrentDatabase(mock, "app")
-	expectDumpCurrentDatabase(mock, "app")
-	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).
-		WillReturnRows(sqlmock.NewRows([]string{"Table", "Create Table"}).
-			AddRow("users", "CREATE TABLE users (id bigint)"))
 
 	outDir := t.TempDir()
 	appDir := filepath.Join(outDir, "app")
