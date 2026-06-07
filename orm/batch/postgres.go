@@ -45,8 +45,12 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 	}
 
 	// 检查是否存在 "id" 字段
-	if _, ok := fields["id"]; !ok {
+	idColumn, idInfo, ok := findIDField(fields)
+	if !ok {
 		return nil, errors.New("struct must have a field with json tag 'id'")
+	}
+	if len(fields) == 1 {
+		return nil, errors.New("no update columns found")
 	}
 
 	// 准备数据
@@ -59,7 +63,7 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 			return nil, fmt.Errorf("dataList[%d] cannot be nil", i)
 		}
 		structVal := item.Elem()
-		idField := structVal.FieldByName(fields["id"].name)
+		idField := structVal.FieldByName(idInfo.name)
 		if !idField.IsValid() {
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
 		}
@@ -72,7 +76,10 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			idStr = strconv.FormatUint(idField.Uint(), 10)
 		case reflect.String:
-			idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(idField.String(), "'", "''")) // PostgreSQL 使用两个单引号转义
+			rawID := idField.String()
+			if rawID != "" {
+				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(rawID, "'", "''")) // PostgreSQL 使用两个单引号转义
+			}
 		default:
 			idStr = fmt.Sprintf("'%v'", idField.Interface())
 		}
@@ -85,7 +92,7 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 
 		// 处理其他字段
 		for fieldName, fieldInfo := range fields {
-			if fieldName == "id" {
+			if fieldName == idColumn {
 				continue
 			}
 			fieldValue := structVal.FieldByName(fieldInfo.name)
@@ -112,7 +119,7 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 		batchStart := i * batchSize
 		batchEnd := min((i+1)*batchSize, length)
 
-		sql, err := buildPostgresBatchUpdateSQL(tableName, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
+		sql, err := buildPostgresBatchUpdateSQLWithIDColumn(tableName, idColumn, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
 		if err != nil {
 			return nil, fmt.Errorf("build batch update SQL error: %w", err)
 		}
@@ -131,8 +138,15 @@ func formatPostgresFieldValue(field reflect.Value) (string, error) {
 
 // buildPostgresBatchUpdateSQL 生成 PostgreSQL 批量更新 SQL
 func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
+	return buildPostgresBatchUpdateSQLWithIDColumn(tableName, "id", updateMap, batchStart, batchEnd, batchIDs)
+}
+
+func buildPostgresBatchUpdateSQLWithIDColumn(tableName, idColumn string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
 	if len(batchIDs) == 0 {
 		return "", errors.New("batchIDs cannot be empty")
+	}
+	if len(updateMap) == 0 {
+		return "", errors.New("no update columns found")
 	}
 
 	var sqlBuilder strings.Builder
@@ -147,7 +161,7 @@ func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string
 		if err != nil {
 			return "", err
 		}
-		clause := escapePostgresIdentifier(fieldName) + ` = CASE "id"`
+		clause := escapePostgresIdentifier(fieldName) + " = CASE " + escapePostgresIdentifier(idColumn)
 		for i, id := range batchIDs {
 			clause += " WHEN " + id + " THEN " + fieldValueList[i]
 		}
@@ -156,7 +170,7 @@ func buildPostgresBatchUpdateSQL(tableName string, updateMap map[string][]string
 	}
 
 	sqlBuilder.WriteString(strings.Join(setClauses, ", "))
-	sqlBuilder.WriteString(` WHERE "id" IN (` + strings.Join(batchIDs, ",") + ")")
+	sqlBuilder.WriteString(" WHERE " + escapePostgresIdentifier(idColumn) + " IN (" + strings.Join(batchIDs, ",") + ")")
 
 	return sqlBuilder.String(), nil
 }

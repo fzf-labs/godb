@@ -63,7 +63,7 @@ func TestBuildPgDumpArgs_UsesDatabaseFlag(t *testing.T) {
 		User:   "postgres",
 		Dbname: "app_db",
 	}, "users")
-	want := []string{"-h", "127.0.0.1", "-p", "5432", "-U", "postgres", "-d", "app_db", "-s", "-t", "users"}
+	want := []string{"-h", "127.0.0.1", "-p", "5432", "-U", "postgres", "-d", "app_db", "-s", "-t", `"users"`}
 	if len(args) != len(want) {
 		t.Fatalf("unexpected arg len: got=%d want=%d", len(args), len(want))
 	}
@@ -71,6 +71,20 @@ func TestBuildPgDumpArgs_UsesDatabaseFlag(t *testing.T) {
 		if args[i] != want[i] {
 			t.Fatalf("unexpected args: got=%v want=%v", args, want)
 		}
+	}
+}
+
+func TestBuildPgDumpArgs_QuotesQualifiedAndMixedCaseTablePattern(t *testing.T) {
+	args := buildPgDumpArgs(&PostgresDsn{
+		Host:   "127.0.0.1",
+		Port:   5432,
+		User:   "postgres",
+		Dbname: "app_db",
+	}, `app_schema.User.Events`)
+	got := args[len(args)-1]
+	want := `"app_schema"."User"."Events"`
+	if got != want {
+		t.Fatalf("unexpected table pattern: got=%q want=%q", got, want)
 	}
 }
 
@@ -126,6 +140,27 @@ SELECT pg_catalog.set_config('search_path', '', false);
 	}
 	if !strings.Contains(got, "CREATE TABLE public.users") {
 		t.Fatalf("expected create table to remain:\n%s", got)
+	}
+}
+
+func TestPostgresRemoveFiltersMultilineOwnerStatement(t *testing.T) {
+	dump := &SQLDump{}
+	input := `CREATE TABLE public.users (
+    id bigint NOT NULL
+);
+ALTER TABLE public.users
+    OWNER TO postgres;
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+`
+
+	got := dump.postgresRemove(input)
+	if strings.Contains(got, "OWNER TO postgres") {
+		t.Fatalf("expected multiline owner statement to be removed:\n%s", got)
+	}
+	wantAlter := "ALTER TABLE ONLY public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+	if !strings.Contains(got, wantAlter) {
+		t.Fatalf("expected non-owner alter statement to remain:\n%s", got)
 	}
 }
 

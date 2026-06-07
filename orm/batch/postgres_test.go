@@ -199,3 +199,39 @@ func TestPostgresBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) 
 	assert.Contains(t, sqlArray[0], "'abc'")
 	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
 }
+
+func TestPostgresBatchUpdateToSQLArray_UsesConfiguredIDColumn(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:user_id"`
+		Name string `gorm:"column:name"`
+	}
+
+	sqlArray, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{ID: 7, Name: "alice"}})
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], `"name" = CASE "user_id" WHEN 7 THEN 'alice' END`)
+	assert.Contains(t, sqlArray[0], `WHERE "user_id" IN (7)`)
+	assert.NotContains(t, sqlArray[0], `CASE "id"`)
+	assert.NotContains(t, sqlArray[0], `WHERE "id" IN`)
+}
+
+func TestPostgresBatchUpdateToSQLArray_RejectsEmptyStringID(t *testing.T) {
+	type TestStruct struct {
+		ID   string `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	_, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{Name: "alice"}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty id value at index 0")
+}
+
+func TestPostgresBatchUpdateToSQLArray_RejectsIDOnlyStruct(t *testing.T) {
+	type TestStruct struct {
+		ID int64 `gorm:"column:id"`
+	}
+
+	_, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{ID: 1}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no update columns found")
+}

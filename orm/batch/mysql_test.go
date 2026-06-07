@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -40,11 +41,11 @@ func TestBatchUpdateToSQLArray(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, sqlArray)
 	assert.Len(t, sqlArray, 1)
-	assert.Contains(t, sqlArray[0], "`age` = CASE id")
-	assert.Contains(t, sqlArray[0], "`is_deleted` = CASE id")
-	assert.Contains(t, sqlArray[0], "`name` = CASE id")
-	assert.True(t, strings.Index(sqlArray[0], "`age` = CASE id") < strings.Index(sqlArray[0], "`is_deleted` = CASE id"))
-	assert.True(t, strings.Index(sqlArray[0], "`is_deleted` = CASE id") < strings.Index(sqlArray[0], "`name` = CASE id"))
+	assert.Contains(t, sqlArray[0], "`age` = CASE `id`")
+	assert.Contains(t, sqlArray[0], "`is_deleted` = CASE `id`")
+	assert.Contains(t, sqlArray[0], "`name` = CASE `id`")
+	assert.True(t, strings.Index(sqlArray[0], "`age` = CASE `id`") < strings.Index(sqlArray[0], "`is_deleted` = CASE `id`"))
+	assert.True(t, strings.Index(sqlArray[0], "`is_deleted` = CASE `id`") < strings.Index(sqlArray[0], "`name` = CASE `id`"))
 }
 
 // TestMysqlBatchUpdateToSQLArray_InvalidIdentifier 验证非法表名会返回错误。
@@ -121,4 +122,42 @@ func TestMysqlBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) {
 	assert.Contains(t, sqlArray[0], "'2024-01-02 03:04:05'")
 	assert.Contains(t, sqlArray[0], "'abc'")
 	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
+}
+
+func TestMysqlBatchUpdateToSQLArray_UsesConfiguredIDColumn(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:user_id"`
+		Name string `gorm:"column:name"`
+	}
+
+	sqlArray, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: 7, Name: "alice"}})
+	require.NoError(t, err)
+	require.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "`name` = CASE `user_id` WHEN 7 THEN 'alice' END")
+	assert.Contains(t, sqlArray[0], "WHERE `user_id` IN (7)")
+	assert.NotContains(t, sqlArray[0], "CASE id")
+	assert.NotContains(t, sqlArray[0], "WHERE id IN")
+}
+
+func TestMysqlBatchUpdateToSQLArray_EscapesSingleQuotesByDoubling(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	sqlArray, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: 1, Name: "O'Reilly"}})
+	require.NoError(t, err)
+	require.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "'O''Reilly'")
+	assert.NotContains(t, sqlArray[0], `O\'Reilly`)
+}
+
+func TestMysqlBatchUpdateToSQLArray_RejectsIDOnlyStruct(t *testing.T) {
+	type TestStruct struct {
+		ID int64 `gorm:"column:id"`
+	}
+
+	_, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: 1}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no update columns found")
 }

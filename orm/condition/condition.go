@@ -167,20 +167,22 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			if v.Exp == "" {
-				v.Exp = EQ
+			exp := v.Exp
+			if exp == "" {
+				exp = EQ
 			}
-			if !ExpValidate(v.Exp) {
-				return whereExpressions, orderExpressions, fmt.Errorf("unknown exp type '%s'", v.Exp)
+			if !ExpValidate(exp) {
+				return whereExpressions, orderExpressions, fmt.Errorf("unknown exp type '%s'", exp)
 			}
-			if v.Logic == "" {
-				v.Logic = AND
+			logic := v.Logic
+			if logic == "" {
+				logic = AND
 			}
-			if !LogicValidate(v.Logic) {
-				return whereExpressions, orderExpressions, fmt.Errorf("unknown logic type '%s'", v.Logic)
+			if !LogicValidate(logic) {
+				return whereExpressions, orderExpressions, fmt.Errorf("unknown logic type '%s'", logic)
 			}
 			var expression clause.Expression
-			switch v.Exp {
+			switch exp {
 			case EQ:
 				expression = clause.Eq{Column: field, Value: v.Value}
 			case NEQ:
@@ -219,7 +221,7 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 					return nil, nil, fmt.Errorf("RAW value is not a clause.Expr")
 				}
 			}
-			if v.Logic == AND {
+			if logic == AND {
 				whereExpressions = append(whereExpressions, clause.And(expression))
 			} else {
 				whereExpressions = append(whereExpressions, clause.Or(expression))
@@ -238,17 +240,18 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			if v.Order == "" {
-				v.Order = ASC
+			order := v.Order
+			if order == "" {
+				order = ASC
 			}
-			if !OrderValidate(v.Order) {
+			if !OrderValidate(order) {
 				return whereExpressions, orderExpressions, fmt.Errorf("order is err")
 			}
 			orderExpressions = append(orderExpressions, clause.OrderBy{
 				Columns: []clause.OrderByColumn{
 					{
 						Column:  clause.Column{Name: field},
-						Desc:    v.Order == DESC,
+						Desc:    order == DESC,
 						Reorder: false,
 					},
 				},
@@ -286,11 +289,20 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 	resp.Page = p.Page
 	resp.PageSize = p.PageSize
 	resp.TotalPage = int32(math.Ceil(float64(total) / float64(p.PageSize)))
-	resp.NextPage = p.Page + 1
+	if resp.TotalPage == 0 {
+		return resp, nil
+	}
+	if p.Page > resp.TotalPage {
+		resp.NextPage = resp.TotalPage
+		resp.PrevPage = resp.TotalPage
+		return resp, nil
+	}
+	currentPage := p.Page
+	resp.NextPage = currentPage + 1
 	if resp.NextPage > resp.TotalPage {
 		resp.NextPage = resp.TotalPage
 	}
-	resp.PrevPage = p.Page - 1
+	resp.PrevPage = currentPage - 1
 	if resp.PrevPage <= 0 {
 		resp.PrevPage = 1
 	}
@@ -310,8 +322,20 @@ func fieldToColumn(model interface{}) map[string]string {
 	if t.Kind() != reflect.Struct {
 		return m
 	}
+	collectFieldColumns(t, m)
+	return m
+}
+
+func collectFieldColumns(t reflect.Type, columns map[string]string) {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
+		fieldType := field.Type
+		for fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+		if field.Anonymous && fieldType.Kind() == reflect.Struct {
+			collectFieldColumns(fieldType, columns)
+		}
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
@@ -319,11 +343,10 @@ func fieldToColumn(model interface{}) map[string]string {
 				if strings.HasPrefix(v, "column:") {
 					column := strings.SplitN(v, ":", 2)
 					if len(column) == 2 {
-						m[strings.ToLower(column[1])] = column[1]
+						columns[strings.ToLower(column[1])] = column[1]
 					}
 				}
 			}
 		}
 	}
-	return m
 }

@@ -45,8 +45,12 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 	}
 
 	// 检查是否存在 "id" 字段
-	if _, ok := fields["id"]; !ok {
+	idColumn, idInfo, ok := findIDField(fields)
+	if !ok {
 		return nil, errors.New("struct must have a field with json tag 'id'")
+	}
+	if len(fields) == 1 {
+		return nil, errors.New("no update columns found")
 	}
 
 	// 准备数据
@@ -59,7 +63,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 			return nil, fmt.Errorf("dataList[%d] cannot be nil", i)
 		}
 		structVal := item.Elem()
-		idField := structVal.FieldByName(fields["id"].name)
+		idField := structVal.FieldByName(idInfo.name)
 		if !idField.IsValid() {
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
 		}
@@ -75,7 +79,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 			idStr = idField.String()
 			// 对字符串类型的 ID 进行转义和引号处理
 			if idStr != "" {
-				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(idStr, "'", "\\'"))
+				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(idStr, "'", "''"))
 			}
 		default:
 			// 其他类型转为字符串处理
@@ -90,7 +94,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 
 		// 处理其他字段
 		for fieldName, fieldInfo := range fields {
-			if fieldName == "id" {
+			if fieldName == idColumn {
 				continue
 			}
 			fieldValue := structVal.FieldByName(fieldInfo.name)
@@ -117,7 +121,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 		batchStart := i * batchSize
 		batchEnd := min((i+1)*batchSize, length)
 
-		sql, err := buildBatchUpdateSQL(tableName, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
+		sql, err := buildBatchUpdateSQLWithIDColumn(tableName, idColumn, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
 		if err != nil {
 			return nil, fmt.Errorf("build batch update SQL error: %w", err)
 		}
@@ -145,6 +149,7 @@ func getStructFields(structType reflect.Type) (map[string]structField, error) {
 			}
 		}
 
+		columnName = strings.TrimSpace(columnName)
 		if columnName == "" {
 			return nil, fmt.Errorf("field %s must have column name in gorm tag", field.Name)
 		}
@@ -165,6 +170,18 @@ func getStructFields(structType reflect.Type) (map[string]structField, error) {
 	return fields, nil
 }
 
+func findIDField(fields map[string]structField) (string, structField, bool) {
+	if field, ok := fields["id"]; ok {
+		return "id", field, true
+	}
+	for column, field := range fields {
+		if field.name == "ID" {
+			return column, field, true
+		}
+	}
+	return "", structField{}, false
+}
+
 type structField struct {
 	name     string
 	typeKind reflect.Kind
@@ -174,14 +191,21 @@ type structField struct {
 // 辅助函数：格式化字段值
 func formatFieldValue(field reflect.Value) (string, error) {
 	return formatSQLValue(field, func(s string) string {
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "\\'"))
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 	})
 }
 
 // 辅助函数：生成每批次的 SQL 语句
 func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
+	return buildBatchUpdateSQLWithIDColumn(tableName, "id", updateMap, batchStart, batchEnd, batchIDs)
+}
+
+func buildBatchUpdateSQLWithIDColumn(tableName, idColumn string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
 	if len(batchIDs) == 0 {
 		return "", errors.New("batchIDs cannot be empty")
+	}
+	if len(updateMap) == 0 {
+		return "", errors.New("no update columns found")
 	}
 
 	var sqlBuilder strings.Builder
@@ -196,7 +220,7 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchS
 		if err != nil {
 			return "", err
 		}
-		clause := escapeIdentifier(fieldName) + " = CASE id"
+		clause := escapeIdentifier(fieldName) + " = CASE " + escapeIdentifier(idColumn)
 		for i, id := range batchIDs {
 			clause += " WHEN " + id + " THEN " + fieldValueList[i]
 		}
@@ -205,7 +229,7 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchS
 	}
 
 	sqlBuilder.WriteString(strings.Join(setClauses, ", "))
-	sqlBuilder.WriteString(" WHERE id IN (" + strings.Join(batchIDs, ",") + ")")
+	sqlBuilder.WriteString(" WHERE " + escapeIdentifier(idColumn) + " IN (" + strings.Join(batchIDs, ",") + ")")
 
 	return sqlBuilder.String(), nil
 }

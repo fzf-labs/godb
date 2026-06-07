@@ -17,6 +17,15 @@ type UserTest struct {
 	Nickname string `gorm:"column:nickname;type:character varying(30);not null;comment:用户昵称" json:"nickname"` // 用户昵称
 }
 
+type embeddedTenantFields struct {
+	TenantID string `gorm:"column:tenant_id"`
+}
+
+type embeddedUserTest struct {
+	embeddedTenantFields
+	ID string `gorm:"column:id"`
+}
+
 func TestPaginatorReq_ConvertToGormExpression(t *testing.T) {
 	type fields struct {
 		Page     int32
@@ -459,6 +468,45 @@ func TestReqConvertToGormExpressionAdditionalBranches(t *testing.T) {
 	}
 }
 
+func TestReqConvertToGormExpressionSupportsEmbeddedColumns(t *testing.T) {
+	req := &Req{
+		Query: []*QueryParam{{Field: "tenant_id", Value: "tenant-1"}},
+		Order: []*OrderParam{{Field: "tenant_id", Order: DESC}},
+	}
+
+	where, order, err := req.ConvertToGormExpression(embeddedUserTest{})
+	if err != nil {
+		t.Fatalf("unexpected embedded column error: %v", err)
+	}
+	if !reflect.DeepEqual(where, []clause.Expression{clause.And(clause.Eq{Column: "tenant_id", Value: "tenant-1"})}) {
+		t.Fatalf("unexpected where expressions: %#v", where)
+	}
+	wantOrder := []clause.Expression{clause.OrderBy{Columns: []clause.OrderByColumn{{Column: clause.Column{Name: "tenant_id"}, Desc: true}}}}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("unexpected order expressions: %#v", order)
+	}
+}
+
+func TestReqConvertToGormExpressionDoesNotMutateDefaults(t *testing.T) {
+	req := &Req{
+		Query: []*QueryParam{{Field: "id", Value: "42"}},
+		Order: []*OrderParam{{Field: "id"}},
+	}
+
+	if _, _, err := req.ConvertToGormExpression(UserTest{}); err != nil {
+		t.Fatalf("unexpected expression error: %v", err)
+	}
+	if req.Query[0].Exp != "" {
+		t.Fatalf("query exp was mutated to %q", req.Query[0].Exp)
+	}
+	if req.Query[0].Logic != "" {
+		t.Fatalf("query logic was mutated to %q", req.Query[0].Logic)
+	}
+	if req.Order[0].Order != "" {
+		t.Fatalf("order was mutated to %q", req.Order[0].Order)
+	}
+}
+
 func TestFieldToColumnBranches(t *testing.T) {
 	if got := fieldToColumn(nil); len(got) != 0 {
 		t.Fatalf("nil model should return empty map: %#v", got)
@@ -571,6 +619,48 @@ func TestPaginatorReq_ConvertToPage(t *testing.T) {
 				PrevPage:  1,
 				NextPage:  1,
 				TotalPage: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "page beyond total clamps previous page",
+			fields: fields{
+				Page:     5,
+				PageSize: 10,
+				Search:   nil,
+				Order:    nil,
+			},
+			args: args{
+				total: 21,
+			},
+			want: &Reply{
+				Page:      5,
+				PageSize:  10,
+				Total:     21,
+				PrevPage:  3,
+				NextPage:  3,
+				TotalPage: 3,
+			},
+			wantErr: false,
+		},
+		{
+			name: "page beyond empty result has no navigation pages",
+			fields: fields{
+				Page:     5,
+				PageSize: 10,
+				Search:   nil,
+				Order:    nil,
+			},
+			args: args{
+				total: 0,
+			},
+			want: &Reply{
+				Page:      5,
+				PageSize:  10,
+				Total:     0,
+				PrevPage:  0,
+				NextPage:  0,
+				TotalPage: 0,
 			},
 			wantErr: false,
 		},

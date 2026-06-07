@@ -23,6 +23,10 @@ type batchInvalidColumn struct {
 	ID int `gorm:"column:bad-name"`
 }
 
+type batchBlankColumn struct {
+	ID int `gorm:"column:   "`
+}
+
 type batchNoID struct {
 	Name string `gorm:"column:name"`
 }
@@ -58,6 +62,7 @@ func TestGetStructFieldsErrors(t *testing.T) {
 		{name: "missing column tag", model: batchNoColumnTag{}},
 		{name: "duplicate column", model: batchDuplicateColumn{}},
 		{name: "invalid column", model: batchInvalidColumn{}},
+		{name: "blank column", model: batchBlankColumn{}},
 	}
 
 	for _, tt := range tests {
@@ -81,7 +86,7 @@ func TestBatchUpdateValidationErrors(t *testing.T) {
 		{name: "empty slice", data: []*batchNoID{}, mysqlErr: true, postgresErr: true},
 		{name: "not pointer slice", data: []batchNoID{{Name: "a"}}, mysqlErr: true, postgresErr: true},
 		{name: "missing id", data: []*batchNoID{{Name: "a"}}, mysqlErr: true, postgresErr: true},
-		{name: "empty id", data: []*batchEmptyStringID{{Name: "a"}}, mysqlErr: true},
+		{name: "empty id", data: []*batchEmptyStringID{{Name: "a"}}, mysqlErr: true, postgresErr: true},
 		{name: "unsupported field", data: []*batchUnsupportedField{{ID: 1, Values: []int{1}}}, mysqlErr: true, postgresErr: true},
 	}
 

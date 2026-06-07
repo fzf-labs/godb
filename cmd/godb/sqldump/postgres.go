@@ -142,8 +142,16 @@ func buildPgDumpArgs(dsnParse *PostgresDsn, table string) []string {
 		"-U", dsnParse.User,
 		"-d", dsnParse.Dbname,
 		"-s",
-		"-t", table,
+		"-t", quotePgDumpTablePattern(table),
 	}
+}
+
+func quotePgDumpTablePattern(table string) string {
+	parts := strings.Split(table, ".")
+	for i, part := range parts {
+		parts[i] = `"` + strings.ReplaceAll(part, `"`, `""`) + `"`
+	}
+	return strings.Join(parts, ".")
 }
 
 // 预编译正则表达式，避免重复编译
@@ -182,8 +190,11 @@ func (s *SQLDump) postgresRemove(str string) string {
 		}
 		// 检测语句结束（以分号结尾）
 		if inAlterStatement && strings.HasSuffix(trimmedLine, ";") {
-			result.WriteString(currentStatement.String())
-			result.WriteByte('\n')
+			statement := currentStatement.String()
+			if !alterOwnerRegex.MatchString(statement) {
+				result.WriteString(statement)
+				result.WriteByte('\n')
+			}
 			inAlterStatement = false
 			currentStatement.Reset()
 		} else if !inAlterStatement {
