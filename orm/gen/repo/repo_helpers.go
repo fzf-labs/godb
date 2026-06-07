@@ -6,8 +6,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/jinzhu/inflection"
+
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // KeyWords 定义生成 repo 代码时需要避让的局部变量名。

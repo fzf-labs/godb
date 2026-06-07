@@ -4,10 +4,11 @@ import (
 	"log"
 	"runtime/debug"
 
+	"github.com/spf13/cobra"
+
 	"github.com/fzf-labs/godb/cmd/godb/ormgen"
 	"github.com/fzf-labs/godb/cmd/godb/sqldump"
 	"github.com/fzf-labs/godb/cmd/godb/sqltopb"
-	"github.com/spf13/cobra"
 )
 
 // version 可在发布构建时通过 -ldflags "-X main.version=vX.Y.Z" 注入。

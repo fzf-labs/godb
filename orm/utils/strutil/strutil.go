@@ -82,7 +82,7 @@ func ConvToString(any any) string {
 		}
 		return value.String()
 	case *time.Time:
-		if value == nil {
+		if value == nil || value.IsZero() {
 			return ""
 		}
 		return value.String()

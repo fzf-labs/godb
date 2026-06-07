@@ -4,6 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-redis/redismock/v9"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/condition"
 	"github.com/fzf-labs/godb/orm/dbcache/goredisdbcache"
@@ -13,11 +19,6 @@ import (
 	gorm_gen_repo2 "github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_repo"
 	"github.com/fzf-labs/godb/orm/gen/config"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/go-redis/redismock/v9"
-	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 // newDB 创建示例测试用 PostgreSQL 连接。

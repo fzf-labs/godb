@@ -8,13 +8,14 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/iancoleman/strcase"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/fzf-labs/godb/orm/utils/template"
-	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 // GenerationPB 生成

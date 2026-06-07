@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 )
 
 var client = redis.NewClient(&redis.Options{

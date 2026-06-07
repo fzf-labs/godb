@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
@@ -13,6 +12,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 )
 
 func TestMonthShardingSuffix(t *testing.T) {

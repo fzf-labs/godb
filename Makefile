@@ -44,7 +44,7 @@ bootstrap-postgres:
 .PHONY: comments
 # make comments 检查导出 API 注释
 comments:
-	@go run ./scripts/check_exported_comments.go
+	@go run ./scripts
 
 .PHONY: ci
 # make ci 运行格式检查、注释检查、vet、测试和覆盖率

@@ -3,9 +3,10 @@ package config
 import (
 	"testing"
 
-	"github.com/fzf-labs/godb/orm/encoding"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/orm/encoding"
 )
 
 func TestNewRepoConfig(t *testing.T) {

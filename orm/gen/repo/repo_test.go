@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fzf-labs/godb/internal/testenv"
-	"github.com/fzf-labs/godb/orm/gormx"
-	tpl "github.com/fzf-labs/godb/orm/utils/template"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	"github.com/fzf-labs/godb/internal/testenv"
+	"github.com/fzf-labs/godb/orm/gormx"
+	tpl "github.com/fzf-labs/godb/orm/utils/template"
 )
 
 // newDB 创建 repo 生成测试用数据库连接。

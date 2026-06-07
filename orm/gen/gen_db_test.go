@@ -7,14 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fzf-labs/godb/internal/testenv"
-	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	"github.com/fzf-labs/godb/internal/testenv"
+	"github.com/fzf-labs/godb/orm/gormx"
 )
 
 type fakeColumnType struct {

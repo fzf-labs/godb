@@ -1,11 +1,12 @@
 package ormgen
 
 import (
+	"github.com/spf13/cobra"
+	gormGen "gorm.io/gen"
+
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/spf13/cobra"
-	gormGen "gorm.io/gen"
 )
 
 // CmdOrmGen 是生成 ORM model、dao 和 repo 代码的 cobra 子命令。

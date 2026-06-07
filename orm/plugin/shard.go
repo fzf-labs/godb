@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/dromara/carbon/v2"
-	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"gorm.io/sharding"
+
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // NewShardingPlugin 按雪花算法

@@ -46,6 +46,7 @@ func TestSliRemoveDoesNotMutateInput(t *testing.T) {
 
 func TestConvToString(t *testing.T) {
 	now := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	zero := time.Time{}
 	intPtr := 7
 	var nilMap map[string]string
 	tests := []struct {
@@ -72,6 +73,7 @@ func TestConvToString(t *testing.T) {
 		{name: "zero time", in: time.Time{}, want: ""},
 		{name: "time", in: now, want: now.String()},
 		{name: "nil time pointer", in: (*time.Time)(nil), want: ""},
+		{name: "zero time pointer", in: &zero, want: ""},
 		{name: "time pointer", in: &now, want: now.String()},
 		{name: "int pointer", in: &intPtr, want: "7"},
 		{name: "nil map", in: nilMap, want: ""},

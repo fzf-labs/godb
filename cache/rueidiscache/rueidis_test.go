@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 )
 
 // TestNewRueiis 验证 rueidis 客户端基础缓存命令。

@@ -1,9 +1,10 @@
 package config
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/fzf-labs/godb/orm/dbcache"
 	"github.com/fzf-labs/godb/orm/encoding"
-	"gorm.io/gorm"
 )
 
 // NewRepoConfig 创建生成仓储使用的运行时依赖配置。

@@ -2,6 +2,7 @@ package keymanage
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -42,7 +43,13 @@ func (p *KeyManage) Document() string {
 	str := `|ServerName|PrefixName|ttl(s)|Remark` + "\n" + `|--|--|--|--|` + "\n"
 
 	if len(p.List) > 0 {
-		for _, m := range p.List {
+		prefixes := make([]string, 0, len(p.List))
+		for prefix := range p.List {
+			prefixes = append(prefixes, prefix)
+		}
+		sort.Strings(prefixes)
+		for _, prefix := range prefixes {
+			m := p.List[prefix]
 			str += `|` + p.ServerName + `|` + m.PrefixName + `|` + strconv.FormatFloat(m.ExpirationTime.Seconds(), 'f', -1, 64) + `|` + m.Remark + `|` + "\n"
 		}
 	}

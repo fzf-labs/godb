@@ -1,10 +1,11 @@
 package sqltopb
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/spf13/cobra"
 )
 
 // CmdSQLToPb 是根据 SQL 表结构生成 proto 文件的 cobra 子命令。

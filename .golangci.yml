@@ -32,7 +32,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/golangci/golangci-lint
+        - github.com/fzf-labs/godb
   exclusions:
     generated: lax
     paths:

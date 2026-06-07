@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 )
 
 // TestLockerOptionWithTTL 验证自定义锁 TTL 配置。

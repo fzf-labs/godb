@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fzf-labs/godb/internal/testenv"
-	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/internal/testenv"
+	"github.com/fzf-labs/godb/orm/gormx"
 )
 
 // newDB 创建 proto 生成测试用数据库连接。

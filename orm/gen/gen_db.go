@@ -8,16 +8,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fzf-labs/godb/orm/gen/repo"
-	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils/fileutil"
-	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/iancoleman/strcase"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	"github.com/fzf-labs/godb/orm/gen/repo"
+	"github.com/fzf-labs/godb/orm/gormx"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // //////////////////////////////////////

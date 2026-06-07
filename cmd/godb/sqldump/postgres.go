@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // DumpPostgres 导出创建语句

@@ -9,6 +9,7 @@ func TestKeyFormat(t *testing.T) {
 	nt := time.Now()
 	ntStr := EscapeKeyPart(nt.Format("2006-01-02 15:04:05"))
 	var nilTime *time.Time
+	zeroTime := time.Time{}
 	type args struct {
 		any any
 	}
@@ -179,9 +180,16 @@ func TestKeyFormat(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "case null time",
+			name: "case nil time pointer",
 			args: args{
 				any: nilTime,
+			},
+			want: "",
+		},
+		{
+			name: "case zero time pointer",
+			args: args{
+				any: &zeroTime,
 			},
 			want: "",
 		},

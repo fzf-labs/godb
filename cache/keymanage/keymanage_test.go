@@ -39,6 +39,26 @@ func TestKeyManageAddKeyDocumentAndTTL(t *testing.T) {
 	}
 }
 
+func TestKeyManageDocumentSortsPrefixes(t *testing.T) {
+	manager := New("svc")
+	for _, prefix := range []string{"user", "admin", "order"} {
+		if _, err := manager.AddKey(prefix, time.Second, prefix+" cache"); err != nil {
+			t.Fatalf("add key %s: %v", prefix, err)
+		}
+	}
+
+	doc := manager.Document()
+	admin := strings.Index(doc, "|svc|admin|1|admin cache|")
+	order := strings.Index(doc, "|svc|order|1|order cache|")
+	user := strings.Index(doc, "|svc|user|1|user cache|")
+	if admin == -1 || order == -1 || user == -1 {
+		t.Fatalf("document missing expected rows:\n%s", doc)
+	}
+	if !(admin < order && order < user) {
+		t.Fatalf("document rows are not sorted by prefix:\n%s", doc)
+	}
+}
+
 func TestKeyPrefix_KeyEscapesSegments(t *testing.T) {
 	prefix := &KeyPrefix{
 		ServerName: "svc",

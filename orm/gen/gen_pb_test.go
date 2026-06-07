@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fzf-labs/godb/internal/testenv"
-	"github.com/fzf-labs/godb/orm/gormx"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/internal/testenv"
+	"github.com/fzf-labs/godb/orm/gormx"
 )
 
 // TestNewGenerationPb 验证 proto 文件生成。

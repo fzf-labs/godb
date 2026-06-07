@@ -1,5 +1,3 @@
-//go:build ignore
-
 package main
 
 import (
@@ -73,6 +71,7 @@ func shouldSkip(path string, d os.DirEntry) bool {
 
 func isCheckedGoFile(path string) bool {
 	return strings.HasSuffix(path, ".go") &&
+		!strings.HasSuffix(path, "_test.go") &&
 		!strings.HasSuffix(path, ".gen.go") &&
 		!strings.HasSuffix(path, ".pb.go")
 }
@@ -90,9 +89,6 @@ func missingInFile(fset *token.FileSet, path string, file *ast.File) []string {
 	for _, decl := range file.Decls {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
-			if strings.HasSuffix(path, "_test.go") && isStandardTestEntrypoint(d.Name.Name) {
-				continue
-			}
 			if d.Name.IsExported() && d.Doc == nil {
 				missing = append(missing, fmt.Sprintf("%s: exported func %s", fset.Position(d.Pos()), d.Name.Name))
 			}
@@ -101,13 +97,6 @@ func missingInFile(fset *token.FileSet, path string, file *ast.File) []string {
 		}
 	}
 	return missing
-}
-
-func isStandardTestEntrypoint(name string) bool {
-	return strings.HasPrefix(name, "Test") ||
-		strings.HasPrefix(name, "Benchmark") ||
-		strings.HasPrefix(name, "Fuzz") ||
-		strings.HasPrefix(name, "Example")
 }
 
 func missingInGenDecl(fset *token.FileSet, decl *ast.GenDecl) []string {

@@ -7,9 +7,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/fzf-labs/godb/orm/dbcache"
 	"github.com/redis/rueidis"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/fzf-labs/godb/orm/dbcache"
 )
 
 // Cache 是基于 rueidis 的数据库查询缓存实现。

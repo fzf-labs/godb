@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/fzf-labs/godb/internal/testenv"
 	ormgen "github.com/fzf-labs/godb/orm/gen"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGenerationDBGoldenMatchesExampleUserDemoRepo(t *testing.T) {

@@ -6,12 +6,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fzf-labs/godb/orm/gen/proto"
-	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gen"
 	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/orm/gen/proto"
+	"github.com/fzf-labs/godb/orm/gormx"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // NewGenerationPB SQL 生成 proto

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
 )
 
 // GenerationTable 为单张表生成 repo 层代码文件。

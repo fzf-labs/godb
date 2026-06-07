@@ -92,7 +92,7 @@ func keyFormatRaw(any any) string {
 		}
 		return value.Format("2006-01-02 15:04:05") // 转换为字符串
 	case *time.Time:
-		if value == nil {
+		if value == nil || value.IsZero() {
 			return ""
 		}
 		return value.Format("2006-01-02 15:04:05") // 转换为字符串
