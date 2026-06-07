@@ -172,7 +172,6 @@ func TestLocker_AutoLock(t *testing.T) {
 	}()
 	ctx := context.Background()
 	err = locker.LockOnce(ctx, key, 10*time.Second, func() error {
-		fmt.Println("test_lock do ")
 		return nil
 	})
 	assert.NoError(t, err)

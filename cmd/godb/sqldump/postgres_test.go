@@ -82,6 +82,7 @@ func TestShouldSkipLine(t *testing.T) {
 		{line: `\restrict abc`, want: true},
 		{line: `\unrestrict abc`, want: true},
 		{line: "ALTER TABLE public.users OWNER TO postgres;", want: true},
+		{line: "ALTER TABLE public.users OWNER TO app_owner;", want: true},
 		{line: "CREATE TABLE public.users (id bigint);", want: false},
 	}
 

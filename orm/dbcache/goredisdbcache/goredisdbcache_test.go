@@ -2,7 +2,6 @@ package goredisdbcache
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -30,12 +29,10 @@ func TestGoRedisCache_Fetch(t *testing.T) {
 	cache := NewGoRedisDBCache(client, WithName("test"), WithTTL(time.Minute))
 	ctx := context.Background()
 	fetch, err := cache.Fetch(ctx, "GoRedisCache_Fetch", func() (string, error) {
-		fmt.Println("do Fetch")
 		return "GoRedisCache_Fetch: result", nil
 	}, cache.TTL())
-	fmt.Println(fetch)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, "GoRedisCache_Fetch: result", fetch)
 }
 
 func TestGoRedisCache_FetchBatch(t *testing.T) {
@@ -55,9 +52,13 @@ func TestGoRedisCache_FetchBatch(t *testing.T) {
 		}
 		return resp, nil
 	}, cache.TTL())
-	fmt.Println(fetch)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"GoRedisCache_Fetch_a": "GoRedisCache_Fetch_a: result",
+		"GoRedisCache_Fetch_b": "GoRedisCache_Fetch_b: result",
+		"GoRedisCache_Fetch_c": "GoRedisCache_Fetch_c: result",
+		"GoRedisCache_Fetch_d": "GoRedisCache_Fetch_d: result",
+	}, fetch)
 }
 
 func TestCache_Del(t *testing.T) {

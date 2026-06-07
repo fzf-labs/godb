@@ -38,8 +38,20 @@ func RedisPassword() string {
 // SkipIfUnavailable skips locally for optional services, but fails in CI where services must be provisioned.
 func SkipIfUnavailable(t testing.TB, format string, args ...any) {
 	t.Helper()
-	if ciEnabled() {
+	skipIfUnavailable(t, ciEnabled(), format, args...)
+}
+
+type unavailableReporter interface {
+	Helper()
+	Fatalf(format string, args ...any)
+	Skipf(format string, args ...any)
+}
+
+func skipIfUnavailable(t unavailableReporter, fail bool, format string, args ...any) {
+	t.Helper()
+	if fail {
 		t.Fatalf(format, args...)
+		return
 	}
 	t.Skipf(format, args...)
 }

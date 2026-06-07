@@ -9,6 +9,7 @@ import (
 	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestNewRueiis 验证 rueidis 客户端基础缓存命令。
@@ -33,12 +34,15 @@ func TestNewRueiis(t *testing.T) {
 	)
 
 	array, err2 := client.DoCache(context.Background(), client.B().Hmget().Key("myhash").Field("1", "2").Cache(), time.Minute).ToArray()
-	if err2 != nil {
-		t.Fatal(err2)
+	require.NoError(t, err2)
+	require.Len(t, array, 2)
+	got := make([]string, 0, len(array))
+	for _, msg := range array {
+		value, err := msg.ToString()
+		require.NoError(t, err)
+		got = append(got, value)
 	}
-	fmt.Printf("%+v \n", array)
-	assert.Len(t, array, 2)
-	assert.Equal(t, nil, err)
+	assert.Equal(t, []string{"a", "b"}, got)
 }
 
 func TestNewRueidisClientReturnsConfigError(t *testing.T) {
@@ -85,9 +89,7 @@ func TestNewRueidisAside(t *testing.T) {
 		loaderCalls++
 		return "abcd", nil
 	})
-	fmt.Println(err)
-	fmt.Println(val)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "abcd", val)
 	assert.Equal(t, 1, loaderCalls)
 
@@ -95,7 +97,7 @@ func TestNewRueidisAside(t *testing.T) {
 		loaderCalls++
 		return "updated", nil
 	})
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "abcd", val)
 	assert.Equal(t, 1, loaderCalls)
 }

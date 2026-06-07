@@ -2,7 +2,6 @@ package rocksdbcache
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -52,12 +51,10 @@ func TestRocksCache_Fetch(t *testing.T) {
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
 	fetch, err := cache.Fetch(ctx, "RocksCache_Fetch", func() (string, error) {
-		fmt.Println(1)
 		return "RocksCache_Fetch:result", nil
 	}, cache.TTL())
-	fmt.Println(fetch)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, "RocksCache_Fetch:result", fetch)
 }
 
 // TestRocksCache_FetchBatch 验证批量缓存查询。
@@ -78,9 +75,12 @@ func TestRocksCache_FetchBatch(t *testing.T) {
 		}
 		return resp, nil
 	}, cache.TTL())
-	fmt.Println(take)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"RocksCache_FetchBatch_a": "RocksCache_FetchBatch_a:result",
+		"RocksCache_FetchBatch_b": "RocksCache_FetchBatch_b:result",
+		"RocksCache_FetchBatch_c": "RocksCache_FetchBatch_c:result",
+	}, take)
 }
 
 // TestCache_Del 验证单 key 删除标记。
@@ -90,8 +90,7 @@ func TestCache_Del(t *testing.T) {
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	ctx := context.Background()
 	err := cache.Del(ctx, "RocksCache_Fetch")
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 }
 
 // TestCache_DelBatch 验证批量 key 删除标记。
@@ -114,7 +113,7 @@ func TestCache_Key(t *testing.T) {
 	rocksCacheClient := NewWeakRocksCacheClient(client)
 	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	key := cache.Key("a", "b", "c")
-	assert.Equal(t, key, "test:a:b:c")
+	assert.Equal(t, "test:a:b:c", key)
 }
 
 func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {

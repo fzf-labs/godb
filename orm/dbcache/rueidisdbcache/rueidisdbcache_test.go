@@ -2,7 +2,6 @@ package rueidisdbcache
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -40,33 +39,40 @@ func TestRueidisCache_Take(t *testing.T) {
 	take, err := rueidisCache.Fetch(ctx, "take_test", func() (string, error) {
 		return "take", nil
 	}, rueidisCache.TTL())
-	fmt.Println(take)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, "take", take)
 }
 
 func TestRueidisCache_TakeBatch(t *testing.T) {
 	client := requireRueidis(t)
 	ctx := context.Background()
 	rueidisCache := NewRueidisDBCache(client)
+	prefix := "batch:" + time.Now().Format("20060102150405.000000000")
 	keys := []string{
-		"a",
-		"b",
-		"c",
-		"d",
+		prefix + ":a",
+		prefix + ":b",
+		prefix + ":c",
+		prefix + ":d",
 	}
+	t.Cleanup(func() {
+		_ = rueidisCache.DelBatch(ctx, keys)
+	})
 	take, err := rueidisCache.FetchBatch(ctx, keys, func(miss []string) (map[string]string, error) {
-		fmt.Println(miss)
+		assert.Equal(t, keys, miss)
 		return map[string]string{
-			"a": "test1",
-			"b": "test2",
-			"c": "test3",
-			"d": "test4",
+			keys[0]: "test1",
+			keys[1]: "test2",
+			keys[2]: "test3",
+			keys[3]: "test4",
 		}, nil
 	}, rueidisCache.TTL())
-	fmt.Println(take)
-	fmt.Println(err)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		keys[0]: "test1",
+		keys[1]: "test2",
+		keys[2]: "test3",
+		keys[3]: "test4",
+	}, take)
 }
 
 func TestRueidisCache_Del(t *testing.T) {

@@ -29,7 +29,7 @@
 - Modify: `orm/gen/proto/proto_test.go`
 - Modify: `orm/example/gorm/example_test.go`
 
-- [ ] **Step 1: Add the shared defaults**
+- [x] **Step 1: Add the shared defaults**
 
 ```go
 package testenv
@@ -64,11 +64,11 @@ func RedisPassword() string {
 }
 ```
 
-- [ ] **Step 2: Replace hard-coded local service addresses**
+- [x] **Step 2: Replace hard-coded local service addresses**
 
 Use `testenv.PostgresDSN("gorm_gen")`, `testenv.PostgresDSN("user")`, `testenv.PostgresDSN("fkratos_sys")`, `testenv.RedisAddr()`, and `testenv.RedisPassword()` in the files listed above.
 
-- [ ] **Step 3: Run the affected packages**
+- [x] **Step 3: Run the affected packages**
 
 Run: `go test ./cache/... ./orm/gormx ./orm/plugin ./orm/dbcache/... ./orm/gen/... ./orm/example/gorm`
 Expected: live-service tests connect through the shared defaults instead of embedding `0.0.0.0`.
@@ -80,7 +80,7 @@ Expected: live-service tests connect through the shared defaults instead of embe
 - Create: `scripts/ci/bootstrap-postgres.sql`
 - Create: `scripts/ci/bootstrap-postgres.sh`
 
-- [ ] **Step 1: Add the workflow**
+- [x] **Step 1: Add the workflow**
 
 Run these checks in CI:
 
@@ -116,11 +116,11 @@ jobs:
           --health-retries=20
 ```
 
-- [ ] **Step 2: Bootstrap the databases**
+- [x] **Step 2: Bootstrap the databases**
 
 Create `gorm_gen`, `user`, and `fkratos_sys`, enable `pgcrypto`, apply the schema files under `orm/example/sql/fdatabase`, seed the two `user_demo` rows used by the repository tests, and create a minimal `sys_admin_202301` table for the sharding plugin tests.
 
-- [ ] **Step 3: Run the checks**
+- [x] **Step 3: Run the checks**
 
 Run:
 
@@ -137,7 +137,7 @@ Expected: CI fails on formatting or static issues, and service-backed tests run 
 **Files:**
 - Modify: `Makefile`
 
-- [ ] **Step 1: Add package filtering for coverage**
+- [x] **Step 1: Add package filtering for coverage**
 
 ```make
 TEST_PKGS := ./...
@@ -156,11 +156,11 @@ cover:
 ci: fmt vet test cover
 ```
 
-- [ ] **Step 2: Keep the existing helpers**
+- [x] **Step 2: Keep the existing helpers**
 
 Leave `fmt`, `vet`, and `help` in place so the new targets extend the current workflow instead of replacing it.
 
-- [ ] **Step 3: Run the entrypoints**
+- [x] **Step 3: Run the entrypoints**
 
 Run: `make test && make cover`
 Expected: `make cover` reports coverage without counting the generated example repo/dao/model packages.
@@ -171,15 +171,15 @@ Expected: `make cover` reports coverage without counting the generated example r
 - Modify: `README.md`
 - Modify: `README_EN.md`
 
-- [ ] **Step 1: Update the development section**
+- [x] **Step 1: Update the development section**
 
 Document `make test`, `make cover`, and `make ci` as the preferred local checks.
 
-- [ ] **Step 2: Clarify external-service behavior**
+- [x] **Step 2: Clarify external-service behavior**
 
 State that PostgreSQL and Redis-backed tests now have stable CI defaults and use local overrides when those environment variables are set.
 
-- [ ] **Step 3: Verify the prose**
+- [x] **Step 3: Verify the prose**
 
 Run: `rg -n "make test|make cover|make ci|0.0.0.0" README.md README_EN.md`
 Expected: the new commands are mentioned and the old hard-coded service address guidance is gone.

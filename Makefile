@@ -36,11 +36,22 @@ cover:
 	@go test $(COVER_PKGS) -coverprofile=/tmp/godb.cover
 	@go tool cover -func=/tmp/godb.cover | tail -n 1
 
+.PHONY: bootstrap-postgres
+# make bootstrap-postgres 准备本地 PostgreSQL 测试数据库
+bootstrap-postgres:
+	@scripts/ci/bootstrap-postgres.sh
+
+.PHONY: comments
+# make comments 检查导出 API 注释
+comments:
+	@go run ./scripts/check_exported_comments.go
+
 .PHONY: ci
-# make ci 运行格式检查、vet、测试和覆盖率
+# make ci 运行格式检查、注释检查、vet、测试和覆盖率
 ci:
 	@test -z "$$(gofmt -l .)"
 	@$(MAKE) lint
+	@$(MAKE) comments
 	@$(MAKE) vet
 	@$(MAKE) test
 	@$(MAKE) cover

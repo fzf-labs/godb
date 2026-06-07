@@ -2,7 +2,6 @@ package gorm
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/fzf-labs/godb/internal/testenv"
@@ -71,8 +70,10 @@ func Test_DeepCopy(t *testing.T) {
 	data.Name = "admin2"
 	data.Admins[0].Username = "admin2"
 	data.Admins[0].Nickname = "admin2"
-	fmt.Println(copyData)
-	fmt.Println(data)
+	assert.Equal(t, "admin", copyData.Name)
+	require.Len(t, copyData.Admins, 1)
+	assert.Equal(t, "admin", copyData.Admins[0].Username)
+	assert.Equal(t, "admin", copyData.Admins[0].Nickname)
 }
 
 // Test_FindOneCacheByID 根据ID查询单条数据
@@ -85,8 +86,11 @@ func Test_FindOneCacheByID(t *testing.T) {
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindOneByID(ctx, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b")
 	require.NoError(t, err)
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b", result.ID)
+	assert.Equal(t, "user-1", result.UID)
+	assert.Equal(t, "a", result.Username)
+	assert.Equal(t, "user-a", result.Nickname)
 }
 
 // Test_FindMultiCacheByUsernames 验证按用户名批量查询缓存。
@@ -99,8 +103,11 @@ func Test_FindMultiCacheByUsernames(t *testing.T) {
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindMultiCacheByUsernames(ctx, []string{"a", "b", "c", "d", "e", "f", "g"})
 	require.NoError(t, err)
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	usernames := make([]string, 0, len(result))
+	for _, item := range result {
+		usernames = append(usernames, item.Username)
+	}
+	assert.ElementsMatch(t, []string{"a", "b"}, usernames)
 }
 
 // Test_UpdateOneCache 验证单条记录缓存更新。
@@ -117,7 +124,9 @@ func Test_UpdateOneCache(t *testing.T) {
 	data.Remark = "123"
 	err = repo.UpdateOneCache(ctx, data, oldData)
 	require.NoError(t, err)
-	assert.Equal(t, nil, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpsertOneWithZeroCache 验证带零值字段的 upsert 缓存更新。
@@ -133,7 +142,9 @@ func Test_UpsertOneWithZeroCache(t *testing.T) {
 	data.Remark = "123"
 	err := repo.UpsertOneCache(ctx, data)
 	require.NoError(t, err)
-	assert.Equal(t, nil, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpsertOneCacheByFieldsTx 验证事务内按字段 upsert 缓存。
@@ -154,7 +165,10 @@ func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 		}
 		return nil
 	})
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpdateBatchByIDS 验证按 ID 批量更新。
@@ -169,7 +183,11 @@ func Test_UpdateBatchByIDS(t *testing.T) {
 		"remark": "test",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, nil, err)
+	for _, id := range []string{"182a65a0-ee20-4fe0-a0e8-ba30edcf402b", "2cc31ef9-7d6b-438b-874c-01d84a332b57"} {
+		updated, err := repo.FindOneByID(ctx, id)
+		require.NoError(t, err)
+		assert.Equal(t, "test", updated.Remark)
+	}
 }
 
 // Test_FindMultiCacheByTenantIDS 验证按租户 ID 批量查询缓存。
@@ -182,8 +200,11 @@ func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindMultiCacheByTenantIDS(ctx, []int64{1, 2})
 	require.NoError(t, err)
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	tenantIDs := make([]int64, 0, len(result))
+	for _, item := range result {
+		tenantIDs = append(tenantIDs, item.TenantID)
+	}
+	assert.ElementsMatch(t, []int64{1, 2}, tenantIDs)
 }
 
 // Test_FindMultiByCustom 自定义查询
@@ -225,9 +246,10 @@ func Test_FindMultiByCondition(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	fmt.Printf("%+v\n", result)
-	fmt.Printf("%+v\n", p)
-	assert.Equal(t, nil, err)
+	assert.NotNil(t, p)
+	assert.Equal(t, int32(1), p.Page)
+	assert.Equal(t, int32(10), p.PageSize)
+	assert.LessOrEqual(t, len(result), 10)
 }
 
 // Test_Tx 使用事务
@@ -269,5 +291,14 @@ func Test_Tx(t *testing.T) {
 		}
 		return nil
 	})
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	created, err := adminDemoRepo.FindOneByID(ctx, "c8ddd930-339a-408b-8acb-fac22f5b43aa")
+	require.NoError(t, err)
+	assert.Equal(t, "admin", created.Username)
+	assert.Equal(t, int16(1), created.Status)
+
+	var logCount int64
+	err = db.WithContext(ctx).Table("admin_log_demo").Where("admin_id = ?", "c8ddd930-339a-408b-8acb-fac22f5b43aa").Count(&logCount).Error
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), logCount)
 }

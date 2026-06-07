@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
@@ -86,16 +85,10 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
-	err = db.Use(NewMonthShardingPlugin("sys_admin", "created_at"))
-	if err != nil {
-		fmt.Printf("gormopentracing new failed!  err: %+v", err)
-	}
+	require.NoError(t, db.Use(NewMonthShardingPlugin("sys_admin", "created_at")))
 	// this record will insert to orders_03
 	err = db.Exec("SELECT * FROM sys_admin WHERE created_at in ('2023-01-13 20:58:35')  ").Error
-	if err != nil {
-		fmt.Println(err)
-	}
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
 }
 
 // TestNewShardingPlugin 验证通用分片插件配置。
@@ -114,14 +107,8 @@ func TestNewShardingPlugin(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
-	err = db.Use(NewShardingPlugin("sys_admin", "created_at", 64))
-	if err != nil {
-		fmt.Printf("gormopentracing new failed!  err: %+v", err)
-	}
+	require.NoError(t, db.Use(NewShardingPlugin("sys_admin", "created_at", 64)))
 	// this record will insert to orders_03
 	err = db.Exec("SELECT * FROM sys_admin WHERE created_at  ='2023-01-13 20:58:01'  ").Error
-	if err != nil {
-		fmt.Println(err)
-	}
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
 }

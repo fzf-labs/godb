@@ -107,7 +107,7 @@ func buildPgDumpArgs(dsnParse *PostgresDsn, table string) []string {
 }
 
 // 预编译正则表达式，避免重复编译
-var alterOwnerRegex = regexp.MustCompile(`ALTER TABLE .*? OWNER TO postgres`)
+var alterOwnerRegex = regexp.MustCompile(`^ALTER TABLE .*?\s+OWNER TO\s+.+;?$`)
 
 // remove 移除多余行
 func (s *SQLDump) postgresRemove(str string) string {

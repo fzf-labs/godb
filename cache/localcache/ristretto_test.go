@@ -1,7 +1,6 @@
 package localcache
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,11 +22,10 @@ func TestNewRistretto(t *testing.T) {
 	if !found {
 		t.Fatal("missing value")
 	}
-	fmt.Println(value)
+	assert.Equal(t, "value", value)
 
 	// del value from dbcache
 	cache.Del("key")
-	assert.Equal(t, nil, err)
 }
 
 func TestNewRistrettoAnyCache(t *testing.T) {

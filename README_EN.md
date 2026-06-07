@@ -74,7 +74,7 @@ import (
 func main() {
 	db, err := gormx.NewGormClient(&gormx.ClientConfig{
 		Driver:          gormx.Postgres,
-		DataSourceName:  "host=localhost port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai",
+		DataSourceName:  "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai",
 		MaxIdleConn:     10,
 		MaxOpenConn:     100,
 		ConnMaxIdleTime: 10 * time.Minute,
@@ -95,7 +95,7 @@ For MySQL, switch the driver and DSN:
 ```go
 db, err := gormx.NewGormClient(&gormx.ClientConfig{
 	Driver:         gormx.MySQL,
-	DataSourceName: "user:password@tcp(localhost:3306)/app?charset=utf8mb4&parseTime=True&loc=Local",
+	DataSourceName: "user:password@tcp(127.0.0.1:3306)/app?charset=utf8mb4&parseTime=True&loc=Local",
 	MaxIdleConn:    10,
 	MaxOpenConn:    100,
 })
@@ -106,7 +106,7 @@ db, err := gormx.NewGormClient(&gormx.ClientConfig{
 ```bash
 godb ormgen \
   --db postgres \
-  --dsn "host=localhost port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
+  --dsn "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
   --outPutPath ./internal/data/gorm \
   --tables users,orders
 ```
@@ -151,13 +151,13 @@ import (
 func main() {
 	db, err := gormx.NewSimpleGormClient(
 		gormx.Postgres,
-		"host=localhost port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai",
+		"host=127.0.0.1 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai",
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	redisClient := redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 
 	repoCfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -187,7 +187,7 @@ godb sqltopb  # Generate proto files from database tables
 ```bash
 godb ormgen \
   -d postgres \
-  -s "host=localhost port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
+  -s "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
   -o ./internal/data/gorm \
   -t users,orders
 ```
@@ -208,7 +208,7 @@ godb ormgen \
 ```bash
 godb sqldump \
   -d mysql \
-  -s "user:password@tcp(localhost:3306)/app?charset=utf8mb4&parseTime=True&loc=Local" \
+  -s "user:password@tcp(127.0.0.1:3306)/app?charset=utf8mb4&parseTime=True&loc=Local" \
   -o ./doc/sql \
   -t users,orders \
   -f
@@ -229,7 +229,7 @@ MySQL uses `SHOW CREATE TABLE`. PostgreSQL uses local `pg_dump -s -t` and remove
 ```bash
 godb sqltopb \
   -d postgres \
-  -s "host=localhost port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
+  -s "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable TimeZone=Asia/Shanghai" \
   -o ./api/pb \
   -p app \
   -g "github.com/example/project/api/pb;pb" \
@@ -371,8 +371,10 @@ Common commands:
 ```bash
 make fmt
 make lint
+make comments
 make vet
 make test
+make bootstrap-postgres
 make cover
 make ci
 ```
@@ -384,7 +386,7 @@ go install ./cmd/godb
 godb --help
 ```
 
-This repository's PostgreSQL/Redis example tests are bootstrapped in CI with seeded databases and a password-protected Redis instance. Locally, you can override the defaults with `GODB_TEST_POSTGRES_DSN`, `GODB_TEST_REDIS_ADDR`, and `GODB_TEST_REDIS_PASSWORD`. When the required service is unavailable locally, related tests skip or use mocks where available; in CI, unavailable services fail the tests so integration coverage is not silently skipped.
+This repository's PostgreSQL/Redis example tests are bootstrapped in CI with seeded databases and a password-protected Redis instance. Locally, you can override the defaults with `GODB_TEST_POSTGRES_DSN`, `GODB_TEST_REDIS_ADDR`, and `GODB_TEST_REDIS_PASSWORD`. If local PostgreSQL uses the default user and password, run `make bootstrap-postgres` to recreate the `gorm_gen`, `user`, and `fkratos_sys` test databases and import the example schema. This command drops and recreates those test databases, so do not point it at production. When the required service is unavailable locally, related tests skip or use mocks where available; in CI, unavailable services fail the tests so integration coverage is not silently skipped.
 
 Release flow:
 

@@ -3,7 +3,6 @@ package gormx
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"regexp"
 	"testing"
 
@@ -28,11 +27,10 @@ func TestNewGormPostgresClient(t *testing.T) {
 		Tracing:         false,
 	}
 	_, err := NewGormClient(&config)
-	fmt.Println(err)
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 }
 
 func TestNewGormClientRejectsNilAndUnknownDriver(t *testing.T) {
