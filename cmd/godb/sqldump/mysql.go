@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
@@ -15,14 +16,16 @@ var newSimpleGormClient = gormx.NewSimpleGormClient
 
 // DumpMySQL 导出创建语句
 func (s *SQLDump) DumpMySQL() error {
+	var err error
+	tables, err := tablelist.ParseCSV(s.targetTables)
+	if err != nil {
+		return err
+	}
 	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
 		return err
 	}
-	var tables []string
-	if s.targetTables != "" {
-		tables = strings.Split(s.targetTables, ",")
-	} else {
+	if len(tables) == 0 {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
 			return err

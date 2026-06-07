@@ -157,6 +157,10 @@ func (g *GenerationDB) Do() (err error) {
 	if len(g.tables) > 0 {
 		tables = g.tables
 	}
+	tables, err = normalizeTableNames(tables)
+	if err != nil {
+		return err
+	}
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.db)
 	if err != nil {
@@ -242,6 +246,21 @@ func generationOutputPaths(basePath, dbName string) (string, string, string) {
 	return filepath.Join(baseDir, dbName+"_dao"),
 		filepath.Join(baseDir, dbName+"_model"),
 		filepath.Join(baseDir, dbName+"_repo")
+}
+
+func normalizeTableNames(tables []string) ([]string, error) {
+	if len(tables) == 0 {
+		return nil, nil
+	}
+	normalized := make([]string, 0, len(tables))
+	for _, table := range tables {
+		table = strings.TrimSpace(table)
+		if table == "" {
+			return nil, fmt.Errorf("table name cannot be empty")
+		}
+		normalized = append(normalized, table)
+	}
+	return normalized, nil
 }
 
 // GetDBName 获取数据库名

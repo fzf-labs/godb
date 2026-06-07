@@ -1,8 +1,7 @@
 package sqltopb
 
 import (
-	"strings"
-
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/spf13/cobra"
@@ -39,9 +38,9 @@ func init() {
 
 // Run 执行 SQL 转 proto 命令。
 func Run(_ *cobra.Command, _ []string) error {
-	var tables []string
-	if targetTables != "" {
-		tables = strings.Split(targetTables, ",")
+	tables, err := tablelist.ParseCSV(targetTables)
+	if err != nil {
+		return err
 	}
 	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
 	if err != nil {

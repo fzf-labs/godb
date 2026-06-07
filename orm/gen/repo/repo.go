@@ -3,6 +3,7 @@ package repo
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"gorm.io/gorm"
@@ -10,6 +11,9 @@ import (
 
 // GenerationTable 为单张表生成 repo 层代码文件。
 func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table string, partitionTables []string, columnNameToDataType, columnNameToName, columnNameToFieldType map[string]string) error {
+	if strings.TrimSpace(table) == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
 	var file string
 	g := Repo{
 		gorm:                  db,

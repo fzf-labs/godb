@@ -20,14 +20,21 @@ func StrSliFind(collection []string, element string) bool {
 
 // SliRemove 删除字符串切片中的某个元素
 func SliRemove(collection, element []string) []string {
-	for _, s := range element {
-		for i, v := range collection {
-			if s == v {
-				collection = append(collection[:i], collection[i+1:]...)
-			}
-		}
+	if len(collection) == 0 || len(element) == 0 {
+		return collection
 	}
-	return collection
+	remove := make(map[string]struct{}, len(element))
+	for _, s := range element {
+		remove[s] = struct{}{}
+	}
+	result := collection[:0]
+	for _, v := range collection {
+		if _, ok := remove[v]; ok {
+			continue
+		}
+		result = append(result, v)
+	}
+	return result
 }
 
 // ConvToString 任意类型转字符串

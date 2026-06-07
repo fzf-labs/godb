@@ -1,6 +1,9 @@
 package ormgen
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestRunReturnsDriverErrorAfterBuildingOptions(t *testing.T) {
 	oldDB, oldDSN, oldTables, oldOut := db, dsn, targetTables, outPutPath
@@ -27,5 +30,22 @@ func TestRunReturnsDriverErrorAfterBuildingOptions(t *testing.T) {
 
 	if err := Run(nil, nil); err == nil {
 		t.Fatal("expected unknown driver error")
+	}
+}
+
+func TestRunRejectsBlankTables(t *testing.T) {
+	oldDB, oldDSN, oldTables, oldOut := db, dsn, targetTables, outPutPath
+	defer func() {
+		db, dsn, targetTables, outPutPath = oldDB, oldDSN, oldTables, oldOut
+	}()
+
+	db = "sqlite"
+	dsn = ":memory:"
+	targetTables = " , "
+	outPutPath = t.TempDir()
+
+	err := Run(nil, nil)
+	if err == nil || !strings.Contains(err.Error(), "no table names found") {
+		t.Fatalf("expected table parsing error, got %v", err)
 	}
 }

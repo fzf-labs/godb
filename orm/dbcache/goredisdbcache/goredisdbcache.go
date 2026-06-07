@@ -3,6 +3,7 @@ package goredisdbcache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -127,6 +128,11 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 		dbValue, err := fn(miss)
 		if err != nil {
 			return nil, err
+		}
+		for _, key := range miss {
+			if _, ok := dbValue[key]; !ok {
+				return nil, fmt.Errorf("missing fetched value for key %q", key)
+			}
 		}
 		_, err = r.client.Pipelined(ctx, func(p redis.Pipeliner) error {
 			for _, v := range miss {

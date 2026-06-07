@@ -3,6 +3,7 @@ package rueidisdbcache
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -135,6 +136,11 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 		dbValue, err := fn(miss)
 		if err != nil {
 			return nil, err
+		}
+		for _, key := range miss {
+			if _, ok := dbValue[key]; !ok {
+				return nil, fmt.Errorf("missing fetched value for key %q", key)
+			}
 		}
 		completes := make([]rueidis.Completed, 0)
 		for k, v := range dbValue {

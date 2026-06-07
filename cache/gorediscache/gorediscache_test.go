@@ -84,12 +84,12 @@ func TestRedisInfoReturnsEmptyOnError(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestRedisInfoReturnsEmptyOnScannerError(t *testing.T) {
+func TestRedisInfoParsesLargeLines(t *testing.T) {
 	client, mock := redismock.NewClientMock()
-	mock.ExpectInfo().SetVal(strings.Repeat("x", 70*1024))
+	mock.ExpectInfo().SetVal("redis_version:" + strings.Repeat("1", 70*1024) + "\n")
 
 	info := RedisInfo(client)
-	assert.Empty(t, info)
+	assert.Equal(t, strings.Repeat("1", 70*1024), info["redis_version"])
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

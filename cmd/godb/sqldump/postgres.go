@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -21,14 +22,15 @@ func (s *SQLDump) DumpPostgres() error {
 	if err != nil {
 		return fmt.Errorf("command pg_dump not found, please install: %w", err)
 	}
+	tables, err := tablelist.ParseCSV(s.targetTables)
+	if err != nil {
+		return err
+	}
 	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
 		return err
 	}
-	var tables []string
-	if s.targetTables != "" {
-		tables = strings.Split(s.targetTables, ",")
-	} else {
+	if len(tables) == 0 {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
 			return err

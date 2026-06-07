@@ -3,6 +3,7 @@ package rocksdbcache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"time"
 
@@ -144,6 +145,11 @@ func (r *Cache) fetchBatchItem(ctx context.Context, keys []string, fn func(miss 
 		dbValue, err := fn(miss)
 		if err != nil {
 			return nil, err
+		}
+		for _, v := range idx {
+			if _, ok := dbValue[keys[v]]; !ok {
+				return nil, fmt.Errorf("missing fetched value for key %q", keys[v])
+			}
 		}
 		keyToInt := make(map[string]int)
 		for k, v := range keys {

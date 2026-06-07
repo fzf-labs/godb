@@ -172,6 +172,14 @@ func TestGenerationPBWithSQLite(t *testing.T) {
 	}
 }
 
+func TestGenerationPBRejectsEmptyTable(t *testing.T) {
+	db := newSQLiteProtoDB(t)
+	err := GenerationPB(db, t.TempDir(), "api.demo.v1", "api/demo/v1;v1", "", map[string]string{}, map[string]string{})
+	if err == nil || !strings.Contains(err.Error(), "table name cannot be empty") {
+		t.Fatalf("expected empty table error, got %v", err)
+	}
+}
+
 func TestProtoNameHelpers(t *testing.T) {
 	p := newProtoForTest(t)
 	if got := p.upperName("api_client"); got != "APIClient" {
@@ -190,6 +198,7 @@ func TestLowerFieldName(t *testing.T) {
 		"ID":       "id",
 		"UserID":   "userId",
 		"URLValue": "URLValue",
+		"":         "",
 		"Type":     "_type",
 	}
 	for input, expected := range tests {

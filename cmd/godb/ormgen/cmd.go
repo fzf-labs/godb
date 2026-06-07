@@ -1,8 +1,7 @@
 package ormgen
 
 import (
-	"strings"
-
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/spf13/cobra"
@@ -55,9 +54,9 @@ func Run(_ *cobra.Command, _ []string) error {
 	if optionRemoveGormTypeTag {
 		dbOpts = append(dbOpts, gen.ModelOptionRemoveGormTypeTag())
 	}
-	var tables []string
-	if targetTables != "" {
-		tables = strings.Split(targetTables, ",")
+	tables, err := tablelist.ParseCSV(targetTables)
+	if err != nil {
+		return err
 	}
 	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
 	if err != nil {

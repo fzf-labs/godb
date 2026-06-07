@@ -101,6 +101,18 @@ func TestRepoOutput_WriteError(t *testing.T) {
 	}
 }
 
+func TestGenerationTableRejectsEmptyTable(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = GenerationTable(db, "gorm_gen", t.TempDir(), t.TempDir(), t.TempDir(), "", nil, map[string]string{}, map[string]string{}, map[string]string{})
+	if err == nil {
+		t.Fatal("expected empty table error")
+	}
+}
+
 func TestUpsertOneCacheByFieldsTemplatesGuardNilData(t *testing.T) {
 	params := map[string]any{
 		"firstTableChar": "u",

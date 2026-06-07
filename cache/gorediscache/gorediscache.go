@@ -81,6 +81,7 @@ func RedisInfo(r *redis.Client, sections ...string) (res map[string]string) {
 // stringToLines string拆分多行
 func stringToLines(s string) (lines []string, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(s))
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}

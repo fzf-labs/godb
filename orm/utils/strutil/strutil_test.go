@@ -23,6 +23,14 @@ func TestSliRemove(t *testing.T) {
 	}
 }
 
+func TestSliRemoveRemovesAllMatchingValues(t *testing.T) {
+	got := SliRemove([]string{"a", "b", "b", "c"}, []string{"b"})
+	want := []string{"a", "c"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("unexpected result: %#v", got)
+	}
+}
+
 func TestConvToString(t *testing.T) {
 	now := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
 	intPtr := 7

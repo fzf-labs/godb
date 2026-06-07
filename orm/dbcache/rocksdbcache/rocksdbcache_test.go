@@ -218,6 +218,19 @@ func TestFetchBatchReturnsLoaderError(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
+func TestFetchBatchRejectsMissingLoaderValues(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient.Options.DisableCacheRead = true
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
+
+	_, err := cache.FetchBatch(context.Background(), []string{"a", "b"}, func([]string) (map[string]string, error) {
+		return map[string]string{}, nil
+	}, time.Minute)
+
+	assert.Error(t, err)
+}
+
 func TestDelAndDelBatchUseRocksCacheClient(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
 	rocksCacheClient := NewWeakRocksCacheClient(rdb)

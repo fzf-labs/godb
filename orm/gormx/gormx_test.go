@@ -217,6 +217,11 @@ func TestGetHealthStatusAndStateInvalidDB(t *testing.T) {
 	assert.Nil(t, GetState(db))
 }
 
+func TestGetHealthStatusAndStateNilDB(t *testing.T) {
+	assert.Equal(t, unhealthy, GetHealthStatus(nil))
+	assert.Nil(t, GetState(nil))
+}
+
 func TestGetState(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {

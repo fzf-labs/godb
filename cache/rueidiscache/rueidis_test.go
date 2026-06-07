@@ -52,6 +52,12 @@ func TestNewRueidisClientReturnsConfigError(t *testing.T) {
 	assert.Contains(t, err.Error(), "no alive address")
 }
 
+func TestNewRueidisClientRejectsNilOption(t *testing.T) {
+	client, err := NewRueidisClient(nil)
+	assert.Nil(t, client)
+	assert.Error(t, err)
+}
+
 // TestNewRueidisAside 验证 cache-aside 客户端的加载和缓存命中。
 func TestNewRueidisAside(t *testing.T) {
 	ctx := context.Background()
@@ -100,4 +106,10 @@ func TestNewRueidisAside(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "abcd", val)
 	assert.Equal(t, 1, loaderCalls)
+}
+
+func TestNewRueidisAsideClientRejectsNilOption(t *testing.T) {
+	client, err := NewRueidisAsideClient(nil)
+	assert.Nil(t, client)
+	assert.Error(t, err)
 }

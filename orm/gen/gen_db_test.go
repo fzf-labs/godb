@@ -131,6 +131,16 @@ func TestNewGenerationDBOptions(t *testing.T) {
 	}
 }
 
+func TestGenerationDBRejectsBlankTables(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	err = NewGenerationDB(db, t.TempDir(), WithOutRepo(), WithTables([]string{""})).Do()
+	if err == nil || !strings.Contains(err.Error(), "table name cannot be empty") {
+		t.Fatalf("expected empty table error, got %v", err)
+	}
+}
+
 func TestGetDBNameAppliesOverrideAndTablePrefix(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{TablePrefix: "tenant_"},

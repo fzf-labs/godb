@@ -19,6 +19,9 @@ import (
 
 // GenerationPB 生成
 func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) error {
+	if strings.TrimSpace(table) == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
 	var f string
 	p := &Proto{
 		gorm:                 db,
@@ -294,6 +297,9 @@ func (p *Proto) lowerName(s string) string {
 
 // lowerFieldName 字段名称小写
 func lowerFieldName(str string) string {
+	if str == "" {
+		return str
+	}
 	words := []string{"API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "IP", "JSON", "LHS", "QPS", "RAM", "RHS", "RPC", "SLA", "SMTP", "SSH", "TLS", "ttl", "UID", "UI", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XSRF", "XSS"}
 	// 如果第一个单词命中  则不处理
 	for _, v := range words {

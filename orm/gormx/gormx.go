@@ -168,6 +168,9 @@ func NewPostgresGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 
 // GetHealthStatus 检查链接是否健康
 func GetHealthStatus(gormDB *gorm.DB) string {
+	if gormDB == nil {
+		return unhealthy
+	}
 	sqlDB, err := gormDB.DB()
 	if err != nil {
 		return unhealthy
@@ -191,6 +194,9 @@ func runHealthCheckQuery(gormDB *gorm.DB, query string) error {
 
 // GetState 获取目前数据库状态参数
 func GetState(gormDB *gorm.DB) *sql.DBStats {
+	if gormDB == nil {
+		return nil
+	}
 	db, err := gormDB.DB()
 	if err != nil {
 		return nil

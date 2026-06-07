@@ -223,6 +223,17 @@ func TestRueidisCacheHitAndLoaderErrorsWithMiniredis(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
+func TestRueidisCacheFetchBatchRejectsMissingLoaderValues(t *testing.T) {
+	_, client := newMiniRueidisClient(t)
+	cache := NewRueidisDBCache(client)
+
+	_, err := cache.FetchBatch(context.Background(), []string{"batch:missing"}, func([]string) (map[string]string, error) {
+		return map[string]string{}, nil
+	}, time.Minute)
+
+	assert.Error(t, err)
+}
+
 func TestRueidisCacheReturnsBackendErrorsWithMiniredis(t *testing.T) {
 	server, client := newMiniRueidisClient(t)
 	cache := NewRueidisDBCache(client)

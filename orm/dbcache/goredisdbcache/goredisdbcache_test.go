@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
@@ -247,6 +248,23 @@ func TestGoRedisCacheFetchBatchErrors(t *testing.T) {
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestGoRedisCacheFetchBatchRejectsMissingLoaderValues(t *testing.T) {
+	server, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(server.Close)
+
+	rdb := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	cache := NewGoRedisDBCache(rdb)
+
+	_, err = cache.FetchBatch(context.Background(), []string{"a"}, func([]string) (map[string]string, error) {
+		return map[string]string{}, nil
+	}, time.Minute)
+
+	assert.Error(t, err)
 }
 
 func TestGoRedisCacheFetchHashHitAndErrors(t *testing.T) {
