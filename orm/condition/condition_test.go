@@ -26,6 +26,11 @@ type embeddedUserTest struct {
 	ID string `gorm:"column:id"`
 }
 
+type taggedEmbeddedUserTest struct {
+	embeddedTenantFields `gorm:"column:tenant"`
+	ID                   string `gorm:"column:id"`
+}
+
 func TestPaginatorReq_ConvertToGormExpression(t *testing.T) {
 	type fields struct {
 		Page     int32
@@ -468,6 +473,52 @@ func TestReqConvertToGormExpressionAdditionalBranches(t *testing.T) {
 	}
 }
 
+func TestReqConvertToGormExpressionNormalizesInputTokens(t *testing.T) {
+	req := &Req{
+		Query: []*QueryParam{{
+			Field: " UID ",
+			Value: []string{"admin"},
+			Exp:   " in ",
+			Logic: " or ",
+		}},
+		Order: []*OrderParam{{
+			Field: " username ",
+			Order: " desc ",
+		}},
+	}
+
+	where, order, err := req.ConvertToGormExpression(UserTest{})
+	if err != nil {
+		t.Fatalf("unexpected expression error: %v", err)
+	}
+	wantWhere := []clause.Expression{clause.Or(clause.IN{Column: "uid", Values: []any{"admin"}})}
+	if !reflect.DeepEqual(where, wantWhere) {
+		t.Fatalf("unexpected where expressions: %#v", where)
+	}
+	wantOrder := []clause.Expression{clause.OrderBy{Columns: []clause.OrderByColumn{{Column: clause.Column{Name: "username"}, Desc: true}}}}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("unexpected order expressions: %#v", order)
+	}
+	if req.Query[0].Field != " UID " || req.Query[0].Exp != " in " || req.Query[0].Logic != " or " {
+		t.Fatalf("query input was mutated: %#v", req.Query[0])
+	}
+	if req.Order[0].Field != " username " || req.Order[0].Order != " desc " {
+		t.Fatalf("order input was mutated: %#v", req.Order[0])
+	}
+}
+
+func TestReqConvertToGormExpressionRejectsBlankFieldsAfterTrim(t *testing.T) {
+	req := &Req{Query: []*QueryParam{{Field: " \t "}}}
+	if _, _, err := req.ConvertToGormExpression(UserTest{}); err == nil || !strings.Contains(err.Error(), "field cannot be empty") {
+		t.Fatalf("expected blank query field error, got %v", err)
+	}
+
+	req = &Req{Order: []*OrderParam{{Field: " \t "}}}
+	if _, _, err := req.ConvertToGormExpression(UserTest{}); err == nil || !strings.Contains(err.Error(), "field cannot be empty") {
+		t.Fatalf("expected blank order field error, got %v", err)
+	}
+}
+
 func TestReqConvertToGormExpressionSupportsEmbeddedColumns(t *testing.T) {
 	req := &Req{
 		Query: []*QueryParam{{Field: "tenant_id", Value: "tenant-1"}},
@@ -484,6 +535,17 @@ func TestReqConvertToGormExpressionSupportsEmbeddedColumns(t *testing.T) {
 	wantOrder := []clause.Expression{clause.OrderBy{Columns: []clause.OrderByColumn{{Column: clause.Column{Name: "tenant_id"}, Desc: true}}}}
 	if !reflect.DeepEqual(order, wantOrder) {
 		t.Fatalf("unexpected order expressions: %#v", order)
+	}
+}
+
+func TestFieldToColumnSkipsAnonymousStructColumnTag(t *testing.T) {
+	got := fieldToColumn(taggedEmbeddedUserTest{})
+	want := map[string]string{
+		"tenant_id": "tenant_id",
+		"id":        "id",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected tagged embedded column map: %#v", got)
 	}
 }
 
@@ -784,6 +846,16 @@ func TestReqConvertToPageNilRequest(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected nil request page: got=%#v want=%#v", got, want)
+	}
+}
+
+func TestReqConvertToPageRejectsNegativeTotal(t *testing.T) {
+	got, err := (&Req{}).ConvertToPage(-1)
+	if err == nil || !strings.Contains(err.Error(), "total cannot be less than 0") {
+		t.Fatalf("expected negative total error, got page=%#v err=%v", got, err)
+	}
+	if got.Total != 0 {
+		t.Fatalf("negative total should not be returned, got %#v", got)
 	}
 }
 

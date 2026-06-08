@@ -81,6 +81,10 @@ const sqlTimeLayout = "2006-01-02 15:04:05"
 
 // formatSQLValue 将字段值格式化为可直接拼入 SQL 的字面量。
 func formatSQLValue(field reflect.Value, quote func(string) string) (string, error) {
+	return formatSQLValueWithBool(field, quote, strconv.FormatBool)
+}
+
+func formatSQLValueWithBool(field reflect.Value, quote func(string) string, boolLiteral func(bool) string) (string, error) {
 	if !field.IsValid() {
 		return "", fmt.Errorf("unsupported field type: invalid")
 	}
@@ -102,7 +106,7 @@ func formatSQLValue(field reflect.Value, quote func(string) string) (string, err
 			if err != nil {
 				return "", err
 			}
-			return formatSQLValueFromAny(raw, quote)
+			return formatSQLValueFromAnyWithBool(raw, quote, boolLiteral)
 		case fmt.Stringer:
 			return quote(value.String()), nil
 		}
@@ -136,7 +140,7 @@ func formatSQLValue(field reflect.Value, quote func(string) string) (string, err
 	case reflect.Float64:
 		return strconv.FormatFloat(field.Float(), 'f', -1, 64), nil
 	case reflect.Bool:
-		return strconv.FormatBool(field.Bool()), nil
+		return boolLiteral(field.Bool()), nil
 	case reflect.Slice:
 		if field.Type().Elem().Kind() == reflect.Uint8 {
 			return quote(string(field.Bytes())), nil
@@ -145,13 +149,17 @@ func formatSQLValue(field reflect.Value, quote func(string) string) (string, err
 		if field.IsNil() {
 			return "NULL", nil
 		}
-		return formatSQLValue(field.Elem(), quote)
+		return formatSQLValueWithBool(field.Elem(), quote, boolLiteral)
 	}
 
 	return "", fmt.Errorf("unsupported field type: %v", field.Kind())
 }
 
 func formatSQLValueFromAny(value any, quote func(string) string) (string, error) {
+	return formatSQLValueFromAnyWithBool(value, quote, strconv.FormatBool)
+}
+
+func formatSQLValueFromAnyWithBool(value any, quote func(string) string, boolLiteral func(bool) string) (string, error) {
 	if value == nil {
 		return "NULL", nil
 	}
@@ -177,7 +185,7 @@ func formatSQLValueFromAny(value any, quote func(string) string) (string, error)
 		if err != nil {
 			return "", err
 		}
-		return formatSQLValueFromAny(raw, quote)
+		return formatSQLValueFromAnyWithBool(raw, quote, boolLiteral)
 	case fmt.Stringer:
 		return quote(v.String()), nil
 	case string:
@@ -185,7 +193,7 @@ func formatSQLValueFromAny(value any, quote func(string) string) (string, error)
 	case []byte:
 		return quote(string(v)), nil
 	case bool:
-		return strconv.FormatBool(v), nil
+		return boolLiteral(v), nil
 	case int:
 		return strconv.FormatInt(int64(v), 10), nil
 	case int8:
@@ -212,7 +220,7 @@ func formatSQLValueFromAny(value any, quote func(string) string) (string, error)
 		return strconv.FormatFloat(v, 'f', -1, 64), nil
 	}
 	if rv.Kind() == reflect.Ptr {
-		return formatSQLValue(rv.Elem(), quote)
+		return formatSQLValueWithBool(rv.Elem(), quote, boolLiteral)
 	}
 	if rv.Kind() == reflect.Slice && rv.Type().Elem().Kind() == reflect.Uint8 {
 		return quote(string(rv.Bytes())), nil
@@ -222,4 +230,36 @@ func formatSQLValueFromAny(value any, quote func(string) string) (string, error)
 	}
 
 	return "", fmt.Errorf("unsupported field type: %T", value)
+}
+
+func formatBatchIDValue(field reflect.Value, quote func(string) string) (string, error) {
+	if !field.IsValid() {
+		return "", fmt.Errorf("id field is invalid")
+	}
+	for field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			return "", fmt.Errorf("empty id value")
+		}
+		field = field.Elem()
+	}
+
+	switch field.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if field.Int() <= 0 {
+			return "", fmt.Errorf("id value must be greater than 0")
+		}
+		return strconv.FormatInt(field.Int(), 10), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if field.Uint() == 0 {
+			return "", fmt.Errorf("id value must be greater than 0")
+		}
+		return strconv.FormatUint(field.Uint(), 10), nil
+	case reflect.String:
+		if strings.TrimSpace(field.String()) == "" {
+			return "", fmt.Errorf("empty id value")
+		}
+		return quote(field.String()), nil
+	default:
+		return formatSQLValue(field, quote)
+	}
 }

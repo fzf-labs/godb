@@ -80,6 +80,7 @@ type Reply struct {
 
 // ExpValidate 验证Exp是否合法
 func ExpValidate(s Exp) bool {
+	s = normalizeExp(s)
 	switch s {
 	case EQ, NEQ, GT, GTE, LT, LTE, IN, NOTIN, LIKE, NOTLIKE, ISNULL, ISNOTNULL, RAW:
 		return true
@@ -90,6 +91,7 @@ func ExpValidate(s Exp) bool {
 
 // LogicValidate 验证Logic是否合法
 func LogicValidate(s Logic) bool {
+	s = normalizeLogic(s)
 	switch s {
 	case AND, OR:
 		return true
@@ -100,6 +102,7 @@ func LogicValidate(s Logic) bool {
 
 // OrderValidate 验证Order是否合法
 func OrderValidate(s Order) bool {
+	s = normalizeOrder(s)
 	switch s {
 	case ASC, DESC:
 		return true
@@ -160,21 +163,22 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if v == nil {
 				return whereExpressions, orderExpressions, fmt.Errorf("query cannot be nil")
 			}
-			if v.Field == "" {
+			queryField := strings.TrimSpace(v.Field)
+			if queryField == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
-			field, ok := column[strings.ToLower(v.Field)]
+			field, ok := column[strings.ToLower(queryField)]
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			exp := v.Exp
+			exp := normalizeExp(v.Exp)
 			if exp == "" {
 				exp = EQ
 			}
 			if !ExpValidate(exp) {
 				return whereExpressions, orderExpressions, fmt.Errorf("unknown exp type '%s'", exp)
 			}
-			logic := v.Logic
+			logic := normalizeLogic(v.Logic)
 			if logic == "" {
 				logic = AND
 			}
@@ -233,14 +237,15 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if v == nil {
 				return whereExpressions, orderExpressions, fmt.Errorf("order cannot be nil")
 			}
-			if v.Field == "" {
+			orderField := strings.TrimSpace(v.Field)
+			if orderField == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
-			field, ok := column[strings.ToLower(v.Field)]
+			field, ok := column[strings.ToLower(orderField)]
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			order := v.Order
+			order := normalizeOrder(v.Order)
 			if order == "" {
 				order = ASC
 			}
@@ -263,6 +268,9 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 
 // ConvertToPage 转换为page
 func (p *Req) ConvertToPage(total int32) (*Reply, error) {
+	if total < 0 {
+		return &Reply{}, fmt.Errorf("total cannot be less than 0")
+	}
 	resp := &Reply{
 		Page:      0,
 		PageSize:  0,
@@ -335,6 +343,7 @@ func collectFieldColumns(t reflect.Type, columns map[string]string) {
 		}
 		if field.Anonymous && fieldType.Kind() == reflect.Struct {
 			collectFieldColumns(fieldType, columns)
+			continue
 		}
 		gormTag := field.Tag.Get("gorm")
 		if gormTag != "" {
@@ -349,4 +358,16 @@ func collectFieldColumns(t reflect.Type, columns map[string]string) {
 			}
 		}
 	}
+}
+
+func normalizeExp(exp Exp) Exp {
+	return Exp(strings.ToUpper(strings.Join(strings.Fields(string(exp)), " ")))
+}
+
+func normalizeLogic(logic Logic) Logic {
+	return Logic(strings.ToUpper(strings.TrimSpace(string(logic))))
+}
+
+func normalizeOrder(order Order) Order {
+	return Order(strings.ToUpper(strings.TrimSpace(string(order))))
 }

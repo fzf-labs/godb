@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -109,6 +110,7 @@ func TestPostgresBatchUpdateToSQLArray_LargeBatch(t *testing.T) {
 	assert.Contains(t, got[1], `WHEN 201 THEN 'User201'`)
 	assert.Contains(t, got[1], `WHEN 250 THEN 'User250'`)
 	assert.NotContains(t, got[1], `WHEN 201 THEN 'User1'`)
+	assert.Contains(t, got[0], `"is_active" = CASE "id" WHEN 1 THEN TRUE WHEN 2 THEN FALSE`)
 	assert.True(t, strings.Index(got[0], `"age" = CASE "id"`) < strings.Index(got[0], `"is_active" = CASE "id"`))
 	assert.True(t, strings.Index(got[0], `"is_active" = CASE "id"`) < strings.Index(got[0], `"name" = CASE "id"`))
 }
@@ -234,4 +236,17 @@ func TestPostgresBatchUpdateToSQLArray_RejectsIDOnlyStruct(t *testing.T) {
 	_, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{ID: 1}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no update columns found")
+}
+
+func TestPostgresBatchUpdateToSQLArray_RejectsNonPositiveNumericID(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	for _, id := range []int64{0, -1} {
+		_, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{ID: id, Name: "alice"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "id value must be greater than 0 at index 0")
+	}
 }

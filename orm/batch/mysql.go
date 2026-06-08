@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -68,26 +67,9 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
 		}
 
-		// 根据字段类型格式化 ID 值
-		var idStr string
-		switch idField.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			idStr = strconv.FormatInt(idField.Int(), 10)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			idStr = strconv.FormatUint(idField.Uint(), 10)
-		case reflect.String:
-			idStr = idField.String()
-			// 对字符串类型的 ID 进行转义和引号处理
-			if idStr != "" {
-				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(idStr, "'", "''"))
-			}
-		default:
-			// 其他类型转为字符串处理
-			idStr = fmt.Sprintf("'%v'", idField.Interface())
-		}
-
-		if idStr == "" {
-			return nil, fmt.Errorf("empty id value at index %d", i)
+		idStr, err := formatBatchIDValue(idField, quoteMySQLString)
+		if err != nil {
+			return nil, fmt.Errorf("%w at index %d", err, i)
 		}
 
 		ids = append(ids, idStr)
@@ -190,9 +172,7 @@ type structField struct {
 
 // 辅助函数：格式化字段值
 func formatFieldValue(field reflect.Value) (string, error) {
-	return formatSQLValue(field, func(s string) string {
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
-	})
+	return formatSQLValueWithBool(field, quoteMySQLString, mysqlBoolLiteral)
 }
 
 // 辅助函数：生成每批次的 SQL 语句
@@ -237,4 +217,15 @@ func buildBatchUpdateSQLWithIDColumn(tableName, idColumn string, updateMap map[s
 // escapeIdentifier 转义 MySQL 标识符。
 func escapeIdentifier(name string) string {
 	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
+}
+
+func quoteMySQLString(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+func mysqlBoolLiteral(value bool) string {
+	if value {
+		return "1"
+	}
+	return "0"
 }

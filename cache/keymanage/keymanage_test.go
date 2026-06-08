@@ -78,6 +78,29 @@ func TestKeyManageDocumentSortsPrefixes(t *testing.T) {
 	}
 }
 
+func TestKeyManageNilReceiverDoesNotPanic(t *testing.T) {
+	var manager *KeyManage
+	if _, err := manager.AddKey("user", time.Second, "user cache"); err == nil || !strings.Contains(err.Error(), "key manager cannot be nil") {
+		t.Fatalf("expected nil manager add error, got %v", err)
+	}
+	if got := manager.Document(); got != "" {
+		t.Fatalf("nil manager document should be empty, got %q", got)
+	}
+}
+
+func TestKeyManageDocumentEscapesMarkdownCells(t *testing.T) {
+	manager := New("svc|api")
+	if _, err := manager.AddKey(`user\cache`, time.Second, `remark|with\slash`); err != nil {
+		t.Fatalf("add key: %v", err)
+	}
+
+	doc := manager.Document()
+	want := `|svc\|api|user\\cache|1|remark\|with\\slash|`
+	if !strings.Contains(doc, want) {
+		t.Fatalf("expected escaped row %q in document:\n%s", want, doc)
+	}
+}
+
 func TestKeyPrefix_KeyEscapesSegments(t *testing.T) {
 	prefix := &KeyPrefix{
 		ServerName: "svc",
@@ -98,5 +121,21 @@ func TestKeyPrefix_KeyAvoidsColonCollisions(t *testing.T) {
 	got2 := prefix.Key("a", "b:c")
 	if got1 == got2 {
 		t.Fatalf("expected different keys, got identical values %q", got1)
+	}
+}
+
+func TestKeyPrefixNilReceiverMethodsReturnZeroValues(t *testing.T) {
+	var prefix *KeyPrefix
+	if got := prefix.Key("1"); got != "" {
+		t.Fatalf("nil key should be empty, got %q", got)
+	}
+	if got := prefix.Keys([]string{"1"}); len(got) != 0 {
+		t.Fatalf("nil keys should be empty, got %#v", got)
+	}
+	if got := prefix.TTL(); got != 0 {
+		t.Fatalf("nil ttl should be zero, got %v", got)
+	}
+	if got := prefix.TTLSecond(); got != 0 {
+		t.Fatalf("nil ttl seconds should be zero, got %d", got)
 	}
 }

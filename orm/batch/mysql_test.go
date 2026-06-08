@@ -44,6 +44,7 @@ func TestBatchUpdateToSQLArray(t *testing.T) {
 	assert.Contains(t, sqlArray[0], "`age` = CASE `id`")
 	assert.Contains(t, sqlArray[0], "`is_deleted` = CASE `id`")
 	assert.Contains(t, sqlArray[0], "`name` = CASE `id`")
+	assert.Contains(t, sqlArray[0], "`is_deleted` = CASE `id` WHEN 1 THEN 0 WHEN 2 THEN 1 END")
 	assert.True(t, strings.Index(sqlArray[0], "`age` = CASE `id`") < strings.Index(sqlArray[0], "`is_deleted` = CASE `id`"))
 	assert.True(t, strings.Index(sqlArray[0], "`is_deleted` = CASE `id`") < strings.Index(sqlArray[0], "`name` = CASE `id`"))
 }
@@ -160,4 +161,17 @@ func TestMysqlBatchUpdateToSQLArray_RejectsIDOnlyStruct(t *testing.T) {
 	_, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: 1}})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no update columns found")
+}
+
+func TestMysqlBatchUpdateToSQLArray_RejectsNonPositiveNumericID(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	for _, id := range []int64{0, -1} {
+		_, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: id, Name: "alice"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "id value must be greater than 0 at index 0")
+	}
 }

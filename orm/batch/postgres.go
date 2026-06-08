@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -68,24 +67,9 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
 		}
 
-		// 根据字段类型格式化 ID 值
-		var idStr string
-		switch idField.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			idStr = strconv.FormatInt(idField.Int(), 10)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			idStr = strconv.FormatUint(idField.Uint(), 10)
-		case reflect.String:
-			rawID := idField.String()
-			if rawID != "" {
-				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(rawID, "'", "''")) // PostgreSQL 使用两个单引号转义
-			}
-		default:
-			idStr = fmt.Sprintf("'%v'", idField.Interface())
-		}
-
-		if idStr == "" {
-			return nil, fmt.Errorf("empty id value at index %d", i)
+		idStr, err := formatBatchIDValue(idField, quotePostgresString)
+		if err != nil {
+			return nil, fmt.Errorf("%w at index %d", err, i)
 		}
 
 		ids = append(ids, idStr)
@@ -131,9 +115,7 @@ func PostgresBatchUpdateToSQLArray(tableName string, dataList any) ([]string, er
 
 // formatPostgresFieldValue 格式化 PostgreSQL 字段值
 func formatPostgresFieldValue(field reflect.Value) (string, error) {
-	return formatSQLValue(field, func(s string) string {
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
-	})
+	return formatSQLValueWithBool(field, quotePostgresString, postgresBoolLiteral)
 }
 
 // buildPostgresBatchUpdateSQL 生成 PostgreSQL 批量更新 SQL
@@ -173,4 +155,15 @@ func buildPostgresBatchUpdateSQLWithIDColumn(tableName, idColumn string, updateM
 	sqlBuilder.WriteString(" WHERE " + escapePostgresIdentifier(idColumn) + " IN (" + strings.Join(batchIDs, ",") + ")")
 
 	return sqlBuilder.String(), nil
+}
+
+func quotePostgresString(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+func postgresBoolLiteral(value bool) string {
+	if value {
+		return "TRUE"
+	}
+	return "FALSE"
 }
