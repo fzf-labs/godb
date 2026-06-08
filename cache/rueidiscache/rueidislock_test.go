@@ -31,7 +31,7 @@ func TestLockerOptionWithTTL(t *testing.T) {
 func TestNewLockerAndDefaultOption(t *testing.T) {
 	option := NewDefaultLockerOption(nil)
 	client, err := option.ClientBuilder(rueidis.ClientOption{})
-	assert.NoError(t, err)
+	assert.ErrorContains(t, err, "rueidis client cannot be nil")
 	assert.Nil(t, client)
 
 	locker := NewLocker(option)

@@ -131,6 +131,33 @@ func TestRueidisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), NewRueidisDBCache(nil, WithTTL(-time.Minute)).TTL())
 }
 
+func TestRueidisCacheRejectsNilClient(t *testing.T) {
+	cache := NewRueidisDBCache(nil)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", func() (string, error) {
+		t.Fatal("fetch callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rueidisdbcache client cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, func([]string) (map[string]string, error) {
+		t.Fatal("fetch batch callback should not run")
+		return nil, nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rueidisdbcache client cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", func() (string, error) {
+		t.Fatal("fetch hash callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rueidisdbcache client cannot be nil")
+
+	assert.ErrorContains(t, cache.Del(ctx, "key"), "rueidisdbcache client cannot be nil")
+	assert.ErrorContains(t, cache.DelBatch(ctx, []string{"a"}), "rueidisdbcache client cannot be nil")
+	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "rueidisdbcache client cannot be nil")
+}
+
 func TestRueidisCacheDelBatchEmptyIsNoop(t *testing.T) {
 	cache := NewRueidisDBCache(nil)
 

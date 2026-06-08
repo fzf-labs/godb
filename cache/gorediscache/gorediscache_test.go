@@ -63,6 +63,12 @@ func TestNewGoRedisReturnsPingError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestNewGoRedisRejectsEmptyAddr(t *testing.T) {
+	client, err := NewGoRedis(GoRedisConfig{})
+	assert.Nil(t, client)
+	assert.ErrorContains(t, err, "redis addr cannot be empty")
+}
+
 func TestNewGoRedisClosesClientWhenTracingFails(t *testing.T) {
 	oldTracing, oldMetrics, oldPing, oldClose := instrumentTracing, instrumentMetrics, pingRedisClient, closeRedisClient
 	t.Cleanup(func() {
@@ -181,6 +187,10 @@ func TestRedisInfoReturnsEmptyOnError(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestRedisInfoReturnsEmptyOnNilClient(t *testing.T) {
+	assert.Empty(t, RedisInfo(nil))
+}
+
 func TestRedisInfoParsesLargeLines(t *testing.T) {
 	client, mock := redismock.NewClientMock()
 	mock.ExpectInfo().SetVal("redis_version:" + strings.Repeat("1", 70*1024) + "\n")
@@ -208,6 +218,10 @@ func TestDBSizeReturnsZeroOnError(t *testing.T) {
 	mock.ExpectDBSize().SetErr(context.Canceled)
 	assert.Equal(t, int64(0), DBSize(client))
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDBSizeReturnsZeroOnNilClient(t *testing.T) {
+	assert.Equal(t, int64(0), DBSize(nil))
 }
 
 func TestStringToKVWithoutSeparator(t *testing.T) {

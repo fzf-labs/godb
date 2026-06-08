@@ -25,6 +25,9 @@ func (s *SQLDump) DumpMySQL() error {
 	if err != nil {
 		return err
 	}
+	if dbClient == nil {
+		return fmt.Errorf("sqldump database client cannot be nil")
+	}
 	defer closeGormDB(dbClient)
 	if len(tables) == 0 {
 		tables, err = dbClient.Migrator().GetTables()

@@ -1,6 +1,10 @@
 package gormx
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 // Index 描述数据库索引及其字段属性。
 type Index struct {
@@ -13,6 +17,9 @@ type Index struct {
 
 // GetIndexes 获取索引
 func GetIndexes(db *gorm.DB, table string) ([]*Index, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	resp := make([]*Index, 0)
 	var err error
 	switch db.Dialector.Name() {
@@ -57,6 +64,9 @@ func getPgIndexes(db *gorm.DB, table string) ([]*Index, error) {
 
 // SortIndexColumns 排序索引字段
 func SortIndexColumns(db *gorm.DB, table string) (map[string][]string, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	resp := make(map[string][]string)
 	var err error
 	switch db.Dialector.Name() {

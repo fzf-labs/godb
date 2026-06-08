@@ -81,8 +81,18 @@ func (r *Cache) TTL() time.Duration {
 	return r.ttl - time.Duration(rand.Float64()*0.1*float64(r.ttl)) //nolint:gosec
 }
 
+func (r *Cache) ensureClient() error {
+	if r == nil || r.client == nil {
+		return fmt.Errorf("goredisdbcache client cannot be nil")
+	}
+	return nil
+}
+
 // Fetch 查询单个缓存值，未命中时调用回源函数并写入缓存。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureClient(); err != nil {
+		return "", err
+	}
 	do, err, _ := r.sf.Do(key, func() (interface{}, error) {
 		result, err := r.client.Get(ctx, key).Result()
 		if err != nil && !errors.Is(err, redis.Nil) {
@@ -111,6 +121,9 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 	keys = uniqueStrings(keys)
 	if len(keys) == 0 {
 		return map[string]string{}, nil
+	}
+	if err := r.ensureClient(); err != nil {
+		return nil, err
 	}
 	resp := make(map[string]string)
 	miss := make([]string, 0)
@@ -177,6 +190,9 @@ func uniqueStrings(values []string) []string {
 
 // FetchHash 查询哈希字段缓存，未命中时回源并设置 hash key 过期时间。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureClient(); err != nil {
+		return "", err
+	}
 	// Hash field 的回源需要按 key:field 去重，避免同一个 hash key 下不同 field 的请求串值。
 	do, err, _ := r.sf.Do(hashFlightKey(key, field), func() (interface{}, error) {
 		result, err := r.client.HGet(ctx, key, field).Result()
@@ -211,6 +227,9 @@ func hashFlightKey(key, field string) string {
 
 // Del 删除单个缓存 key。
 func (r *Cache) Del(ctx context.Context, key string) error {
+	if err := r.ensureClient(); err != nil {
+		return err
+	}
 	err := r.client.Del(ctx, key).Err()
 	if err != nil {
 		return err
@@ -228,6 +247,9 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+	if err := r.ensureClient(); err != nil {
+		return err
+	}
 	err := r.client.Del(ctx, keys...).Err()
 	if err != nil {
 		return err
@@ -243,6 +265,9 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 
 // DelHash 删除 hash key 下的指定字段。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
+	if err := r.ensureClient(); err != nil {
+		return err
+	}
 	err := r.client.HDel(ctx, key, field).Err()
 	if err != nil {
 		return err

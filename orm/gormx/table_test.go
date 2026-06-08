@@ -10,6 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestPartitionAndCommentsRejectNilDB(t *testing.T) {
+	if _, err := GetPartitionTableToChildTables(nil); err == nil {
+		t.Fatal("expected partition helper to reject nil db")
+	}
+	if _, err := GetTableComments(nil); err == nil {
+		t.Fatal("expected comment helper to reject nil db")
+	}
+}
+
 func TestBuildPostgresTableCommentsQuery_IncludesPartitionedTables(t *testing.T) {
 	query := buildPostgresTableCommentsQuery()
 	if !strings.Contains(query, "c.relkind IN ('r', 'p')") {

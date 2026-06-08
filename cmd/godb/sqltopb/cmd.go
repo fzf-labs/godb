@@ -84,6 +84,9 @@ func runWithOptions(opts runOptions) error {
 	if err != nil {
 		return err
 	}
+	if dbClient == nil {
+		return fmt.Errorf("sqltopb database client cannot be nil")
+	}
 	defer closeGormDB(dbClient)
 	return generatePBDo(gen.NewGenerationPB(
 		dbClient,

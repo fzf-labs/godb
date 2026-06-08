@@ -81,8 +81,18 @@ func (r *Cache) TTL() time.Duration {
 	return r.ttl - time.Duration(rand.Float64()*0.1*float64(r.ttl))
 }
 
+func (r *Cache) ensureClient() error {
+	if r == nil || r.client == nil {
+		return fmt.Errorf("rueidisdbcache client cannot be nil")
+	}
+	return nil
+}
+
 // Fetch 查询单个缓存值，未命中时调用回源函数并写入缓存。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureClient(); err != nil {
+		return "", err
+	}
 	do, err, _ := r.sf.Do(key, func() (any, error) {
 		cacheValue := r.client.DoCache(ctx, r.client.B().Get().Key(key).Cache(), expire)
 		if cacheValue.Error() != nil && !rueidis.IsRedisNil(cacheValue.Error()) {
@@ -116,6 +126,9 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 	keys = uniqueStrings(keys)
 	if len(keys) == 0 {
 		return map[string]string{}, nil
+	}
+	if err := r.ensureClient(); err != nil {
+		return nil, err
 	}
 	resp := make(map[string]string)
 	commands := make([]rueidis.CacheableTTL, 0)
@@ -184,6 +197,9 @@ func uniqueStrings(values []string) []string {
 
 // FetchHash 查询哈希字段缓存，未命中时回源并设置 hash key 过期时间。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureClient(); err != nil {
+		return "", err
+	}
 	do, err, _ := r.sf.Do(hashFlightKey(key, field), func() (any, error) {
 		cacheValue := r.client.DoCache(ctx, r.client.B().Hget().Key(key).Field(field).Cache(), expire)
 		if cacheValue.Error() != nil && !rueidis.IsRedisNil(cacheValue.Error()) {
@@ -225,6 +241,9 @@ func hashFlightKey(key, field string) string {
 
 // Del 删除单个缓存 key。
 func (r *Cache) Del(ctx context.Context, key string) error {
+	if err := r.ensureClient(); err != nil {
+		return err
+	}
 	err := r.client.Do(ctx, r.client.B().Del().Key(key).Build()).Error()
 	if err != nil {
 		return err
@@ -241,6 +260,9 @@ func (r *Cache) Del(ctx context.Context, key string) error {
 func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 	if len(keys) == 0 {
 		return nil
+	}
+	if err := r.ensureClient(); err != nil {
+		return err
 	}
 	completes := make([]rueidis.Completed, 0)
 	for _, v := range keys {
@@ -271,6 +293,9 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 
 // DelHash 删除 hash key 下的指定字段。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
+	if err := r.ensureClient(); err != nil {
+		return err
+	}
 	err := r.client.Do(ctx, r.client.B().Hdel().Key(key).Field(field).Build()).Error()
 	if err != nil {
 		return err

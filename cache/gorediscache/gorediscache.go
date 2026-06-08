@@ -3,6 +3,7 @@ package gorediscache
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -40,6 +41,9 @@ type GoRedisConfig struct {
 
 // NewGoRedis 初始化go-redis客户端
 func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
+	if strings.TrimSpace(cfg.Addr) == "" {
+		return nil, fmt.Errorf("redis addr cannot be empty")
+	}
 	client := redis.NewClient(&redis.Options{
 		Addr:         cfg.Addr,
 		Password:     cfg.Password,
@@ -72,8 +76,11 @@ func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
 
 // RedisInfo Redis服务信息
 func RedisInfo(r *redis.Client, sections ...string) (res map[string]string) {
-	infoStr, err := r.Info(context.Background(), sections...).Result()
 	res = map[string]string{}
+	if r == nil {
+		return res
+	}
+	infoStr, err := r.Info(context.Background(), sections...).Result()
 	if err != nil {
 		return res
 	}
@@ -106,6 +113,9 @@ func stringToLines(s string) (lines []string, err error) {
 
 // DBSize 当前数据库key数量
 func DBSize(r *redis.Client) int64 {
+	if r == nil {
+		return 0
+	}
 	size, err := r.DBSize(context.Background()).Result()
 	if err != nil {
 		return 0

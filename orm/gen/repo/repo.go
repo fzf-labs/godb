@@ -12,6 +12,9 @@ import (
 
 // GenerationTable 为单张表生成 repo 层代码文件。
 func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table string, partitionTables []string, columnNameToDataType, columnNameToName, columnNameToFieldType map[string]string) error {
+	if db == nil {
+		return fmt.Errorf("repo generation db cannot be nil")
+	}
 	if strings.TrimSpace(table) == "" {
 		return fmt.Errorf("table name cannot be empty")
 	}

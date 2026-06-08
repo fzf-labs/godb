@@ -82,8 +82,25 @@ func (r *Cache) TTL() time.Duration {
 	return r.ttl - time.Duration(rand.Float64()*0.1*float64(r.ttl))
 }
 
+func (r *Cache) ensureRocksCacheClient() error {
+	if r == nil || r.rocksCacheClient == nil {
+		return fmt.Errorf("rocksdbcache rocks cache client cannot be nil")
+	}
+	return nil
+}
+
+func (r *Cache) ensureRedisClient() error {
+	if r == nil || r.redisClient == nil {
+		return fmt.Errorf("rocksdbcache redis client cannot be nil")
+	}
+	return nil
+}
+
 // Fetch 查询单个缓存值，未命中时回源加载。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureRocksCacheClient(); err != nil {
+		return "", err
+	}
 	// 查询redis缓存
 	rocksCacheValue, err := r.rocksCacheClient.Fetch2(ctx, key, expire, fn)
 	if err != nil {
@@ -97,6 +114,12 @@ func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []st
 	resp := make(map[string]string)
 	// 去重
 	keys = unique(keys)
+	if len(keys) == 0 {
+		return resp, nil
+	}
+	if err := r.ensureRocksCacheClient(); err != nil {
+		return nil, err
+	}
 	// 查询redis缓存
 	batch, err := chunk(keys, r.batchSize)
 	if err != nil {
@@ -175,6 +198,9 @@ func (r *Cache) fetchBatchItem(ctx context.Context, keys []string, fn func(miss 
 
 // FetchHash 查询哈希字段缓存，未命中时回源加载。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
+	if err := r.ensureRedisClient(); err != nil {
+		return "", err
+	}
 	result, err := r.redisClient.HGet(ctx, key, field).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return "", err
@@ -198,6 +224,9 @@ func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func
 
 // Del 标记单个缓存 key 已删除。
 func (r *Cache) Del(ctx context.Context, key string) error {
+	if err := r.ensureRocksCacheClient(); err != nil {
+		return err
+	}
 	err := r.rocksCacheClient.TagAsDeleted2(ctx, key)
 	if err != nil {
 		return err
@@ -210,6 +239,9 @@ func (r *Cache) DelBatch(ctx context.Context, keys []string) error {
 	keys = unique(keys)
 	if len(keys) == 0 {
 		return nil
+	}
+	if err := r.ensureRocksCacheClient(); err != nil {
+		return err
 	}
 	batch, err := chunk(keys, r.batchSize)
 	if err != nil {
@@ -274,5 +306,8 @@ func chunk(collection []string, size int) ([][]string, error) {
 
 // DelHash 删除哈希字段缓存。
 func (r *Cache) DelHash(ctx context.Context, key string, field string) error {
+	if err := r.ensureRedisClient(); err != nil {
+		return err
+	}
 	return r.redisClient.HDel(ctx, key, field).Err()
 }

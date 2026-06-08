@@ -138,6 +138,33 @@ func TestRocksDBCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), NewRocksDBCache(nil, nil, WithTTL(-time.Minute)).TTL())
 }
 
+func TestRocksDBCacheRejectsNilClients(t *testing.T) {
+	cache := NewRocksDBCache(nil, nil)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", func() (string, error) {
+		t.Fatal("fetch callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rocksdbcache rocks cache client cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, func([]string) (map[string]string, error) {
+		t.Fatal("fetch batch callback should not run")
+		return nil, nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rocksdbcache rocks cache client cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", func() (string, error) {
+		t.Fatal("fetch hash callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "rocksdbcache redis client cannot be nil")
+
+	assert.ErrorContains(t, cache.Del(ctx, "key"), "rocksdbcache rocks cache client cannot be nil")
+	assert.ErrorContains(t, cache.DelBatch(ctx, []string{"a"}), "rocksdbcache rocks cache client cannot be nil")
+	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "rocksdbcache redis client cannot be nil")
+}
+
 func TestUniquePreservesOrder(t *testing.T) {
 	assert.Nil(t, unique(nil))
 	assert.Equal(t, []string{"a", "b", "c"}, unique([]string{"a", "b", "a", "c", "b"}))

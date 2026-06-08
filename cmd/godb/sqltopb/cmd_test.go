@@ -93,6 +93,26 @@ func TestRunWithOptionsRejectsMissingRequiredFieldsBeforeConnecting(t *testing.T
 	}
 }
 
+func TestRunWithOptionsRejectsNilDBClient(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	defer func() { newSimpleGormClient = oldNewSimple }()
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return nil, nil
+	}
+
+	err := runWithOptions(runOptions{
+		db:           "postgres",
+		dsn:          "dsn",
+		targetTables: "users",
+		pbPackage:    "pb",
+		pbGoPackage:  "example.com/pb;pb",
+		outPutPath:   t.TempDir(),
+	})
+	if err == nil || !strings.Contains(err.Error(), "sqltopb database client cannot be nil") {
+		t.Fatalf("expected sqltopb nil db client error, got %v", err)
+	}
+}
+
 func TestRunWithOptionsUsesProvidedSnapshotAndClosesDB(t *testing.T) {
 	oldDB, oldDSN, oldTables := db, dsn, targetTables
 	oldPBPackage, oldPBGoPackage, oldOut := pbPackage, pbGoPackage, outPutPath

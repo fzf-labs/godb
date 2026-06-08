@@ -95,6 +95,24 @@ func TestRunWithOptionsRejectsMissingRequiredFieldsBeforeConnecting(t *testing.T
 	}
 }
 
+func TestRunWithOptionsRejectsNilDBClient(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	defer func() { newSimpleGormClient = oldNewSimple }()
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return nil, nil
+	}
+
+	err := runWithOptions(runOptions{
+		db:           "postgres",
+		dsn:          "dsn",
+		outPutPath:   t.TempDir(),
+		targetTables: "users",
+	})
+	if err == nil || !strings.Contains(err.Error(), "ormgen database client cannot be nil") {
+		t.Fatalf("expected ormgen nil db client error, got %v", err)
+	}
+}
+
 func TestRunWithOptionsUsesProvidedSnapshotAndClosesDB(t *testing.T) {
 	oldDB, oldDSN, oldTables, oldOut := db, dsn, targetTables, outPutPath
 	oldNewSimple := newSimpleGormClient

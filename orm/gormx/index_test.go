@@ -17,6 +17,15 @@ type indexExample struct {
 	DeptID   int64  `gorm:"index:idx_index_example_tenant_dept,priority:2"`
 }
 
+func TestIndexHelpersRejectNilDB(t *testing.T) {
+	if _, err := GetIndexes(nil, "users"); err == nil {
+		t.Fatal("expected GetIndexes to reject nil db")
+	}
+	if _, err := SortIndexColumns(nil, "users"); err == nil {
+		t.Fatal("expected SortIndexColumns to reject nil db")
+	}
+}
+
 // TableName 返回索引测试模型表名。
 func (indexExample) TableName() string {
 	return "index_examples"

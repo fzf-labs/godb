@@ -109,6 +109,33 @@ func TestGoRedisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), NewGoRedisDBCache(rdb, WithTTL(-time.Minute)).TTL())
 }
 
+func TestGoRedisCacheRejectsNilClient(t *testing.T) {
+	cache := NewGoRedisDBCache(nil)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", func() (string, error) {
+		t.Fatal("fetch callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "goredisdbcache client cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, func([]string) (map[string]string, error) {
+		t.Fatal("fetch batch callback should not run")
+		return nil, nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "goredisdbcache client cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", func() (string, error) {
+		t.Fatal("fetch hash callback should not run")
+		return "", nil
+	}, time.Minute)
+	assert.ErrorContains(t, err, "goredisdbcache client cannot be nil")
+
+	assert.ErrorContains(t, cache.Del(ctx, "key"), "goredisdbcache client cannot be nil")
+	assert.ErrorContains(t, cache.DelBatch(ctx, []string{"a"}), "goredisdbcache client cannot be nil")
+	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "goredisdbcache client cannot be nil")
+}
+
 func TestGoRedisCacheFetchHit(t *testing.T) {
 	rdb, mock := redismock.NewClientMock()
 	cache := NewGoRedisDBCache(rdb)

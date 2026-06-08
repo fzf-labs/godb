@@ -104,6 +104,9 @@ func runWithOptions(opts runOptions) error {
 	if err != nil {
 		return err
 	}
+	if dbClient == nil {
+		return fmt.Errorf("ormgen database client cannot be nil")
+	}
 	defer closeGormDB(dbClient)
 	return generateDBDo(gen.NewGenerationDB(
 		dbClient,

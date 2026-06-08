@@ -10,6 +10,7 @@ import (
 )
 
 var errNilLockCallback = errors.New("lock callback cannot be nil")
+var errNilLockClient = errors.New("rueidis client cannot be nil")
 
 // NewLocker 创建基于 rueidislock 的分布式锁封装。
 func NewLocker(option rueidislock.LockerOption) *Locker {
@@ -18,6 +19,13 @@ func NewLocker(option rueidislock.LockerOption) *Locker {
 
 // NewDefaultLockerOption 使用已有 rueidis 客户端构造默认锁配置。
 func NewDefaultLockerOption(client rueidis.Client) rueidislock.LockerOption {
+	if client == nil {
+		return rueidislock.LockerOption{
+			ClientBuilder: func(_ rueidis.ClientOption) (rueidis.Client, error) {
+				return nil, errNilLockClient
+			},
+		}
+	}
 	return rueidislock.LockerOption{
 		ClientBuilder: func(_ rueidis.ClientOption) (rueidis.Client, error) {
 			return client, nil

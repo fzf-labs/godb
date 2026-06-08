@@ -1,6 +1,7 @@
 package gormx
 
 import (
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -8,6 +9,9 @@ import (
 
 // GetPartitionTableToChildTables 获取分区表到子表的映射
 func GetPartitionTableToChildTables(db *gorm.DB) (resp map[string][]string, err error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	switch db.Dialector.Name() {
 	case Postgres:
 		resp, err = getPGPartitionTableToChildTables(db)
@@ -66,6 +70,9 @@ func getMySQLPartitionTableToChildTables(db *gorm.DB) (map[string][]string, erro
 
 // GetTableComments 获取数据库中所有表对应的 comment
 func GetTableComments(db *gorm.DB) (map[string]string, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	resp := make(map[string]string)
 	switch db.Dialector.Name() {
 	case MySQL:

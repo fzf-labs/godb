@@ -115,6 +115,13 @@ func TestGenerationTableRejectsEmptyTable(t *testing.T) {
 	}
 }
 
+func TestGenerationTableRejectsNilDB(t *testing.T) {
+	err := GenerationTable(nil, "gorm_gen", t.TempDir(), t.TempDir(), t.TempDir(), "users", nil, map[string]string{}, map[string]string{}, map[string]string{})
+	if err == nil || !strings.Contains(err.Error(), "repo generation db cannot be nil") {
+		t.Fatalf("expected repo-specific nil db error, got %v", err)
+	}
+}
+
 func TestGenerationTableRejectsMissingPackagePaths(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
