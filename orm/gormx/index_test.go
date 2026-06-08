@@ -104,6 +104,17 @@ func TestPostgresIndexQueriesReturnErrors(t *testing.T) {
 	}
 }
 
+func TestIndexQueriesRejectUnsupportedDialects(t *testing.T) {
+	db := openNamedSQLite(t, "oracle")
+
+	if _, err := GetIndexes(db, "users"); err == nil {
+		t.Fatal("expected unsupported index dialect error")
+	}
+	if _, err := SortIndexColumns(db, "users"); err == nil {
+		t.Fatal("expected unsupported sort dialect error")
+	}
+}
+
 func TestPostgresIndexQueriesWithMock(t *testing.T) {
 	db, mock := openMockPostgres(t)
 

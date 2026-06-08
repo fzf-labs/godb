@@ -16,6 +16,7 @@ import (
 
 	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/gormx"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
 )
 
 type fakeColumnType struct {
@@ -188,6 +189,39 @@ func TestGetDBNameAppliesOverrideAndTablePrefix(t *testing.T) {
 	}
 	if got := GetDBName(db, func(*gorm.DB) string { return "tenant_app" }); got != "tenant_app" {
 		t.Fatalf("db name should not be double-prefixed: %s", got)
+	}
+}
+
+type prefixedNamingStrategy struct {
+	schema.NamingStrategy
+}
+
+func TestGetDBNameUsesEmbeddedNamingStrategyPrefix(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		NamingStrategy: prefixedNamingStrategy{
+			NamingStrategy: schema.NamingStrategy{TablePrefix: "tenant_"},
+		},
+	})
+	require.NoError(t, err)
+
+	if got := GetDBName(db, func(*gorm.DB) string { return "app" }); got != "tenant_app" {
+		t.Fatalf("unexpected db name: %s", got)
+	}
+}
+
+func TestGenerationOutputFilePathCleansAndJoins(t *testing.T) {
+	gotRepo, err := fileutil.JoinOutputFilePath("/tmp/out/", "users", ".repo.go")
+	require.NoError(t, err)
+	wantRepo := filepath.Join("/tmp/out", "users.repo.go")
+	if gotRepo != wantRepo {
+		t.Fatalf("unexpected repo output path: %s", gotRepo)
+	}
+
+	gotProto, err := fileutil.JoinOutputFilePath("/tmp/out/../out", "users", ".proto")
+	require.NoError(t, err)
+	wantProto := filepath.Join("/tmp/out", "users.proto")
+	if gotProto != wantProto {
+		t.Fatalf("unexpected proto output path: %s", gotProto)
 	}
 }
 

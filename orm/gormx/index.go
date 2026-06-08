@@ -29,7 +29,7 @@ func GetIndexes(db *gorm.DB, table string) ([]*Index, error) {
 			return nil, err
 		}
 		return resp, nil
-	default:
+	case MySQL, "sqlite":
 		result, err := db.Migrator().GetIndexes(table)
 		if err != nil {
 			return nil, err
@@ -48,6 +48,8 @@ func GetIndexes(db *gorm.DB, table string) ([]*Index, error) {
 			}
 		}
 		return resp, nil
+	default:
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
 }
 
@@ -75,7 +77,7 @@ func SortIndexColumns(db *gorm.DB, table string) (map[string][]string, error) {
 		if err != nil {
 			return nil, err
 		}
-	default:
+	case MySQL, "sqlite":
 		result, err := db.Migrator().GetIndexes(table)
 		if err != nil {
 			return nil, err
@@ -86,6 +88,8 @@ func SortIndexColumns(db *gorm.DB, table string) (map[string][]string, error) {
 			}
 			resp[v.Name()] = v.Columns()
 		}
+	default:
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
 	return resp, nil
 }

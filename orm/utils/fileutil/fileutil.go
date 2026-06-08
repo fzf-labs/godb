@@ -1,8 +1,10 @@
 package fileutil
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -39,6 +41,16 @@ func Exists(path string) bool {
 // MkdirPath 生成文件夹
 func MkdirPath(relativePath string) error {
 	return os.MkdirAll(relativePath, os.ModePerm)
+}
+
+// JoinOutputFilePath returns a cleaned output path for a generated file.
+func JoinOutputFilePath(basePath, fileName, ext string) (string, error) {
+	fileName = strings.TrimSpace(fileName)
+	if fileName == "" || fileName == "." || fileName == ".." ||
+		filepath.IsAbs(fileName) || strings.ContainsAny(fileName, `/\`) {
+		return "", fmt.Errorf("unsafe output file name: %q", fileName)
+	}
+	return filepath.Join(filepath.Clean(basePath), fileName+ext), nil
 }
 
 // WriteContentCover 数据写入，不存在则创建

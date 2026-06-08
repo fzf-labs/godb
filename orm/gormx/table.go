@@ -25,8 +25,10 @@ func GetPartitionTableToChildTables(db *gorm.DB) (resp map[string][]string, err 
 			return nil, err
 		}
 		return resp, nil
-	default:
+	case "sqlite":
 		return nil, nil
+	default:
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
 }
 
@@ -90,6 +92,8 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 			resp[v.TableName] = v.TableComment
 		}
 		return resp, nil
+	case "sqlite":
+		return nil, nil
 	case Postgres:
 		type tmp struct {
 			TableName    string `gorm:"column:table_name"`
@@ -106,7 +110,7 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 		}
 		return resp, nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
 }
 

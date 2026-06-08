@@ -103,7 +103,10 @@ func GenerationTable(db *gorm.DB, dbname, daoPath, modelPath, repoPath, table st
 	file += fmt.Sprintln(generateUpdateFunc)
 	file += fmt.Sprintln(generateReadFunc)
 	file += fmt.Sprintln(generateDelFunc)
-	outputFile := g.repoPath + "/" + table + ".repo.go"
+	outputFile, err := fileutil.JoinOutputFilePath(g.repoPath, table, ".repo.go")
+	if err != nil {
+		return err
+	}
 	err = g.output(outputFile, []byte(file))
 	if err != nil {
 		return err

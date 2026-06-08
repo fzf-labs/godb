@@ -55,7 +55,10 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 		return fmt.Errorf("generate message: %w", err)
 	}
 	f += message
-	outputFile := p.outPutPath + "/" + table + ".proto"
+	outputFile, err := fileutil.JoinOutputFilePath(p.outPutPath, table, ".proto")
+	if err != nil {
+		return err
+	}
 	return p.output(outputFile, f)
 }
 

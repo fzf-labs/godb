@@ -256,6 +256,70 @@ SQL
 	}
 }
 
+func TestDumpPostgresOverwritesExistingFileWithEmptyCleanedOutput(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(driver, dsn string) (*gorm.DB, error) {
+		if driver != "postgres" || !strings.Contains(dsn, "dbname=app") {
+			t.Fatalf("unexpected connection args: %s %s", driver, dsn)
+		}
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	binDir := t.TempDir()
+	pgDump := filepath.Join(binDir, "pg_dump")
+	script := `#!/bin/sh
+cat <<'SQL'
+-- comment
+SET statement_timeout = 0;
+ALTER TABLE public.users OWNER TO postgres;
+SQL
+`
+	if err := os.WriteFile(pgDump, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	outDir := t.TempDir()
+	existingDir := filepath.Join(outDir, "app")
+	if err := os.MkdirAll(existingDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	existingFile := filepath.Join(existingDir, "users.sql")
+	if err := os.WriteFile(existingFile, []byte("stale"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	if err := NewSQLDump("postgres", dsn, outDir, "users", true).DumpPostgres(); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(existingFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != "" {
+		t.Fatalf("expected empty overwritten file, got %q", string(content))
+	}
+}
+
+func TestDumpPostgresRejectsUnsafeOutputFileName(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	restore := replacePostgresDumpClient(t)
+	defer restore()
+
+	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
+	err := NewSQLDump("postgres", dsn, t.TempDir(), "../users", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "unsafe output file name") {
+		t.Fatalf("expected unsafe output file name error, got %v", err)
+	}
+}
+
 func TestDumpPostgresReturnsMissingCommand(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 

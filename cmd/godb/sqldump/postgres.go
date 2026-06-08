@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -63,7 +62,10 @@ func (s *SQLDump) DumpPostgres() error {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
-		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
+		outFile, err := fileutil.JoinOutputFilePath(outPath, v, ".sql")
+		if err != nil {
+			return err
+		}
 		if !s.fileOverwrite {
 			if fileutil.Exists(outFile) {
 				continue
@@ -76,11 +78,9 @@ func (s *SQLDump) DumpPostgres() error {
 			return formatPgDumpError(v, stderr, err)
 		}
 		tableContent := s.postgresRemove(string(output))
-		if tableContent != "" {
-			err := fileutil.WriteContentCover(outFile, tableContent)
-			if err != nil {
-				return fmt.Errorf("write %s: %w", outFile, err)
-			}
+		err = fileutil.WriteContentCover(outFile, tableContent)
+		if err != nil {
+			return fmt.Errorf("write %s: %w", outFile, err)
 		}
 	}
 	return nil

@@ -3,7 +3,6 @@ package sqldump
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
@@ -45,23 +44,24 @@ func (s *SQLDump) DumpMySQL() error {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
-		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
+		outFile, err := fileutil.JoinOutputFilePath(outPath, v, ".sql")
+		if err != nil {
+			return err
+		}
 		if !s.fileOverwrite {
 			if fileutil.Exists(outFile) {
 				continue
 			}
 		}
 		result := make(map[string]any)
-		err := dbClient.Raw(buildMySQLShowCreateTableSQL(currentDatabase, v)).Scan(result).Error
+		err = dbClient.Raw(buildMySQLShowCreateTableSQL(currentDatabase, v)).Scan(result).Error
 		if err != nil {
 			return fmt.Errorf("show create table %s: %w", v, err)
 		}
 		tableContent := strutil.ConvToString(result["Create Table"])
-		if tableContent != "" {
-			err := fileutil.WriteContentCover(outFile, tableContent)
-			if err != nil {
-				return fmt.Errorf("write %s: %w", outFile, err)
-			}
+		err = fileutil.WriteContentCover(outFile, tableContent)
+		if err != nil {
+			return fmt.Errorf("write %s: %w", outFile, err)
 		}
 	}
 	return nil

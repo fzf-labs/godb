@@ -3,6 +3,7 @@ package gen
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -12,7 +13,6 @@ import (
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 
 	"github.com/fzf-labs/godb/orm/gen/repo"
 	"github.com/fzf-labs/godb/orm/gormx"
@@ -281,14 +281,32 @@ func GetDBName(db *gorm.DB, fn func(*gorm.DB) string) string {
 	if fn != nil {
 		tableName = fn(db)
 	}
-	tablePrefix := ""
-	if ns, ok := db.NamingStrategy.(schema.NamingStrategy); ok {
-		tablePrefix = ns.TablePrefix
-	}
+	tablePrefix := namingStrategyTablePrefix(db.NamingStrategy)
 	if !strings.HasPrefix(tableName, tablePrefix) {
 		tableName = tablePrefix + tableName
 	}
 	return tableName
+}
+
+func namingStrategyTablePrefix(strategy any) string {
+	if strategy == nil {
+		return ""
+	}
+	value := reflect.ValueOf(strategy)
+	for value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return ""
+		}
+		value = value.Elem()
+	}
+	if !value.IsValid() || value.Kind() != reflect.Struct {
+		return ""
+	}
+	field := value.FieldByName("TablePrefix")
+	if !field.IsValid() || field.Kind() != reflect.String {
+		return ""
+	}
+	return field.String()
 }
 
 // JSONTagNameStrategy json tag 命名

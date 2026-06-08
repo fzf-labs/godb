@@ -137,6 +137,29 @@ func TestWriteContentCoverReturnsPathErrors(t *testing.T) {
 	}
 }
 
+func TestJoinOutputFilePathRejectsUnsafeFileNames(t *testing.T) {
+	tests := []string{"../users", "nested/users", `nested\users`, ".."}
+	for _, name := range tests {
+		t.Run(name, func(t *testing.T) {
+			if _, err := JoinOutputFilePath(t.TempDir(), name, ".sql"); err == nil {
+				t.Fatal("expected unsafe file name error")
+			}
+		})
+	}
+}
+
+func TestJoinOutputFilePathAllowsSchemaQualifiedNames(t *testing.T) {
+	base := t.TempDir()
+	got, err := JoinOutputFilePath(base, "public.users", ".sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(base, "public.users.sql")
+	if got != want {
+		t.Fatalf("unexpected output path: %s", got)
+	}
+}
+
 func TestFillModelPkgPath(t *testing.T) {
 	if got := FillModelPkgPath("."); !strings.HasSuffix(got, "/orm/utils/fileutil") {
 		t.Fatalf("unexpected package path: %s", got)

@@ -62,6 +62,17 @@ func TestPartitionAndCommentsNamedDialectErrors(t *testing.T) {
 	}
 }
 
+func TestPartitionAndCommentsRejectUnsupportedDialects(t *testing.T) {
+	db := openNamedSQLite(t, "oracle")
+
+	if _, err := GetPartitionTableToChildTables(db); err == nil {
+		t.Fatal("expected unsupported partition dialect error")
+	}
+	if _, err := GetTableComments(db); err == nil {
+		t.Fatal("expected unsupported table comments dialect error")
+	}
+}
+
 func TestMySQLPartitionAndComments(t *testing.T) {
 	db, mock := openMockMySQL(t)
 

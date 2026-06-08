@@ -166,6 +166,50 @@ func TestDumpMySQLSkipsExistingFile(t *testing.T) {
 	}
 }
 
+func TestDumpMySQLRejectsUnsafeOutputFileName(t *testing.T) {
+	db, mock := openMySQLDumpMock(t)
+	restore := replaceDumpClient(t, db)
+	defer restore()
+	expectDumpCurrentDatabase(mock, "app")
+
+	err := NewSQLDump("mysql", "dsn", t.TempDir(), "../users", true).DumpMySQL()
+	if err == nil || !strings.Contains(err.Error(), "unsafe output file name") {
+		t.Fatalf("expected unsafe output file name error, got %v", err)
+	}
+}
+
+func TestDumpMySQLOverwritesExistingFileWithEmptyCleanedOutput(t *testing.T) {
+	db, mock := openMySQLDumpMock(t)
+	restore := replaceDumpClient(t, db)
+	defer restore()
+	expectDumpCurrentDatabase(mock, "app")
+	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).
+		WillReturnRows(sqlmock.NewRows([]string{"Table", "Create Table"}).
+			AddRow("users", ""))
+
+	outDir := t.TempDir()
+	appDir := filepath.Join(outDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	outFile := filepath.Join(appDir, "users.sql")
+	if err := os.WriteFile(outFile, []byte("stale"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := NewSQLDump("mysql", "dsn", outDir, "users", true).DumpMySQL(); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != "" {
+		t.Fatalf("expected empty overwritten file, got %q", string(content))
+	}
+}
+
 func TestDumpMySQLReturnsWriteError(t *testing.T) {
 	db, mock := openMySQLDumpMock(t)
 	restore := replaceDumpClient(t, db)
