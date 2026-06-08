@@ -7,6 +7,11 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var writeContentOpenFile = os.OpenFile
+var writeContentCloseFile = func(file *os.File) error {
+	return file.Close()
+}
+
 // FillModelPkgPath 返回模型文件的包路径
 func FillModelPkgPath(dir string) string {
 	pkg, err := packages.Load(&packages.Config{
@@ -42,14 +47,14 @@ func WriteContentCover(filePath, content string) error {
 	if err := os.MkdirAll(fileDir, 0775); err != nil {
 		return err
 	}
-	dstFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0665)
+	dstFile, err := writeContentOpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0665)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
 	_, err = dstFile.WriteString(content)
+	closeErr := writeContentCloseFile(dstFile)
 	if err != nil {
 		return err
 	}
-	return err
+	return closeErr
 }

@@ -1,6 +1,7 @@
 package fileutil
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,6 +99,23 @@ func TestWriteContentCover(t *testing.T) {
 	}
 	if string(content) != "second" {
 		t.Fatalf("unexpected overwritten content: %q", string(content))
+	}
+}
+
+func TestWriteContentCoverReturnsCloseError(t *testing.T) {
+	oldClose := writeContentCloseFile
+	defer func() { writeContentCloseFile = oldClose }()
+
+	wantErr := errors.New("close failed")
+	writeContentCloseFile = func(file *os.File) error {
+		_ = file.Close()
+		return wantErr
+	}
+
+	file := filepath.Join(t.TempDir(), "close", "file.txt")
+	err := WriteContentCover(file, "content")
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected close error, got %v", err)
 	}
 }
 

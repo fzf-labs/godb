@@ -306,6 +306,24 @@ func TestDumpPostgresReturnsGetTablesError(t *testing.T) {
 	}
 }
 
+func TestDumpPostgresRejectsEmptyTableSet(t *testing.T) {
+	installPgDump(t, "#!/bin/sh\nexit 0\n")
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	err = NewSQLDump("postgres", "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable", t.TempDir(), "", true).DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "no tables to dump") {
+		t.Fatalf("expected empty table set error, got %v", err)
+	}
+}
+
 func TestDumpPostgresReturnsDSNParseError(t *testing.T) {
 	installPgDump(t, "#!/bin/sh\nexit 0\n")
 	restore := replacePostgresDumpClient(t)

@@ -58,10 +58,19 @@ func snapshotRunOptions() runOptions {
 }
 
 func runWithOptions(opts runOptions) error {
+	opts = opts.normalize()
 	if err := opts.validate(); err != nil {
 		return err
 	}
 	return NewSQLDump(opts.db, opts.dsn, opts.outPutPath, opts.targetTables, opts.fileOverwrite).Run()
+}
+
+func (o runOptions) normalize() runOptions {
+	o.db = strings.ToLower(strings.TrimSpace(o.db))
+	o.dsn = strings.TrimSpace(o.dsn)
+	o.outPutPath = strings.TrimSpace(o.outPutPath)
+	o.targetTables = strings.TrimSpace(o.targetTables)
+	return o
 }
 
 func (o runOptions) validate() error {

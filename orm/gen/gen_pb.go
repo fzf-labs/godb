@@ -112,6 +112,9 @@ func (g *GenerationPb) Do() (err error) {
 	}
 	// 去掉tables中的partitionChildTables
 	tables = strutil.SliRemove(tables, partitionChildTables)
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to generate")
+	}
 	var group errgroup.Group
 	var mu sync.Mutex
 	genErrs := make([]error, len(tables))

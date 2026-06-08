@@ -15,20 +15,30 @@ import (
 func TestRunReturnsDriverErrorAfterParsingTables(t *testing.T) {
 	oldDB, oldDSN, oldTables := db, dsn, targetTables
 	oldPBPackage, oldPBGoPackage, oldOut := pbPackage, pbGoPackage, outPutPath
+	oldNewSimple := newSimpleGormClient
 	defer func() {
 		db, dsn, targetTables = oldDB, oldDSN, oldTables
 		pbPackage, pbGoPackage, outPutPath = oldPBPackage, oldPBGoPackage, oldOut
+		newSimpleGormClient = oldNewSimple
 	}()
 
-	db = "sqlite"
-	dsn = ":memory:"
-	targetTables = "users,roles"
-	pbPackage = "pb"
-	pbGoPackage = "example.com/project/pb;pb"
-	outPutPath = t.TempDir()
+	sentinelErr := errors.New("connect failed")
+	newSimpleGormClient = func(driver, dataSource string) (*gorm.DB, error) {
+		if driver != "postgres" || dataSource != "dsn" {
+			t.Fatalf("unexpected connection args: %s %s", driver, dataSource)
+		}
+		return nil, sentinelErr
+	}
 
-	if err := Run(nil, nil); err == nil {
-		t.Fatal("expected unknown driver error")
+	db = " POSTGRES "
+	dsn = " dsn "
+	targetTables = " users,roles "
+	pbPackage = " pb "
+	pbGoPackage = " example.com/project/pb;pb "
+	outPutPath = " " + t.TempDir() + " "
+
+	if err := Run(nil, nil); !errors.Is(err, sentinelErr) {
+		t.Fatalf("expected connection error, got %v", err)
 	}
 }
 
@@ -114,12 +124,12 @@ func TestRunWithOptionsUsesProvidedSnapshotAndClosesDB(t *testing.T) {
 	defer func() { generatePBDo = (*gen.GenerationPb).Do }()
 
 	err := runWithOptions(runOptions{
-		db:           "postgres",
-		dsn:          "dsn",
-		targetTables: "users",
-		pbPackage:    "pb",
-		pbGoPackage:  "example.com/pb;pb",
-		outPutPath:   t.TempDir(),
+		db:           " postgres ",
+		dsn:          " dsn ",
+		targetTables: " users ",
+		pbPackage:    " pb ",
+		pbGoPackage:  " example.com/pb;pb ",
+		outPutPath:   " " + t.TempDir() + " ",
 	})
 	if !errors.Is(err, sentinelErr) {
 		t.Fatalf("expected generation error, got %v", err)

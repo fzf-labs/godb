@@ -1,6 +1,7 @@
 package sqldump
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -9,18 +10,28 @@ import (
 
 func TestRunCommandReturnsSQLDumpError(t *testing.T) {
 	oldDB, oldDSN, oldOut, oldTables, oldOverwrite := db, dsn, outPutPath, targetTables, fileOverwrite
+	oldNewSimple := newSimpleGormClient
 	defer func() {
 		db, dsn, outPutPath, targetTables, fileOverwrite = oldDB, oldDSN, oldOut, oldTables, oldOverwrite
+		newSimpleGormClient = oldNewSimple
 	}()
 
-	db = "sqlite"
-	dsn = ":memory:"
-	outPutPath = t.TempDir()
-	targetTables = "users"
+	sentinelErr := errors.New("connect failed")
+	newSimpleGormClient = func(driver, dataSource string) (*gorm.DB, error) {
+		if driver != "mysql" || dataSource != "dsn" {
+			t.Fatalf("unexpected connection args: %s %s", driver, dataSource)
+		}
+		return nil, sentinelErr
+	}
+
+	db = " MYSQL "
+	dsn = " dsn "
+	outPutPath = " " + t.TempDir() + " "
+	targetTables = " users "
 	fileOverwrite = true
 
-	if err := Run(nil, nil); err == nil {
-		t.Fatal("expected unknown database type error")
+	if err := Run(nil, nil); !errors.Is(err, sentinelErr) {
+		t.Fatalf("expected connection error, got %v", err)
 	}
 }
 
@@ -32,9 +43,9 @@ func TestRunCommandRejectsBlankTablesBeforeConnecting(t *testing.T) {
 		newSimpleGormClient = oldNewSimple
 	}()
 
-	db = "mysql"
-	dsn = "dsn"
-	outPutPath = t.TempDir()
+	db = " MYSQL "
+	dsn = " dsn "
+	outPutPath = " " + t.TempDir() + " "
 	targetTables = " , "
 	fileOverwrite = true
 	newSimpleGormClient = func(string, string) (*gorm.DB, error) {

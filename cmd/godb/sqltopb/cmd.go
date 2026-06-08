@@ -72,6 +72,7 @@ func snapshotRunOptions() runOptions {
 }
 
 func runWithOptions(opts runOptions) error {
+	opts = opts.normalize()
 	if err := opts.validate(); err != nil {
 		return err
 	}
@@ -95,6 +96,16 @@ func runWithOptions(opts runOptions) error {
 		),
 		gen.WithPBTables(tables),
 	))
+}
+
+func (o runOptions) normalize() runOptions {
+	o.db = strings.ToLower(strings.TrimSpace(o.db))
+	o.dsn = strings.TrimSpace(o.dsn)
+	o.targetTables = strings.TrimSpace(o.targetTables)
+	o.pbPackage = strings.TrimSpace(o.pbPackage)
+	o.pbGoPackage = strings.TrimSpace(o.pbGoPackage)
+	o.outPutPath = strings.TrimSpace(o.outPutPath)
+	return o
 }
 
 func (o runOptions) validate() error {

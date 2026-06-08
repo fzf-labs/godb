@@ -39,6 +39,25 @@ func TestKeyManageAddKeyDocumentAndTTL(t *testing.T) {
 	}
 }
 
+func TestKeyManageTrimsAndRejectsBlankInputs(t *testing.T) {
+	manager := New(" svc ")
+	prefix, err := manager.AddKey(" user ", time.Second, "user cache")
+	if err != nil {
+		t.Fatalf("add key: %v", err)
+	}
+	if prefix.ServerName != "svc" || prefix.PrefixName != "user" {
+		t.Fatalf("unexpected trimmed prefix: %#v", prefix)
+	}
+
+	if _, err := manager.AddKey("  ", time.Second, "blank"); err == nil || !strings.Contains(err.Error(), "prefix cannot be empty") {
+		t.Fatalf("expected blank prefix error, got %v", err)
+	}
+
+	if _, err := New("  ").AddKey("user", time.Second, "blank"); err == nil || !strings.Contains(err.Error(), "server name cannot be empty") {
+		t.Fatalf("expected blank server error, got %v", err)
+	}
+}
+
 func TestKeyManageDocumentSortsPrefixes(t *testing.T) {
 	manager := New("svc")
 	for _, prefix := range []string{"user", "admin", "order"} {

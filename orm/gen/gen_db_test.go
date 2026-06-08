@@ -142,6 +142,24 @@ func TestGenerationDBRejectsBlankTables(t *testing.T) {
 	}
 }
 
+func TestGenerationDBDoRejectsEmptyTableSet(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	err = NewGenerationDB(db, t.TempDir(), WithOutRepo()).Do()
+	if err == nil || !strings.Contains(err.Error(), "no tables to generate") {
+		t.Fatalf("expected empty table set error, got %v", err)
+	}
+}
+
+func TestNormalizeTableNamesDeduplicatesWhilePreservingOrder(t *testing.T) {
+	got, err := normalizeTableNames([]string{" users ", "roles", "users", "admin", "roles"})
+	require.NoError(t, err)
+	if !reflect.DeepEqual(got, []string{"users", "roles", "admin"}) {
+		t.Fatalf("unexpected normalized tables: %#v", got)
+	}
+}
+
 func TestGenerationDBDoRejectsMissingRequiredConfig(t *testing.T) {
 	t.Run("nil db", func(t *testing.T) {
 		err := NewGenerationDB(nil, t.TempDir()).Do()

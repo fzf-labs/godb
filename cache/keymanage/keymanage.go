@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fzf-labs/godb/orm/dbcache"
@@ -18,18 +19,26 @@ type KeyManage struct {
 // New 实例化key管理器
 func New(serverName string) *KeyManage {
 	return &KeyManage{
-		ServerName: serverName,
+		ServerName: strings.TrimSpace(serverName),
 		List:       make(map[string]KeyPrefix),
 	}
 }
 
 // AddKey 添加一个key prefix
 func (p *KeyManage) AddKey(prefix string, expirationTime time.Duration, remark string) (*KeyPrefix, error) {
+	serverName := strings.TrimSpace(p.ServerName)
+	if serverName == "" {
+		return nil, fmt.Errorf("server name cannot be empty")
+	}
+	prefix = strings.TrimSpace(prefix)
+	if prefix == "" {
+		return nil, fmt.Errorf("prefix cannot be empty")
+	}
 	if _, ok := p.List[prefix]; ok {
 		return nil, fmt.Errorf("key %s is exist, please change one", prefix)
 	}
 	key := KeyPrefix{
-		ServerName:     p.ServerName,
+		ServerName:     serverName,
 		PrefixName:     prefix,
 		Remark:         remark,
 		ExpirationTime: expirationTime,

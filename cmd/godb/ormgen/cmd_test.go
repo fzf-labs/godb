@@ -18,25 +18,35 @@ func TestRunReturnsDriverErrorAfterBuildingOptions(t *testing.T) {
 	oldPGDefault := optionPgDefaultString
 	oldRemoveDefault := optionRemoveDefault
 	oldRemoveType := optionRemoveGormTypeTag
+	oldNewSimple := newSimpleGormClient
 	defer func() {
 		db, dsn, targetTables, outPutPath = oldDB, oldDSN, oldTables, oldOut
 		optionUnderline = oldUnderline
 		optionPgDefaultString = oldPGDefault
 		optionRemoveDefault = oldRemoveDefault
 		optionRemoveGormTypeTag = oldRemoveType
+		newSimpleGormClient = oldNewSimple
 	}()
 
-	db = "sqlite"
-	dsn = ":memory:"
-	targetTables = "users,roles"
-	outPutPath = t.TempDir()
+	sentinelErr := errors.New("connect failed")
+	newSimpleGormClient = func(driver, dataSource string) (*gorm.DB, error) {
+		if driver != "postgres" || dataSource != "dsn" {
+			t.Fatalf("unexpected connection args: %s %s", driver, dataSource)
+		}
+		return nil, sentinelErr
+	}
+
+	db = " POSTGRES "
+	dsn = " dsn "
+	targetTables = " users , roles "
+	outPutPath = " " + t.TempDir() + " "
 	optionUnderline = "UL"
 	optionPgDefaultString = true
 	optionRemoveDefault = true
 	optionRemoveGormTypeTag = true
 
-	if err := Run(nil, nil); err == nil {
-		t.Fatal("expected unknown driver error")
+	if err := Run(nil, nil); !errors.Is(err, sentinelErr) {
+		t.Fatalf("expected connection error, got %v", err)
 	}
 }
 
@@ -112,8 +122,8 @@ func TestRunWithOptionsUsesProvidedSnapshotAndClosesDB(t *testing.T) {
 	defer func() { generateDBDo = (*gen.GenerationDB).Do }()
 
 	err := runWithOptions(runOptions{
-		db:                    "postgres",
-		dsn:                   "dsn",
+		db:                    " postgres ",
+		dsn:                   " dsn ",
 		outPutPath:            t.TempDir(),
 		targetTables:          "users",
 		optionUnderline:       "UL",

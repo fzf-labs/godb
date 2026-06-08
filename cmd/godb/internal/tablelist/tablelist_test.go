@@ -22,3 +22,9 @@ func TestParseCSVRejectsAllBlankEntries(t *testing.T) {
 	assert.Error(t, err)
 	assert.Empty(t, got)
 }
+
+func TestParseCSVDeduplicatesWhilePreservingOrder(t *testing.T) {
+	got, err := ParseCSV(" users , roles,users, admin ,roles ")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"users", "roles", "admin"}, got)
+}

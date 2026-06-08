@@ -32,7 +32,11 @@ func (s *SQLDump) DumpMySQL() error {
 			return err
 		}
 	}
-	outPath := outputDir(s.outPutPath, dbClient.Migrator().CurrentDatabase())
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to dump")
+	}
+	currentDatabase := dbClient.Migrator().CurrentDatabase()
+	outPath := outputDir(s.outPutPath, currentDatabase)
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("create output path: %w", err)
@@ -45,7 +49,7 @@ func (s *SQLDump) DumpMySQL() error {
 			}
 		}
 		result := make(map[string]any)
-		err := dbClient.Raw(buildMySQLShowCreateTableSQL(dbClient.Migrator().CurrentDatabase(), v)).Scan(result).Error
+		err := dbClient.Raw(buildMySQLShowCreateTableSQL(currentDatabase, v)).Scan(result).Error
 		if err != nil {
 			return fmt.Errorf("show create table %s: %w", v, err)
 		}

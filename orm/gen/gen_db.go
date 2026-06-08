@@ -178,6 +178,9 @@ func (g *GenerationDB) Do() (err error) {
 	}
 	// 去掉tables中的分区子表
 	tables = strutil.SliRemove(tables, partitionChildTables)
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to generate")
+	}
 	models := make(map[string]any, len(tables))
 	for _, tableName := range tables {
 		generateModel := generator.GenerateModel(tableName)
@@ -257,11 +260,16 @@ func normalizeTableNames(tables []string) ([]string, error) {
 		return nil, nil
 	}
 	normalized := make([]string, 0, len(tables))
+	seen := make(map[string]struct{}, len(tables))
 	for _, table := range tables {
 		table = strings.TrimSpace(table)
 		if table == "" {
 			return nil, fmt.Errorf("table name cannot be empty")
 		}
+		if _, ok := seen[table]; ok {
+			continue
+		}
+		seen[table] = struct{}{}
 		normalized = append(normalized, table)
 	}
 	return normalized, nil

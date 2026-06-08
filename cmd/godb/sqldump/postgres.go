@@ -47,6 +47,9 @@ func (s *SQLDump) DumpPostgres() error {
 			return err
 		}
 	}
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to dump")
+	}
 	dsnParse, err := s.postgresDsnParse()
 	if err != nil {
 		return err

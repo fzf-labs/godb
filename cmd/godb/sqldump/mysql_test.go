@@ -10,6 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -53,9 +54,6 @@ func TestDumpMySQLWritesCreateTable(t *testing.T) {
 	mock.ExpectQuery(currentDBQuery).
 		WithArgs("%", "").
 		WillReturnRows(sqlmock.NewRows([]string{"SCHEMA_NAME"}).AddRow("app"))
-	mock.ExpectQuery(currentDBQuery).
-		WithArgs("%", "").
-		WillReturnRows(sqlmock.NewRows([]string{"SCHEMA_NAME"}).AddRow("app"))
 	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).
 		WillReturnRows(sqlmock.NewRows([]string{"Table", "Create Table"}).
 			AddRow("users", "CREATE TABLE users (id bigint)"))
@@ -89,6 +87,26 @@ func TestDumpMySQLReturnsGetTablesError(t *testing.T) {
 	}
 }
 
+func TestDumpMySQLRejectsEmptyTableSet(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(driver, dsn string) (*gorm.DB, error) {
+		if driver != "mysql" || dsn != "dsn" {
+			t.Fatalf("unexpected connection args: %s %s", driver, dsn)
+		}
+		return db, nil
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	err = NewSQLDump("mysql", "dsn", t.TempDir(), "", true).DumpMySQL()
+	if err == nil || !strings.Contains(err.Error(), "no tables to dump") {
+		t.Fatalf("expected empty table set error, got %v", err)
+	}
+}
+
 func TestDumpMySQLReturnsMkdirError(t *testing.T) {
 	db, mock := openMySQLDumpMock(t)
 	restore := replaceDumpClient(t, db)
@@ -110,7 +128,6 @@ func TestDumpMySQLReturnsRawError(t *testing.T) {
 	db, mock := openMySQLDumpMock(t)
 	restore := replaceDumpClient(t, db)
 	defer restore()
-	expectDumpCurrentDatabase(mock, "app")
 	expectDumpCurrentDatabase(mock, "app")
 	rawErr := errors.New("raw failed")
 	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).WillReturnError(rawErr)
@@ -153,7 +170,6 @@ func TestDumpMySQLReturnsWriteError(t *testing.T) {
 	db, mock := openMySQLDumpMock(t)
 	restore := replaceDumpClient(t, db)
 	defer restore()
-	expectDumpCurrentDatabase(mock, "app")
 	expectDumpCurrentDatabase(mock, "app")
 	mock.ExpectQuery(regexp.QuoteMeta("SHOW CREATE TABLE `app`.`users`")).
 		WillReturnRows(sqlmock.NewRows([]string{"Table", "Create Table"}).

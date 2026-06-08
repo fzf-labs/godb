@@ -14,11 +14,16 @@ func ParseCSV(raw string) ([]string, error) {
 	}
 	parts := strings.Split(raw, ",")
 	tables := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
 	for _, part := range parts {
 		table := strings.TrimSpace(part)
 		if table == "" {
 			continue
 		}
+		if _, ok := seen[table]; ok {
+			continue
+		}
+		seen[table] = struct{}{}
 		tables = append(tables, table)
 	}
 	if len(tables) == 0 {

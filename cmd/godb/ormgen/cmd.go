@@ -79,6 +79,7 @@ func snapshotRunOptions() runOptions {
 }
 
 func runWithOptions(opts runOptions) error {
+	opts = opts.normalize()
 	if err := opts.validate(); err != nil {
 		return err
 	}
@@ -112,6 +113,15 @@ func runWithOptions(opts runOptions) error {
 		gen.WithDBNameOpts(gen.DBNameOpts()),
 		gen.WithDBOpts(dbOpts...),
 	))
+}
+
+func (o runOptions) normalize() runOptions {
+	o.db = strings.ToLower(strings.TrimSpace(o.db))
+	o.dsn = strings.TrimSpace(o.dsn)
+	o.targetTables = strings.TrimSpace(o.targetTables)
+	o.outPutPath = strings.TrimSpace(o.outPutPath)
+	o.optionUnderline = strings.TrimSpace(o.optionUnderline)
+	return o
 }
 
 func (o runOptions) validate() error {

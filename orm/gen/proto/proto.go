@@ -3,13 +3,10 @@ package proto
 import (
 	"fmt"
 	"go/token"
-	"os"
-	"path/filepath"
 	"strings"
 	"unicode"
 
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/fzf-labs/godb/orm/gormx"
@@ -79,22 +76,9 @@ type Proto struct {
 
 func (p *Proto) output(filePath, content string) error {
 	if fileutil.Exists(filePath) {
-		return errors.New(fmt.Sprintf("%s exist", filePath))
+		return fmt.Errorf("%s exist", filePath)
 	}
-	fileDir := filepath.Dir(filePath)
-	if err := os.MkdirAll(fileDir, 0775); err != nil {
-		return err
-	}
-	dstFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0775)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-	_, err = dstFile.WriteString(content)
-	if err != nil {
-		return err
-	}
-	return err
+	return fileutil.WriteContentCover(filePath, content)
 }
 
 func (p *Proto) getTableComment(table string) (string, error) {
