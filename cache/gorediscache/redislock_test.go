@@ -167,3 +167,34 @@ func TestLockerLockMethodsRejectNilCallback(t *testing.T) {
 		})
 	}
 }
+
+func TestLockerLockMethodsRejectNilReceiverAndClient(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*Locker) error
+	}{
+		{name: "lock once", run: func(locker *Locker) error {
+			return locker.LockOnce(context.Background(), "lock:key", time.Minute, func() error { return nil })
+		}},
+		{name: "lock retry", run: func(locker *Locker) error {
+			return locker.LockRetry(context.Background(), "lock:key", time.Minute, func() error { return nil })
+		}},
+		{name: "lock custom", run: func(locker *Locker) error {
+			return locker.LockWithCustom(context.Background(), "lock:key", time.Minute, time.Millisecond, 1, func() error { return nil })
+		}},
+		{name: "lock once not release", run: func(locker *Locker) error {
+			return locker.LockOnceNotRelease(context.Background(), "lock:key", time.Minute, func() error { return nil })
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"/nil receiver", func(t *testing.T) {
+			var locker *Locker
+			assert.ErrorContains(t, tt.run(locker), "redis locker cannot be nil")
+		})
+		t.Run(tt.name+"/nil client", func(t *testing.T) {
+			locker := &Locker{}
+			assert.ErrorContains(t, tt.run(locker), "redis locker cannot be nil")
+		})
+	}
+}

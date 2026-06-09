@@ -23,6 +23,9 @@ type Cache struct {
 }
 
 var delayedDeleteAfterFunc = time.AfterFunc
+var errNilFetchCallback = errors.New("fetch callback cannot be nil")
+var errNilFetchBatchCallback = errors.New("fetch batch callback cannot be nil")
+var errNilFetchHashCallback = errors.New("fetch hash callback cannot be nil")
 
 // NewGoRedisDBCache 创建 go-redis 数据库查询缓存。
 func NewGoRedisDBCache(client *redis.Client, opts ...CacheOption) *Cache {
@@ -90,6 +93,9 @@ func (r *Cache) ensureClient() error {
 
 // Fetch 查询单个缓存值，未命中时调用回源函数并写入缓存。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
+	if fn == nil {
+		return "", errNilFetchCallback
+	}
 	if err := r.ensureClient(); err != nil {
 		return "", err
 	}
@@ -118,6 +124,9 @@ func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error)
 
 // FetchBatch 批量查询缓存值，未命中时按缺失 key 回源并写入缓存。
 func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []string) (map[string]string, error), expire time.Duration) (map[string]string, error) {
+	if fn == nil {
+		return nil, errNilFetchBatchCallback
+	}
 	keys = uniqueStrings(keys)
 	if len(keys) == 0 {
 		return map[string]string{}, nil
@@ -190,6 +199,9 @@ func uniqueStrings(values []string) []string {
 
 // FetchHash 查询哈希字段缓存，未命中时回源并设置 hash key 过期时间。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
+	if fn == nil {
+		return "", errNilFetchHashCallback
+	}
 	if err := r.ensureClient(); err != nil {
 		return "", err
 	}

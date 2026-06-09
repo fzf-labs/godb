@@ -14,6 +14,10 @@ import (
 	"github.com/fzf-labs/godb/orm/dbcache"
 )
 
+var errNilFetchCallback = errors.New("fetch callback cannot be nil")
+var errNilFetchBatchCallback = errors.New("fetch batch callback cannot be nil")
+var errNilFetchHashCallback = errors.New("fetch hash callback cannot be nil")
+
 // Cache 是基于 RocksCache 的数据库查询缓存实现。
 type Cache struct {
 	name             string // 缓存名称
@@ -98,6 +102,9 @@ func (r *Cache) ensureRedisClient() error {
 
 // Fetch 查询单个缓存值，未命中时回源加载。
 func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error), expire time.Duration) (string, error) {
+	if fn == nil {
+		return "", errNilFetchCallback
+	}
 	if err := r.ensureRocksCacheClient(); err != nil {
 		return "", err
 	}
@@ -111,6 +118,9 @@ func (r *Cache) Fetch(ctx context.Context, key string, fn func() (string, error)
 
 // FetchBatch 批量查询缓存值，未命中时按批次回源加载。
 func (r *Cache) FetchBatch(ctx context.Context, keys []string, fn func(miss []string) (map[string]string, error), expire time.Duration) (map[string]string, error) {
+	if fn == nil {
+		return nil, errNilFetchBatchCallback
+	}
 	resp := make(map[string]string)
 	// 去重
 	keys = unique(keys)
@@ -198,6 +208,9 @@ func (r *Cache) fetchBatchItem(ctx context.Context, keys []string, fn func(miss 
 
 // FetchHash 查询哈希字段缓存，未命中时回源加载。
 func (r *Cache) FetchHash(ctx context.Context, key string, field string, fn func() (string, error), expire time.Duration) (string, error) {
+	if fn == nil {
+		return "", errNilFetchHashCallback
+	}
 	if err := r.ensureRedisClient(); err != nil {
 		return "", err
 	}

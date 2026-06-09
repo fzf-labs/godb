@@ -136,6 +136,23 @@ func TestGoRedisCacheRejectsNilClient(t *testing.T) {
 	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "goredisdbcache client cannot be nil")
 }
 
+func TestGoRedisCacheRejectsNilFetchCallbacks(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	cache := NewGoRedisDBCache(rdb)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch callback cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch batch callback cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch hash callback cannot be nil")
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestGoRedisCacheFetchHit(t *testing.T) {
 	rdb, mock := redismock.NewClientMock()
 	cache := NewGoRedisDBCache(rdb)

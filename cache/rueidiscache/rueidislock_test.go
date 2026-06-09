@@ -108,6 +108,39 @@ func TestLockerMethodsRejectNilCallback(t *testing.T) {
 	}
 }
 
+func TestLockerMethodsRejectNilReceiver(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*Locker) error
+	}{
+		{
+			name: "once",
+			run: func(locker *Locker) error {
+				return locker.LockOnce(context.Background(), "lock-key", time.Second, func() error { return nil })
+			},
+		},
+		{
+			name: "retry",
+			run: func(locker *Locker) error {
+				return locker.LockRetry(context.Background(), "lock-key", time.Second, func() error { return nil })
+			},
+		},
+		{
+			name: "not release",
+			run: func(locker *Locker) error {
+				return locker.LockOnceNotRelease(context.Background(), "lock-key", time.Second, func() error { return nil })
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var locker *Locker
+			assert.ErrorContains(t, tt.run(locker), "rueidis locker cannot be nil")
+		})
+	}
+}
+
 func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
 	server, err := miniredis.Run()
 	require.NoError(t, err)

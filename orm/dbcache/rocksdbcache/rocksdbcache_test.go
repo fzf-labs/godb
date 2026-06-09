@@ -165,6 +165,22 @@ func TestRocksDBCacheRejectsNilClients(t *testing.T) {
 	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "rocksdbcache redis client cannot be nil")
 }
 
+func TestRocksDBCacheRejectsNilFetchCallbacks(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	cache := NewRocksDBCache(rdb, rocksCacheClient)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch callback cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch batch callback cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch hash callback cannot be nil")
+}
+
 func TestUniquePreservesOrder(t *testing.T) {
 	assert.Nil(t, unique(nil))
 	assert.Equal(t, []string{"a", "b", "c"}, unique([]string{"a", "b", "a", "c", "b"}))

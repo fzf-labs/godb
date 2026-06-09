@@ -11,6 +11,7 @@ import (
 
 var errNilLockCallback = errors.New("lock callback cannot be nil")
 var errNilLockClient = errors.New("rueidis client cannot be nil")
+var errNilLocker = errors.New("rueidis locker cannot be nil")
 
 // NewLocker 创建基于 rueidislock 的分布式锁封装。
 func NewLocker(option rueidislock.LockerOption) *Locker {
@@ -38,6 +39,13 @@ type Locker struct {
 	option rueidislock.LockerOption
 }
 
+func (l *Locker) ensureLocker() error {
+	if l == nil {
+		return errNilLocker
+	}
+	return nil
+}
+
 // optionWithTTL 返回带有指定 ttl 的配置副本。
 // ttl 小于等于 0 时保留原 KeyValidity，用于沿用默认锁有效期。
 func (l *Locker) optionWithTTL(ttl time.Duration) rueidislock.LockerOption {
@@ -53,6 +61,9 @@ func (l *Locker) optionWithTTL(ttl time.Duration) rueidislock.LockerOption {
 func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	if fn == nil {
 		return errNilLockCallback
+	}
+	if err := l.ensureLocker(); err != nil {
+		return err
 	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
@@ -73,6 +84,9 @@ func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 	if fn == nil {
 		return errNilLockCallback
 	}
+	if err := l.ensureLocker(); err != nil {
+		return err
+	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {
 		return err
@@ -90,6 +104,9 @@ func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 func (l *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	if fn == nil {
 		return errNilLockCallback
+	}
+	if err := l.ensureLocker(); err != nil {
+		return err
 	}
 	locker, err := rueidislock.NewLocker(l.optionWithTTL(ttl))
 	if err != nil {

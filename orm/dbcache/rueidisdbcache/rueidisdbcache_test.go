@@ -158,6 +158,21 @@ func TestRueidisCacheRejectsNilClient(t *testing.T) {
 	assert.ErrorContains(t, cache.DelHash(ctx, "key", "field"), "rueidisdbcache client cannot be nil")
 }
 
+func TestRueidisCacheRejectsNilFetchCallbacks(t *testing.T) {
+	client := requireRueidis(t)
+	cache := NewRueidisDBCache(client)
+	ctx := context.Background()
+
+	_, err := cache.Fetch(ctx, "key", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch callback cannot be nil")
+
+	_, err = cache.FetchBatch(ctx, []string{"a"}, nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch batch callback cannot be nil")
+
+	_, err = cache.FetchHash(ctx, "key", "field", nil, time.Minute)
+	assert.ErrorContains(t, err, "fetch hash callback cannot be nil")
+}
+
 func TestRueidisCacheDelBatchEmptyIsNoop(t *testing.T) {
 	cache := NewRueidisDBCache(nil)
 

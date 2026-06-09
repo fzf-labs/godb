@@ -15,6 +15,7 @@ import (
 var NotObtained = errors.New("lock not obtained")
 
 var errNilLockCallback = errors.New("lock callback cannot be nil")
+var errNilLocker = errors.New("redis locker cannot be nil")
 
 func classifyObtainErr(err error) error {
 	if err == nil {
@@ -38,11 +39,21 @@ type Locker struct {
 	locker *redislock.Client
 }
 
+func (r *Locker) ensureLocker() error {
+	if r == nil || r.locker == nil {
+		return errNilLocker
+	}
+	return nil
+}
+
 // LockOnce 自动锁-一次
 // 自动加锁与释放
 func (r *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	if fn == nil {
 		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
 	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
@@ -59,6 +70,9 @@ func (r *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn
 func (r *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	if fn == nil {
 		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
 	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(100*time.Millisecond), 3),
@@ -78,6 +92,9 @@ func (r *Locker) LockWithCustom(ctx context.Context, key string, ttl, retryDurat
 	if fn == nil {
 		return errNilLockCallback
 	}
+	if err := r.ensureLocker(); err != nil {
+		return err
+	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(retryDuration), retryNum),
 	})
@@ -94,6 +111,9 @@ func (r *Locker) LockWithCustom(ctx context.Context, key string, ttl, retryDurat
 func (r *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
 	if fn == nil {
 		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
 	}
 	_, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
