@@ -88,6 +88,53 @@ func TestBuildPgDumpArgs_QuotesQualifiedAndMixedCaseTablePattern(t *testing.T) {
 	}
 }
 
+func TestValidatePgDumpTablePattern(t *testing.T) {
+	tests := []struct {
+		name    string
+		table   string
+		wantErr bool
+	}{
+		{name: "simple", table: "users"},
+		{name: "qualified", table: "public.users"},
+		{name: "mixed case", table: "Public.Users"},
+		{name: "wildcard", table: "public.*", wantErr: true},
+		{name: "space", table: "bad name", wantErr: true},
+		{name: "semicolon", table: "users;drop", wantErr: true},
+		{name: "empty segment", table: "public..users", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePgDumpTablePattern(tt.table)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error for %q", tt.table)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for %q: %v", tt.table, err)
+			}
+		})
+	}
+}
+
+func TestDumpPostgresRejectsUnsafeTablePatternsBeforePgDump(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		t.Fatal("expected table validation to fail before opening the database")
+		return nil, nil
+	}
+	t.Cleanup(func() { newSimpleGormClient = oldNewSimple })
+
+	t.Setenv("PATH", "")
+	dump := NewSQLDump("postgres", "host=127.0.0.1 port=5432 user=postgres password=secret dbname=app sslmode=disable", t.TempDir(), "public.*", false)
+	err := dump.DumpPostgres()
+	if err == nil || !strings.Contains(err.Error(), "invalid postgres table pattern") {
+		t.Fatalf("expected invalid table pattern error, got %v", err)
+	}
+}
+
 func TestShouldSkipLine(t *testing.T) {
 	dump := &SQLDump{}
 	tests := []struct {
@@ -140,6 +187,21 @@ SELECT pg_catalog.set_config('search_path', '', false);
 	}
 	if !strings.Contains(got, "CREATE TABLE public.users") {
 		t.Fatalf("expected create table to remain:\n%s", got)
+	}
+}
+
+func TestPostgresRemovePreservesFinalStatementWithoutTrailingNewline(t *testing.T) {
+	dump := &SQLDump{}
+	input := `CREATE TABLE public.users (
+    id bigint NOT NULL
+);
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);`
+
+	got := dump.postgresRemove(input)
+	want := "ALTER TABLE ONLY public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+	if !strings.Contains(got, want) {
+		t.Fatalf("expected final statement %q to remain in:\n%s", want, got)
 	}
 }
 
@@ -308,15 +370,15 @@ SQL
 	}
 }
 
-func TestDumpPostgresRejectsUnsafeOutputFileName(t *testing.T) {
+func TestDumpPostgresRejectsUnsafeTableIdentifierBeforeDump(t *testing.T) {
 	installPgDump(t, "#!/bin/sh\nexit 0\n")
 	restore := replacePostgresDumpClient(t)
 	defer restore()
 
 	dsn := "host=127.0.0.1 port=5432 user=pg password=secret dbname=app sslmode=disable"
 	err := NewSQLDump("postgres", dsn, t.TempDir(), "../users", true).DumpPostgres()
-	if err == nil || !strings.Contains(err.Error(), "unsafe output file name") {
-		t.Fatalf("expected unsafe output file name error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "invalid postgres table pattern") {
+		t.Fatalf("expected invalid table pattern error, got %v", err)
 	}
 }
 

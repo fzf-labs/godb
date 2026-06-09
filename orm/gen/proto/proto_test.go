@@ -182,6 +182,28 @@ func TestGenerationPBRejectsEmptyTable(t *testing.T) {
 	}
 }
 
+func TestGenerationPBRejectsInvalidPackageNames(t *testing.T) {
+	tests := []struct {
+		name       string
+		packageStr string
+		goPackage  string
+		wantErr    string
+	}{
+		{name: "proto package", packageStr: "api..v1", goPackage: "api/demo/v1;v1", wantErr: "invalid proto package"},
+		{name: "go package alias", packageStr: "api.demo.v1", goPackage: "api/demo/v1;1v", wantErr: "invalid go package alias"},
+		{name: "go package path", packageStr: "api.demo.v1", goPackage: "api demo/v1;v1", wantErr: "invalid go package"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := GenerationPB(nil, t.TempDir(), tt.packageStr, tt.goPackage, "proto_examples", map[string]string{}, map[string]string{})
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("expected %q error, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
 func TestProtoNameHelpers(t *testing.T) {
 	p := newProtoForTest(t)
 	if got := p.upperName("api_client"); got != "APIClient" {

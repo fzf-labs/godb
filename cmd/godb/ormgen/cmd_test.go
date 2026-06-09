@@ -95,6 +95,25 @@ func TestRunWithOptionsRejectsMissingRequiredFieldsBeforeConnecting(t *testing.T
 	}
 }
 
+func TestRunWithOptionsRejectsUnsafeTableNamesBeforeConnecting(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	defer func() { newSimpleGormClient = oldNewSimple }()
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		t.Fatal("expected table validation to fail before connecting")
+		return nil, nil
+	}
+
+	err := runWithOptions(runOptions{
+		db:           "postgres",
+		dsn:          "dsn",
+		outPutPath:   t.TempDir(),
+		targetTables: "users,bad name",
+	})
+	if err == nil || !strings.Contains(err.Error(), "whitespace or control characters") {
+		t.Fatalf("expected unsafe table name error, got %v", err)
+	}
+}
+
 func TestRunWithOptionsRejectsNilDBClient(t *testing.T) {
 	oldNewSimple := newSimpleGormClient
 	defer func() { newSimpleGormClient = oldNewSimple }()

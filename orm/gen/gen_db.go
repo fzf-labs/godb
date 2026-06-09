@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/iancoleman/strcase"
 	"golang.org/x/sync/errgroup"
@@ -262,10 +263,10 @@ func normalizeTableNames(tables []string) ([]string, error) {
 	normalized := make([]string, 0, len(tables))
 	seen := make(map[string]struct{}, len(tables))
 	for _, table := range tables {
-		table = strings.TrimSpace(table)
-		if table == "" {
-			return nil, fmt.Errorf("table name cannot be empty")
+		if err := validateTableName(table); err != nil {
+			return nil, err
 		}
+		table = strings.TrimSpace(table)
 		if _, ok := seen[table]; ok {
 			continue
 		}
@@ -273,6 +274,28 @@ func normalizeTableNames(tables []string) ([]string, error) {
 		normalized = append(normalized, table)
 	}
 	return normalized, nil
+}
+
+// ValidateTableNames 检查表名列表是否包含空白或控制字符。
+func ValidateTableNames(tables []string) error {
+	for _, table := range tables {
+		if err := validateTableName(table); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateTableName(table string) error {
+	if strings.TrimSpace(table) == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+	if strings.ContainsFunc(table, func(r rune) bool {
+		return unicode.IsSpace(r) || unicode.IsControl(r)
+	}) {
+		return fmt.Errorf("table name cannot contain whitespace or control characters: %q", table)
+	}
+	return nil
 }
 
 // GetDBName 获取数据库名

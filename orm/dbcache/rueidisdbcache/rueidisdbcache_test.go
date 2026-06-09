@@ -126,6 +126,14 @@ func TestRueidisCacheOptionsKeyAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestRueidisCacheWithNameTrimsAndKeepsDefaultForBlank(t *testing.T) {
+	trimmed := NewRueidisDBCache(nil, WithName("  custom  "))
+	assert.Equal(t, "custom:a", trimmed.Key("a"))
+
+	defaulted := NewRueidisDBCache(nil, WithName("   "))
+	assert.Equal(t, "GormCache:a", defaulted.Key("a"))
+}
+
 func TestRueidisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), NewRueidisDBCache(nil, WithTTL(0)).TTL())
 	assert.Equal(t, time.Duration(0), NewRueidisDBCache(nil, WithTTL(-time.Minute)).TTL())

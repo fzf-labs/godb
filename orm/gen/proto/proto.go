@@ -20,6 +20,12 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 	if strings.TrimSpace(table) == "" {
 		return fmt.Errorf("table name cannot be empty")
 	}
+	if err := ValidateProtoPackageStr(packageStr); err != nil {
+		return err
+	}
+	if err := ValidateGoPackageStr(goPackageStr); err != nil {
+		return err
+	}
 	var f string
 	p := &Proto{
 		gorm:                 db,
@@ -60,6 +66,41 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 		return err
 	}
 	return p.output(outputFile, f)
+}
+
+// ValidateProtoPackageStr 检查 proto package 是否由合法标识符组成。
+func ValidateProtoPackageStr(packageStr string) error {
+	packageStr = strings.TrimSpace(packageStr)
+	if packageStr == "" {
+		return fmt.Errorf("proto package cannot be empty")
+	}
+	parts := strings.Split(packageStr, ".")
+	for _, part := range parts {
+		if !token.IsIdentifier(part) {
+			return fmt.Errorf("invalid proto package: %q", packageStr)
+		}
+	}
+	return nil
+}
+
+// ValidateGoPackageStr 检查 go_package 是否包含合法的导入路径和可选别名。
+func ValidateGoPackageStr(goPackageStr string) error {
+	goPackageStr = strings.TrimSpace(goPackageStr)
+	if goPackageStr == "" {
+		return fmt.Errorf("go package cannot be empty")
+	}
+	importPath, alias, found := strings.Cut(goPackageStr, ";")
+	importPath = strings.TrimSpace(importPath)
+	if importPath == "" || strings.ContainsAny(importPath, " \t\r\n;") {
+		return fmt.Errorf("invalid go package: %q", goPackageStr)
+	}
+	if found {
+		alias = strings.TrimSpace(alias)
+		if !token.IsIdentifier(alias) {
+			return fmt.Errorf("invalid go package alias: %q", goPackageStr)
+		}
+	}
+	return nil
 }
 
 // Proto 保存单表 proto 文件生成过程中的模板上下文。

@@ -9,6 +9,7 @@ import (
 
 	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/gen"
+	genproto "github.com/fzf-labs/godb/orm/gen/proto"
 	"github.com/fzf-labs/godb/orm/gormx"
 )
 
@@ -126,6 +127,12 @@ func (o runOptions) validate() error {
 	}
 	if strings.TrimSpace(o.pbGoPackage) == "" {
 		return fmt.Errorf("pb go package cannot be empty")
+	}
+	if err := genproto.ValidateProtoPackageStr(o.pbPackage); err != nil {
+		return err
+	}
+	if err := genproto.ValidateGoPackageStr(o.pbGoPackage); err != nil {
+		return err
 	}
 	return nil
 }

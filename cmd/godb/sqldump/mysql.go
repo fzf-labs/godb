@@ -20,6 +20,11 @@ func (s *SQLDump) DumpMySQL() error {
 	if err != nil {
 		return err
 	}
+	if len(tables) > 0 {
+		if err := validateMySQLTablePatterns(tables); err != nil {
+			return err
+		}
+	}
 	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
 		return err
@@ -36,6 +41,9 @@ func (s *SQLDump) DumpMySQL() error {
 	}
 	if len(tables) == 0 {
 		return fmt.Errorf("no tables to dump")
+	}
+	if err := validateMySQLTablePatterns(tables); err != nil {
+		return err
 	}
 	currentDatabase := dbClient.Migrator().CurrentDatabase()
 	outPath := outputDir(s.outPutPath, currentDatabase)
@@ -73,4 +81,23 @@ func buildMySQLShowCreateTableSQL(dbName, table string) string {
 
 func quoteMySQLIdentifier(identifier string) string {
 	return "`" + strings.ReplaceAll(identifier, "`", "``") + "`"
+}
+
+func validateMySQLTablePatterns(tables []string) error {
+	for _, table := range tables {
+		if err := validateMySQLTablePattern(table); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateMySQLTablePattern(table string) error {
+	parts := strings.Split(table, ".")
+	for _, part := range parts {
+		if !pgDumpTableIdentifierPattern.MatchString(part) {
+			return fmt.Errorf("invalid mysql table pattern: %q", table)
+		}
+	}
+	return nil
 }

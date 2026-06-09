@@ -40,9 +40,25 @@ func SliRemove(collection, element []string) []string {
 	return result
 }
 
+func isNilLikeValue(any any) bool {
+	if any == nil {
+		return true
+	}
+	rv := reflect.ValueOf(any)
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
 // ConvToString 任意类型转字符串
 func ConvToString(any any) string {
-	if any == nil {
+	if isNilLikeValue(any) {
 		return ""
 	}
 	switch value := any.(type) {

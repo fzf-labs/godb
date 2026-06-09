@@ -46,13 +46,29 @@ func BuildKey(parts ...any) string {
 	return strings.Join(formatted, ":")
 }
 
+func isNilLikeValue(any any) bool {
+	if any == nil {
+		return true
+	}
+	rv := reflect.ValueOf(any)
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
 // KeyFormat 将任意类型转换为字符串并转义为安全的 key 分段。
 func KeyFormat(any any) string {
 	return EscapeKeyPart(keyFormatRaw(any))
 }
 
 func keyFormatRaw(any any) string {
-	if any == nil {
+	if isNilLikeValue(any) {
 		return ""
 	}
 	switch value := any.(type) {

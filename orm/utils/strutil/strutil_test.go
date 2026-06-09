@@ -1,10 +1,17 @@
 package strutil
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 )
+
+type typedNilStringer struct{}
+
+func (*typedNilStringer) String() string {
+	return "typed nil"
+}
 
 func TestStrSliFind(t *testing.T) {
 	if !StrSliFind([]string{"a", "b"}, "b") {
@@ -95,5 +102,12 @@ func TestConvToStringUsesSprintWhenJSONFails(t *testing.T) {
 	}{Ch: ch})
 	if !strings.Contains(got, "0x") {
 		t.Fatalf("expected fmt fallback for unsupported json value, got %q", got)
+	}
+}
+
+func TestConvToStringReturnsEmptyForTypedNilInterface(t *testing.T) {
+	var stringer fmt.Stringer = (*typedNilStringer)(nil)
+	if got := ConvToString(stringer); got != "" {
+		t.Fatalf("expected empty string for typed nil interface, got %q", got)
 	}
 }

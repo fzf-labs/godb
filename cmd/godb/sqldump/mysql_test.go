@@ -22,6 +22,51 @@ func TestBuildMySQLShowCreateTableSQL_QuotesIdentifiers(t *testing.T) {
 	}
 }
 
+func TestValidateMySQLTablePattern(t *testing.T) {
+	tests := []struct {
+		name    string
+		table   string
+		wantErr bool
+	}{
+		{name: "simple", table: "users"},
+		{name: "qualified", table: "app.users"},
+		{name: "mixed case", table: "App.Users"},
+		{name: "wildcard", table: "app.*", wantErr: true},
+		{name: "space", table: "bad name", wantErr: true},
+		{name: "semicolon", table: "users;drop", wantErr: true},
+		{name: "empty segment", table: "app..users", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateMySQLTablePattern(tt.table)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error for %q", tt.table)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for %q: %v", tt.table, err)
+			}
+		})
+	}
+}
+
+func TestDumpMySQLRejectsUnsafeTableIdentifiersBeforeShowCreate(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		t.Fatal("expected table validation to fail before opening the database")
+		return nil, nil
+	}
+	t.Cleanup(func() { newSimpleGormClient = oldNewSimple })
+
+	err := NewSQLDump("mysql", "dsn", t.TempDir(), "app.*", true).DumpMySQL()
+	if err == nil || !strings.Contains(err.Error(), "invalid mysql table pattern") {
+		t.Fatalf("expected invalid table pattern error, got %v", err)
+	}
+}
+
 func TestDumpMySQLReturnsDriverError(t *testing.T) {
 	err := NewSQLDump("sqlite", "ignored", t.TempDir(), "users", false).DumpMySQL()
 	if err == nil {
@@ -163,18 +208,6 @@ func TestDumpMySQLSkipsExistingFile(t *testing.T) {
 	}
 	if string(content) != "keep" {
 		t.Fatalf("expected existing file to be preserved, got %s", string(content))
-	}
-}
-
-func TestDumpMySQLRejectsUnsafeOutputFileName(t *testing.T) {
-	db, mock := openMySQLDumpMock(t)
-	restore := replaceDumpClient(t, db)
-	defer restore()
-	expectDumpCurrentDatabase(mock, "app")
-
-	err := NewSQLDump("mysql", "dsn", t.TempDir(), "../users", true).DumpMySQL()
-	if err == nil || !strings.Contains(err.Error(), "unsafe output file name") {
-		t.Fatalf("expected unsafe output file name error, got %v", err)
 	}
 }
 

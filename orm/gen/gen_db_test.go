@@ -154,10 +154,19 @@ func TestGenerationDBDoRejectsEmptyTableSet(t *testing.T) {
 }
 
 func TestNormalizeTableNamesDeduplicatesWhilePreservingOrder(t *testing.T) {
-	got, err := normalizeTableNames([]string{" users ", "roles", "users", "admin", "roles"})
+	got, err := normalizeTableNames([]string{"users", "roles", "users", "admin", "roles"})
 	require.NoError(t, err)
 	if !reflect.DeepEqual(got, []string{"users", "roles", "admin"}) {
 		t.Fatalf("unexpected normalized tables: %#v", got)
+	}
+}
+
+func TestNormalizeTableNamesRejectsWhitespaceAndControlCharacters(t *testing.T) {
+	tests := []string{" users ", "bad name", "bad\tname", "bad\nname"}
+	for _, table := range tests {
+		_, err := normalizeTableNames([]string{table})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "whitespace or control characters")
 	}
 }
 

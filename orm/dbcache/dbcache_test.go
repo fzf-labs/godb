@@ -1,9 +1,16 @@
 package dbcache
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
+
+type typedNilStringer struct{}
+
+func (*typedNilStringer) String() string {
+	return "typed nil"
+}
 
 func TestKeyFormat(t *testing.T) {
 	nt := time.Now()
@@ -246,5 +253,12 @@ func TestKeyFormatReflectBranches(t *testing.T) {
 
 	if got := KeyFormat(make(chan int)); got == "" {
 		t.Fatal("json marshal fallback should return fmt string for unsupported values")
+	}
+}
+
+func TestKeyFormatReturnsEmptyForTypedNilInterface(t *testing.T) {
+	var stringer fmt.Stringer = (*typedNilStringer)(nil)
+	if got := KeyFormat(stringer); got != "" {
+		t.Fatalf("expected empty string for typed nil interface, got %q", got)
 	}
 }

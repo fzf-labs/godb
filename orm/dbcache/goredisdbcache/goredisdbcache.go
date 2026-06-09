@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -48,6 +49,10 @@ type CacheOption func(cache *Cache)
 // WithName 设置缓存 key 的命名前缀。
 func WithName(name string) CacheOption {
 	return func(r *Cache) {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return
+		}
 		r.name = name
 	}
 }

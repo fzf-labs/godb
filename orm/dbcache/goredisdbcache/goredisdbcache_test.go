@@ -102,6 +102,15 @@ func TestGoRedisCacheOptionsAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestGoRedisCacheWithNameTrimsAndKeepsDefaultForBlank(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	trimmed := NewGoRedisDBCache(rdb, WithName("  custom  "))
+	assert.Equal(t, "custom:a", trimmed.Key("a"))
+
+	defaulted := NewGoRedisDBCache(rdb, WithName("   "))
+	assert.Equal(t, "GormCache:a", defaulted.Key("a"))
+}
+
 func TestGoRedisCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
 

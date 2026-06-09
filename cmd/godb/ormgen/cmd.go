@@ -100,6 +100,9 @@ func runWithOptions(opts runOptions) error {
 	if err != nil {
 		return err
 	}
+	if err := gen.ValidateTableNames(tables); err != nil {
+		return err
+	}
 	dbClient, err := newSimpleGormClient(opts.db, opts.dsn)
 	if err != nil {
 		return err

@@ -133,6 +133,16 @@ func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {
 	assert.GreaterOrEqual(t, ttl, 54*time.Second)
 }
 
+func TestRocksDBCacheWithNameTrimsAndKeepsDefaultForBlank(t *testing.T) {
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	trimmed := NewRocksDBCache(rdb, rocksCacheClient, WithName("  custom  "))
+	assert.Equal(t, "custom:a", trimmed.Key("a"))
+
+	defaulted := NewRocksDBCache(rdb, rocksCacheClient, WithName("   "))
+	assert.Equal(t, "GormCache:a", defaulted.Key("a"))
+}
+
 func TestRocksDBCacheTTLReturnsZeroForNonPositiveTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), NewRocksDBCache(nil, nil, WithTTL(0)).TTL())
 	assert.Equal(t, time.Duration(0), NewRocksDBCache(nil, nil, WithTTL(-time.Minute)).TTL())

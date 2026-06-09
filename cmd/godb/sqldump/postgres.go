@@ -26,14 +26,19 @@ var (
 
 // DumpPostgres 导出创建语句
 func (s *SQLDump) DumpPostgres() error {
-	// 查找命令的可执行文件
-	_, err := exec.LookPath("pg_dump")
-	if err != nil {
-		return fmt.Errorf("command pg_dump not found, please install: %w", err)
-	}
 	tables, err := tablelist.ParseCSV(s.targetTables)
 	if err != nil {
 		return err
+	}
+	if len(tables) > 0 {
+		if err := validatePgDumpTablePatterns(tables); err != nil {
+			return err
+		}
+	}
+	// 查找命令的可执行文件
+	_, err = exec.LookPath("pg_dump")
+	if err != nil {
+		return fmt.Errorf("command pg_dump not found, please install: %w", err)
 	}
 	dbClient, err := newSimpleGormClient(s.db, s.dsn)
 	if err != nil {
@@ -51,6 +56,9 @@ func (s *SQLDump) DumpPostgres() error {
 	}
 	if len(tables) == 0 {
 		return fmt.Errorf("no tables to dump")
+	}
+	if err := validatePgDumpTablePatterns(tables); err != nil {
+		return err
 	}
 	dsnParse, err := s.postgresDsnParse()
 	if err != nil {
@@ -150,6 +158,27 @@ func buildPgDumpArgs(dsnParse *PostgresDsn, table string) []string {
 		"-s",
 		"-t", quotePgDumpTablePattern(table),
 	}
+}
+
+var pgDumpTableIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+
+func validatePgDumpTablePatterns(tables []string) error {
+	for _, table := range tables {
+		if err := validatePgDumpTablePattern(table); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validatePgDumpTablePattern(table string) error {
+	parts := strings.Split(table, ".")
+	for _, part := range parts {
+		if !pgDumpTableIdentifierPattern.MatchString(part) {
+			return fmt.Errorf("invalid postgres table pattern: %q", table)
+		}
+	}
+	return nil
 }
 
 func quotePgDumpTablePattern(table string) string {

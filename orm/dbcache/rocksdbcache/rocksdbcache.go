@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/dtm-labs/rockscache"
@@ -50,6 +51,10 @@ type CacheOption func(cache *Cache)
 // WithName 设置缓存名称
 func WithName(name string) CacheOption {
 	return func(r *Cache) {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return
+		}
 		r.name = name
 	}
 }

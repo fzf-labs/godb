@@ -93,6 +93,33 @@ func TestRunWithOptionsRejectsMissingRequiredFieldsBeforeConnecting(t *testing.T
 	}
 }
 
+func TestRunWithOptionsRejectsInvalidPackageNamesBeforeConnecting(t *testing.T) {
+	oldNewSimple := newSimpleGormClient
+	defer func() { newSimpleGormClient = oldNewSimple }()
+	newSimpleGormClient = func(string, string) (*gorm.DB, error) {
+		t.Fatal("expected package validation to fail before connecting")
+		return nil, nil
+	}
+
+	tests := []struct {
+		name string
+		opts runOptions
+		want string
+	}{
+		{name: "proto package", opts: runOptions{db: "postgres", dsn: "dsn", outPutPath: t.TempDir(), targetTables: "users", pbPackage: "api..v1", pbGoPackage: "example.com/pb;pb"}, want: "invalid proto package"},
+		{name: "go package alias", opts: runOptions{db: "postgres", dsn: "dsn", outPutPath: t.TempDir(), targetTables: "users", pbPackage: "api.demo.v1", pbGoPackage: "example.com/pb;1bad"}, want: "invalid go package alias"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := runWithOptions(tt.opts)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("expected %q error, got %v", tt.want, err)
+			}
+		})
+	}
+}
+
 func TestRunWithOptionsRejectsNilDBClient(t *testing.T) {
 	oldNewSimple := newSimpleGormClient
 	defer func() { newSimpleGormClient = oldNewSimple }()
