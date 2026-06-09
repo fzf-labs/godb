@@ -149,3 +149,55 @@ func TestFormatSQLValueFromAnyErrors(t *testing.T) {
 		t.Fatal("expected unsupported struct error")
 	}
 }
+
+func TestFormatBatchIDValueCoversSupportedKinds(t *testing.T) {
+	id := int64(42)
+	tests := []struct {
+		name  string
+		value any
+		want  string
+	}{
+		{name: "int", value: int(1), want: "1"},
+		{name: "int pointer", value: &id, want: "42"},
+		{name: "uint", value: uint(2), want: "2"},
+		{name: "string", value: "abc'123", want: "'abc''123'"},
+		{name: "bool fallback", value: true, want: "true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatBatchIDValue(reflect.ValueOf(tt.value), testQuote)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("got %q want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatBatchIDValueRejectsInvalidIDs(t *testing.T) {
+	var nilID *int64
+	tests := []struct {
+		name  string
+		value reflect.Value
+		want  string
+	}{
+		{name: "invalid", value: reflect.Value{}, want: "id field is invalid"},
+		{name: "nil pointer", value: reflect.ValueOf(nilID), want: "empty id value"},
+		{name: "zero int", value: reflect.ValueOf(0), want: "id value must be greater than 0"},
+		{name: "negative int", value: reflect.ValueOf(-1), want: "id value must be greater than 0"},
+		{name: "zero uint", value: reflect.ValueOf(uint(0)), want: "id value must be greater than 0"},
+		{name: "blank string", value: reflect.ValueOf(" \t\n"), want: "empty id value"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := formatBatchIDValue(tt.value, testQuote)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("expected %q error, got %v", tt.want, err)
+			}
+		})
+	}
+}

@@ -170,6 +170,29 @@ func TestNormalizeTableNamesRejectsWhitespaceAndControlCharacters(t *testing.T) 
 	}
 }
 
+func TestValidateTableNames(t *testing.T) {
+	require.NoError(t, ValidateTableNames(nil))
+	require.NoError(t, ValidateTableNames([]string{"users", "admin_roles"}))
+
+	tests := []struct {
+		name   string
+		tables []string
+		want   string
+	}{
+		{name: "empty", tables: []string{""}, want: "table name cannot be empty"},
+		{name: "blank", tables: []string{" \t\n"}, want: "table name cannot be empty"},
+		{name: "space", tables: []string{"bad name"}, want: "whitespace or control characters"},
+		{name: "control", tables: []string{"bad\nname"}, want: "whitespace or control characters"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateTableNames(tt.tables)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.want)
+		})
+	}
+}
+
 func TestGenerationDBDoRejectsMissingRequiredConfig(t *testing.T) {
 	t.Run("nil db", func(t *testing.T) {
 		err := NewGenerationDB(nil, t.TempDir()).Do()
@@ -215,6 +238,30 @@ func TestGetDBNameUsesEmbeddedNamingStrategyPrefix(t *testing.T) {
 
 	if got := GetDBName(db, func(*gorm.DB) string { return "app" }); got != "tenant_app" {
 		t.Fatalf("unexpected db name: %s", got)
+	}
+}
+
+func TestNamingStrategyTablePrefixEdgeCases(t *testing.T) {
+	var nilStrategy *schema.NamingStrategy
+
+	tests := []struct {
+		name     string
+		strategy any
+		want     string
+	}{
+		{name: "nil", strategy: nil, want: ""},
+		{name: "nil pointer", strategy: nilStrategy, want: ""},
+		{name: "non struct", strategy: "tenant_", want: ""},
+		{name: "direct strategy", strategy: schema.NamingStrategy{TablePrefix: "tenant_"}, want: "tenant_"},
+		{name: "strategy pointer", strategy: &schema.NamingStrategy{TablePrefix: "app_"}, want: "app_"},
+		{name: "embedded strategy", strategy: prefixedNamingStrategy{NamingStrategy: schema.NamingStrategy{TablePrefix: "org_"}}, want: "org_"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := namingStrategyTablePrefix(tt.strategy); got != tt.want {
+				t.Fatalf("namingStrategyTablePrefix()=%q want %q", got, tt.want)
+			}
+		})
 	}
 }
 

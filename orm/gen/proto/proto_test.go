@@ -3,11 +3,14 @@ package proto
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -124,6 +127,44 @@ func TestProtoTemplateSections(t *testing.T) {
 		if !strings.Contains(message, want) {
 			t.Fatalf("expected %q in message:\n%s", want, message)
 		}
+	}
+}
+
+func TestProtoGetTableComment(t *testing.T) {
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer sqlDB.Close()
+
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+	require.NoError(t, err)
+	p := &Proto{gorm: db}
+
+	commentQuery := regexp.QuoteMeta("SELECT c.relname AS table_name, obj_description(c.oid) AS table_comment FROM pg_class c WHERE c.relkind IN ('r', 'p') AND c.relname NOT LIKE 'pg_%' AND c.relname NOT LIKE 'sql_%'")
+	mock.ExpectQuery(commentQuery).
+		WillReturnRows(sqlmock.NewRows([]string{"table_name", "table_comment"}).AddRow("proto_examples", "Example table"))
+	comment, err := p.getTableComment("proto_examples")
+	require.NoError(t, err)
+	if comment != "Example table" {
+		t.Fatalf("unexpected comment: %q", comment)
+	}
+
+	mock.ExpectQuery(commentQuery).
+		WillReturnRows(sqlmock.NewRows([]string{"table_name", "table_comment"}).AddRow("other_table", "Other"))
+	comment, err = p.getTableComment("proto_examples")
+	require.NoError(t, err)
+	if comment != "" {
+		t.Fatalf("missing comment should return empty string, got %q", comment)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestProtoGetTableCommentReturnsLookupError(t *testing.T) {
+	p := &Proto{}
+	if _, err := p.getTableComment("proto_examples"); err == nil || !strings.Contains(err.Error(), "db cannot be nil") {
+		t.Fatalf("expected nil db lookup error, got %v", err)
 	}
 }
 

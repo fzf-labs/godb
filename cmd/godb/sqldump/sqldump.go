@@ -3,6 +3,7 @@ package sqldump
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -18,7 +19,13 @@ type SQLDump struct {
 
 // NewSQLDump 创建数据库结构导出器。
 func NewSQLDump(db, dsn, outPutPath, targetTables string, fileCover bool) *SQLDump {
-	return &SQLDump{db: db, dsn: dsn, outPutPath: outPutPath, targetTables: targetTables, fileOverwrite: fileCover}
+	return &SQLDump{
+		db:            strings.ToLower(strings.TrimSpace(db)),
+		dsn:           strings.TrimSpace(dsn),
+		outPutPath:    strings.TrimSpace(outPutPath),
+		targetTables:  strings.TrimSpace(targetTables),
+		fileOverwrite: fileCover,
+	}
 }
 
 // Run 根据数据库类型执行结构导出。

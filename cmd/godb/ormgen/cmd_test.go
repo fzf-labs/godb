@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/fzf-labs/godb/orm/gen"
@@ -171,6 +172,24 @@ func TestRunWithOptionsUsesProvidedSnapshotAndClosesDB(t *testing.T) {
 		t.Fatalf("expected generation error, got %v", err)
 	}
 	assertClosed()
+}
+
+func TestCloseGormDBHandlesNilAndClosesSQLite(t *testing.T) {
+	closeGormDB(nil)
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	closeGormDB(db)
+	if err := sqlDB.Ping(); err == nil {
+		t.Fatal("expected sqlite db to be closed")
+	}
 }
 
 func closeTrackingDB(t *testing.T) (*gorm.DB, func()) {

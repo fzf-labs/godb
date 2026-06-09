@@ -136,6 +136,10 @@ func TestCleanupGormDBClosesUnderlyingSQLDB(t *testing.T) {
 	}
 }
 
+func TestCleanupGormDBHandlesNilDB(t *testing.T) {
+	CleanupGormDB(t, nil)
+}
+
 func TestCIEnabled(t *testing.T) {
 	t.Setenv("CI", "")
 	t.Setenv("GITHUB_ACTIONS", "")

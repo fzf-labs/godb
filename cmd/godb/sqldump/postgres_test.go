@@ -1,8 +1,10 @@
 package sqldump
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -242,6 +244,52 @@ func TestPostgresRemovePreservesLongLines(t *testing.T) {
 	}
 	if !strings.Contains(got, "CREATE TABLE public.big_defaults") {
 		t.Fatalf("expected create table statement to remain:\n%s", got)
+	}
+}
+
+func TestReadDumpLineHandlesFinalPartialLineAndEOF(t *testing.T) {
+	reader := bufio.NewReader(strings.NewReader("CREATE TABLE public.users (id bigint);"))
+
+	line, err := readDumpLine(reader)
+	if err != nil {
+		t.Fatalf("unexpected partial line error: %v", err)
+	}
+	if line != "CREATE TABLE public.users (id bigint);" {
+		t.Fatalf("unexpected line: %q", line)
+	}
+
+	if _, err := readDumpLine(reader); !errors.Is(err, io.EOF) {
+		t.Fatalf("expected EOF after final line, got %v", err)
+	}
+}
+
+func TestFormatPgDumpErrorVariants(t *testing.T) {
+	commandErr := errors.New("exit status 3")
+
+	tests := []struct {
+		name     string
+		stderr   []byte
+		err      error
+		contains []string
+	}{
+		{name: "stderr detail", stderr: []byte("permission denied\n"), err: commandErr, contains: []string{"pg_dump table users", "exit status 3", "permission denied"}},
+		{name: "without stderr", err: commandErr, contains: []string{"pg_dump table users", "exit status 3"}},
+		{name: "timeout without stderr", err: context.DeadlineExceeded, contains: []string{"pg_dump table users timed out", "context deadline exceeded"}},
+		{name: "timeout with stderr", stderr: []byte("still running"), err: context.DeadlineExceeded, contains: []string{"pg_dump table users timed out", "still running"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := formatPgDumpError("users", tt.stderr, tt.err)
+			if err == nil {
+				t.Fatal("expected formatted error")
+			}
+			for _, want := range tt.contains {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("expected %q in %q", want, err.Error())
+				}
+			}
+		})
 	}
 }
 

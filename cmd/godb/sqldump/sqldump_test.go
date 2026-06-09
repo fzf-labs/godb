@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,27 @@ func TestNewSQLDumpAndRunUnknownDatabase(t *testing.T) {
 
 	if err := dump.Run(); err == nil {
 		t.Fatal("expected unknown database type error")
+	}
+}
+
+func TestNewSQLDumpNormalizesInputsForDirectUsers(t *testing.T) {
+	dump := NewSQLDump(" MySQL ", " dsn ", " /tmp/out ", " users,roles ", true)
+	if dump.db != "mysql" || dump.dsn != "dsn" || dump.outPutPath != "/tmp/out" || dump.targetTables != "users,roles" || !dump.fileOverwrite {
+		t.Fatalf("unexpected normalized dump config: %#v", dump)
+	}
+
+	clientErr := errors.New("client failed")
+	oldNewSimple := newSimpleGormClient
+	newSimpleGormClient = func(driver, dataSource string) (*gorm.DB, error) {
+		if driver != "mysql" || dataSource != "dsn" {
+			t.Fatalf("unexpected normalized connection args: %s %s", driver, dataSource)
+		}
+		return nil, clientErr
+	}
+	defer func() { newSimpleGormClient = oldNewSimple }()
+
+	if err := dump.Run(); !errors.Is(err, clientErr) {
+		t.Fatalf("expected mysql dispatch error, got %v", err)
 	}
 }
 
@@ -63,5 +85,23 @@ func TestDumpPostgresRejectsNilDBClient(t *testing.T) {
 	err := NewSQLDump("postgres", dsn, t.TempDir(), "users", true).DumpPostgres()
 	if err == nil || !strings.Contains(err.Error(), "sqldump database client cannot be nil") {
 		t.Fatalf("expected postgres nil db client error, got %v", err)
+	}
+}
+
+func TestCloseGormDBHandlesNilAndClosesSQLite(t *testing.T) {
+	closeGormDB(nil)
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	closeGormDB(db)
+	if err := sqlDB.Ping(); err == nil {
+		t.Fatal("expected sqlite db to be closed")
 	}
 }
