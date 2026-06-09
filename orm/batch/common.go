@@ -63,6 +63,26 @@ func sliceBatchValues(values []string, start, end int) ([]string, error) {
 	return values[start:end], nil
 }
 
+func normalizeBatchSlice(dataList any) (reflect.Value, error) {
+	rv := reflect.ValueOf(dataList)
+	if !rv.IsValid() {
+		return reflect.Value{}, fmt.Errorf("dataList must be a slice")
+	}
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return reflect.Value{}, fmt.Errorf("dataList must be a slice")
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("dataList must be a slice")
+	}
+	if rv.Len() == 0 {
+		return reflect.Value{}, fmt.Errorf("dataList cannot be empty")
+	}
+	return rv, nil
+}
+
 // escapePostgresIdentifier 转义 PostgreSQL 标识符。
 func escapePostgresIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
@@ -111,6 +131,26 @@ func formatSQLValueWithBool(field reflect.Value, quote func(string) string, bool
 			return quote(value.String()), nil
 		}
 	}
+	if field.CanAddr() && field.Addr().CanInterface() {
+		if value, ok := field.Addr().Interface().(driver.Valuer); ok {
+			raw, err := value.Value()
+			if err != nil {
+				return "", err
+			}
+			return formatSQLValueFromAnyWithBool(raw, quote, boolLiteral)
+		}
+	}
+	if field.CanInterface() && field.Kind() != reflect.Ptr {
+		addressable := reflect.New(field.Type())
+		addressable.Elem().Set(field)
+		if value, ok := addressable.Interface().(driver.Valuer); ok {
+			raw, err := value.Value()
+			if err != nil {
+				return "", err
+			}
+			return formatSQLValueFromAnyWithBool(raw, quote, boolLiteral)
+		}
+	}
 
 	switch field.Kind() {
 	case reflect.Int:
@@ -136,9 +176,9 @@ func formatSQLValueWithBool(field reflect.Value, quote func(string) string, bool
 	case reflect.String:
 		return quote(field.String()), nil
 	case reflect.Float32:
-		return strconv.FormatFloat(field.Float(), 'f', -1, 32), nil
+		return formatSQLFloat(field.Float(), 32)
 	case reflect.Float64:
-		return strconv.FormatFloat(field.Float(), 'f', -1, 64), nil
+		return formatSQLFloat(field.Float(), 64)
 	case reflect.Bool:
 		return boolLiteral(field.Bool()), nil
 	case reflect.Slice:
@@ -215,9 +255,9 @@ func formatSQLValueFromAnyWithBool(value any, quote func(string) string, boolLit
 	case uint64:
 		return strconv.FormatUint(v, 10), nil
 	case float32:
-		return strconv.FormatFloat(float64(v), 'f', -1, 32), nil
+		return formatSQLFloat(float64(v), 32)
 	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64), nil
+		return formatSQLFloat(v, 64)
 	}
 	if rv.Kind() == reflect.Ptr {
 		return formatSQLValueWithBool(rv.Elem(), quote, boolLiteral)
@@ -230,6 +270,13 @@ func formatSQLValueFromAnyWithBool(value any, quote func(string) string, boolLit
 	}
 
 	return "", fmt.Errorf("unsupported field type: %T", value)
+}
+
+func formatSQLFloat(value float64, bitSize int) (string, error) {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return "", fmt.Errorf("unsupported float value: %v", value)
+	}
+	return strconv.FormatFloat(value, 'f', -1, bitSize), nil
 }
 
 func formatBatchIDValue(field reflect.Value, quote func(string) string) (string, error) {

@@ -58,6 +58,21 @@ func TestKeyManageTrimsAndRejectsBlankInputs(t *testing.T) {
 	}
 }
 
+func TestKeyManageAddKeyInitializesNilList(t *testing.T) {
+	manager := &KeyManage{ServerName: "svc"}
+
+	prefix, err := manager.AddKey("user", time.Second, "user cache")
+	if err != nil {
+		t.Fatalf("add key with nil list: %v", err)
+	}
+	if prefix.Key("1") != "svc:user:1" {
+		t.Fatalf("unexpected key from nil-list manager: %s", prefix.Key("1"))
+	}
+	if _, ok := manager.List["user"]; !ok {
+		t.Fatalf("prefix was not stored in initialized list: %#v", manager.List)
+	}
+}
+
 func TestKeyManageDocumentSortsPrefixes(t *testing.T) {
 	manager := New("svc")
 	for _, prefix := range []string{"user", "admin", "order"} {

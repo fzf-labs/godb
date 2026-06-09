@@ -1,6 +1,7 @@
 package condition
 
 import (
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -438,6 +439,55 @@ func TestReqConvertToCacheField(t *testing.T) {
 	}
 }
 
+func TestReqConvertToCacheFieldNormalizesEquivalentRequests(t *testing.T) {
+	req := &Req{
+		Query: []*QueryParam{{
+			Field: " id ",
+			Value: "42",
+			Exp:   " = ",
+			Logic: " and ",
+		}},
+		Order: []*OrderParam{{
+			Field: " id ",
+			Order: " asc ",
+		}},
+	}
+	equivalent := &Req{
+		Query: []*QueryParam{{
+			Field: "id",
+			Value: "42",
+			Exp:   EQ,
+			Logic: AND,
+		}},
+		Order: []*OrderParam{{
+			Field: "id",
+			Order: ASC,
+		}},
+	}
+	withDefaults := &Req{
+		Query: []*QueryParam{{
+			Field: "id",
+			Value: "42",
+		}},
+		Order: []*OrderParam{{
+			Field: "id",
+		}},
+	}
+
+	if req.ConvertToCacheField() != equivalent.ConvertToCacheField() {
+		t.Fatal("normalized request should use the same cache field")
+	}
+	if equivalent.ConvertToCacheField() != withDefaults.ConvertToCacheField() {
+		t.Fatal("default exp, logic, and order should use the normalized cache field")
+	}
+	if req.Query[0].Field != " id " || req.Query[0].Exp != " = " || req.Query[0].Logic != " and " {
+		t.Fatalf("query input was mutated: %#v", req.Query[0])
+	}
+	if req.Order[0].Field != " id " || req.Order[0].Order != " asc " {
+		t.Fatalf("order input was mutated: %#v", req.Order[0])
+	}
+}
+
 func TestReqConvertToGormExpressionAdditionalBranches(t *testing.T) {
 	if where, order, err := (*Req)(nil).ConvertToGormExpression(UserTest{}); err != nil || len(where) != 0 || len(order) != 0 {
 		t.Fatalf("nil request should return empty expressions, got where=%v order=%v err=%v", where, order, err)
@@ -581,7 +631,24 @@ func TestFieldToColumnBranches(t *testing.T) {
 		Name string `json:"name"`
 	}
 	got := fieldToColumn(&mixedTags{})
-	if !reflect.DeepEqual(got, map[string]string{"id": "id"}) {
+	if !reflect.DeepEqual(got, map[string]string{"id": "id", "name": "name"}) {
+		t.Fatalf("unexpected field map: %#v", got)
+	}
+}
+
+func TestFieldToColumnNormalizesTagsAndDefaultColumns(t *testing.T) {
+	type modelWithDefaults struct {
+		UserID   int    `gorm:" column: user_id ;primaryKey"`
+		UserName string `json:"userName"`
+		Ignored  string `gorm:"-"`
+	}
+
+	got := fieldToColumn(modelWithDefaults{})
+	want := map[string]string{
+		"user_id":   "user_id",
+		"user_name": "user_name",
+	}
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected field map: %#v", got)
 	}
 }
@@ -856,6 +923,24 @@ func TestReqConvertToPageRejectsNegativeTotal(t *testing.T) {
 	}
 	if got.Total != 0 {
 		t.Fatalf("negative total should not be returned, got %#v", got)
+	}
+}
+
+func TestReqConvertToPageDoesNotOverflowNextPage(t *testing.T) {
+	req := &Req{
+		Page:     math.MaxInt32,
+		PageSize: 1,
+	}
+
+	got, err := req.ConvertToPage(math.MaxInt32)
+	if err != nil {
+		t.Fatalf("unexpected max page error: %v", err)
+	}
+	if got.NextPage != math.MaxInt32 || got.TotalPage != math.MaxInt32 {
+		t.Fatalf("page navigation overflowed: %#v", got)
+	}
+	if got.PrevPage != math.MaxInt32-1 {
+		t.Fatalf("unexpected previous page: %#v", got)
 	}
 }
 

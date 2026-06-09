@@ -11,6 +11,7 @@ import (
 // tableName: 表名
 // dataList: 需要更新的数据列表,必须是指向结构体的切片
 func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error) {
+	tableName = strings.TrimSpace(tableName)
 	if tableName == "" {
 		return nil, errors.New("tableName cannot be empty")
 	}
@@ -18,17 +19,9 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 		return nil, err
 	}
 
-	// 检查 dataList 是否为切片
-	rv := reflect.ValueOf(dataList)
-	if !rv.IsValid() {
-		return nil, errors.New("dataList must be a slice")
-	}
-	if rv.Kind() != reflect.Slice {
-		return nil, errors.New("dataList must be a slice")
-	}
-
-	if rv.Len() == 0 {
-		return nil, errors.New("dataList cannot be empty")
+	rv, err := normalizeBatchSlice(dataList)
+	if err != nil {
+		return nil, err
 	}
 
 	// 获取元素类型

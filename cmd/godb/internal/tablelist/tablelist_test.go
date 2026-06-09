@@ -12,15 +12,25 @@ func TestParseCSV(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, got)
 
-	got, err = ParseCSV("users, roles, ,admin,,")
+	got, err = ParseCSV("users, roles, admin")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"users", "roles", "admin"}, got)
 }
 
-func TestParseCSVRejectsAllBlankEntries(t *testing.T) {
+func TestParseCSVRejectsEmptyEntries(t *testing.T) {
 	got, err := ParseCSV(" , , ")
 	assert.Error(t, err)
 	assert.Empty(t, got)
+
+	got, err = ParseCSV("users,,roles")
+	assert.Error(t, err)
+	assert.Empty(t, got)
+	assert.Contains(t, err.Error(), "empty table name at position 2")
+
+	got, err = ParseCSV("users,roles,")
+	assert.Error(t, err)
+	assert.Empty(t, got)
+	assert.Contains(t, err.Error(), "empty table name at position 3")
 }
 
 func TestParseCSVDeduplicatesWhilePreservingOrder(t *testing.T) {

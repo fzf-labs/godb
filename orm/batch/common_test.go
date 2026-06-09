@@ -3,6 +3,7 @@ package batch
 import (
 	"database/sql/driver"
 	"errors"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -16,6 +17,18 @@ type sqlValueValuer struct {
 
 // Value 返回测试用 driver.Value 或预设错误。
 func (v sqlValueValuer) Value() (driver.Value, error) {
+	return v.value, v.err
+}
+
+type pointerOnlyValuer struct {
+	value driver.Value
+	err   error
+}
+
+func (v *pointerOnlyValuer) Value() (driver.Value, error) {
+	if v == nil {
+		return nil, nil
+	}
 	return v.value, v.err
 }
 
@@ -45,6 +58,7 @@ func TestFormatSQLValueCoversSupportedKinds(t *testing.T) {
 		{name: "time", value: reflect.ValueOf(ts), want: "'2026-06-04 01:02:03'"},
 		{name: "time pointer", value: reflect.ValueOf(&ts), want: "'2026-06-04 01:02:03'"},
 		{name: "driver valuer", value: reflect.ValueOf(sqlValueValuer{value: int64(12)}), want: "12"},
+		{name: "pointer receiver valuer", value: reflect.ValueOf(pointerOnlyValuer{value: "db"}), want: "'db'"},
 		{name: "stringer", value: reflect.ValueOf(sqlValueStringer("hello")), want: "'hello'"},
 		{name: "int", value: reflect.ValueOf(int(-1)), want: "-1"},
 		{name: "int8", value: reflect.ValueOf(int8(-2)), want: "-2"},
@@ -86,9 +100,18 @@ func TestFormatSQLValueErrors(t *testing.T) {
 	if _, err := formatSQLValue(reflect.ValueOf(sqlValueValuer{err: wantErr}), testQuote); !errors.Is(err, wantErr) {
 		t.Fatalf("got %v want %v", err, wantErr)
 	}
+	if _, err := formatSQLValue(reflect.ValueOf(pointerOnlyValuer{err: wantErr}), testQuote); !errors.Is(err, wantErr) {
+		t.Fatalf("got %v want %v", err, wantErr)
+	}
 
 	if _, err := formatSQLValue(reflect.ValueOf([]int{1}), testQuote); err == nil {
 		t.Fatal("expected unsupported slice error")
+	}
+	if _, err := formatSQLValue(reflect.ValueOf(math.NaN()), testQuote); err == nil || !strings.Contains(err.Error(), "unsupported float value") {
+		t.Fatalf("expected NaN error, got %v", err)
+	}
+	if _, err := formatSQLValue(reflect.ValueOf(math.Inf(1)), testQuote); err == nil || !strings.Contains(err.Error(), "unsupported float value") {
+		t.Fatalf("expected Inf error, got %v", err)
 	}
 }
 
@@ -147,6 +170,9 @@ func TestFormatSQLValueFromAnyErrors(t *testing.T) {
 
 	if _, err := formatSQLValueFromAny(struct{}{}, testQuote); err == nil {
 		t.Fatal("expected unsupported struct error")
+	}
+	if _, err := formatSQLValueFromAny(math.NaN(), testQuote); err == nil || !strings.Contains(err.Error(), "unsupported float value") {
+		t.Fatalf("expected NaN error, got %v", err)
 	}
 }
 

@@ -4,11 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"math"
 	"reflect"
 	"strings"
+	"sync"
 
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
 type Exp string // 操作
@@ -140,7 +141,7 @@ func (p *Req) ToInterfaceSlice(val interface{}) ([]interface{}, error) {
 
 // ConvertToCacheField 将 req 转换为缓存 hash 中的 field
 func (p *Req) ConvertToCacheField() string {
-	marshal, err := json.Marshal(p)
+	marshal, err := json.Marshal(p.canonicalCachePayload())
 	if err != nil {
 		return ""
 	}
@@ -148,6 +149,52 @@ func (p *Req) ConvertToCacheField() string {
 	hash := sha256.New()
 	hash.Write(marshal)
 	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+func (p *Req) canonicalCachePayload() any {
+	if p == nil {
+		return nil
+	}
+	query := make([]*QueryParam, len(p.Query))
+	for i, item := range p.Query {
+		if item == nil {
+			continue
+		}
+		exp := normalizeExp(item.Exp)
+		if exp == "" {
+			exp = EQ
+		}
+		logic := normalizeLogic(item.Logic)
+		if logic == "" {
+			logic = AND
+		}
+		query[i] = &QueryParam{
+			Field: strings.TrimSpace(item.Field),
+			Value: item.Value,
+			Exp:   exp,
+			Logic: logic,
+		}
+	}
+	order := make([]*OrderParam, len(p.Order))
+	for i, item := range p.Order {
+		if item == nil {
+			continue
+		}
+		direction := normalizeOrder(item.Order)
+		if direction == "" {
+			direction = ASC
+		}
+		order[i] = &OrderParam{
+			Field: strings.TrimSpace(item.Field),
+			Order: direction,
+		}
+	}
+	return &Req{
+		Page:     p.Page,
+		PageSize: p.PageSize,
+		Query:    query,
+		Order:    order,
+	}
 }
 
 // ConvertToGormExpression 根据SearchColumn参数转换为符合gorm where clause.Expression
@@ -296,7 +343,7 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 	}
 	resp.Page = p.Page
 	resp.PageSize = p.PageSize
-	resp.TotalPage = int32(math.Ceil(float64(total) / float64(p.PageSize)))
+	resp.TotalPage = int32((int64(total) + int64(p.PageSize) - 1) / int64(p.PageSize))
 	if resp.TotalPage == 0 {
 		return resp, nil
 	}
@@ -306,9 +353,10 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 		return resp, nil
 	}
 	currentPage := p.Page
-	resp.NextPage = currentPage + 1
-	if resp.NextPage > resp.TotalPage {
+	if currentPage >= resp.TotalPage {
 		resp.NextPage = resp.TotalPage
+	} else {
+		resp.NextPage = currentPage + 1
 	}
 	resp.PrevPage = currentPage - 1
 	if resp.PrevPage <= 0 {
@@ -320,6 +368,17 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 // fieldToColumn 将model的tag中gorm的tag的Column转换为map[string]string
 func fieldToColumn(model interface{}) map[string]string {
 	m := make(map[string]string)
+	if model == nil {
+		return m
+	}
+	if parsed, err := schema.Parse(model, &sync.Map{}, schema.NamingStrategy{}); err == nil {
+		for _, field := range parsed.Fields {
+			column := strings.TrimSpace(field.DBName)
+			if column != "" {
+				m[strings.ToLower(column)] = column
+			}
+		}
+	}
 	t := reflect.TypeOf(model)
 	if t == nil {
 		return m
@@ -335,6 +394,7 @@ func fieldToColumn(model interface{}) map[string]string {
 }
 
 func collectFieldColumns(t reflect.Type, columns map[string]string) {
+	namer := schema.NamingStrategy{}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		fieldType := field.Type
@@ -345,18 +405,50 @@ func collectFieldColumns(t reflect.Type, columns map[string]string) {
 			collectFieldColumns(fieldType, columns)
 			continue
 		}
+		if field.PkgPath != "" {
+			continue
+		}
 		gormTag := field.Tag.Get("gorm")
+		if gormTag == "-" {
+			continue
+		}
+		columnName := ""
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
 			for _, v := range gormTags {
-				if strings.HasPrefix(v, "column:") {
-					column := strings.SplitN(v, ":", 2)
+				tagPart := strings.TrimSpace(v)
+				if strings.HasPrefix(strings.ToLower(tagPart), "column:") {
+					column := strings.SplitN(tagPart, ":", 2)
 					if len(column) == 2 {
-						columns[strings.ToLower(column[1])] = column[1]
+						columnName = strings.TrimSpace(column[1])
 					}
+					break
 				}
 			}
 		}
+		if columnName == "" {
+			if !isDefaultColumnCandidate(fieldType) {
+				continue
+			}
+			columnName = namer.ColumnName("", field.Name)
+		}
+		columns[strings.ToLower(columnName)] = columnName
+	}
+}
+
+func isDefaultColumnCandidate(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	switch t.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.String:
+		return true
+	case reflect.Slice, reflect.Array:
+		return t.Elem().Kind() == reflect.Uint8
+	default:
+		return false
 	}
 }
 

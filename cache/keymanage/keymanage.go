@@ -37,6 +37,9 @@ func (p *KeyManage) AddKey(prefix string, expirationTime time.Duration, remark s
 	if prefix == "" {
 		return nil, fmt.Errorf("prefix cannot be empty")
 	}
+	if p.List == nil {
+		p.List = make(map[string]KeyPrefix)
+	}
 	if _, ok := p.List[prefix]; ok {
 		return nil, fmt.Errorf("key %s is exist, please change one", prefix)
 	}

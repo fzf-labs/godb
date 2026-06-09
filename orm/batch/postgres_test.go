@@ -2,6 +2,7 @@ package batch
 
 import (
 	"database/sql"
+	"math"
 	"strconv"
 	"strings"
 	"testing"
@@ -156,6 +157,13 @@ func TestPostgresBatchUpdateToSQLArray_QualifiedTableName(t *testing.T) {
 	assert.Contains(t, sqlArray[0], `UPDATE "public"."users" SET `)
 }
 
+func TestPostgresBatchUpdateToSQLArray_TrimsTableName(t *testing.T) {
+	sqlArray, err := PostgresBatchUpdateToSQLArray(" users ", []*testUser{{ID: 1, Name: "test", Age: 18, IsActive: true}})
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], `UPDATE "users" SET `)
+}
+
 // TestPostgresBatchUpdateToSQLArray_InvalidColumnIdentifier 验证非法列名会返回错误。
 func TestPostgresBatchUpdateToSQLArray_InvalidColumnIdentifier(t *testing.T) {
 	type BadStruct struct {
@@ -200,6 +208,15 @@ func TestPostgresBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) 
 	assert.Contains(t, sqlArray[0], "'2024-01-02 03:04:05'")
 	assert.Contains(t, sqlArray[0], "'abc'")
 	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
+}
+
+func TestPostgresBatchUpdateToSQLArray_SupportsPointerToSlice(t *testing.T) {
+	data := []*testUser{{ID: 1, Name: "alice", Age: 18, IsActive: true}}
+
+	sqlArray, err := PostgresBatchUpdateToSQLArray("users", &data)
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], `"name" = CASE "id" WHEN 1 THEN 'alice' END`)
 }
 
 func TestPostgresBatchUpdateToSQLArray_UsesConfiguredIDColumn(t *testing.T) {
@@ -249,4 +266,15 @@ func TestPostgresBatchUpdateToSQLArray_RejectsNonPositiveNumericID(t *testing.T)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "id value must be greater than 0 at index 0")
 	}
+}
+
+func TestPostgresBatchUpdateToSQLArray_RejectsInvalidFloatValues(t *testing.T) {
+	type TestStruct struct {
+		ID    int64   `gorm:"column:id"`
+		Score float64 `gorm:"column:score"`
+	}
+
+	_, err := PostgresBatchUpdateToSQLArray("users", []*TestStruct{{ID: 1, Score: math.Inf(1)}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported float value")
 }

@@ -2,6 +2,7 @@ package batch
 
 import (
 	"database/sql"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -74,6 +75,18 @@ func TestMysqlBatchUpdateToSQLArray_QualifiedTableName(t *testing.T) {
 	assert.Contains(t, sqlArray[0], "UPDATE `test_db`.`test_table` SET ")
 }
 
+func TestMysqlBatchUpdateToSQLArray_TrimsTableName(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+
+	sqlArray, err := MysqlBatchUpdateToSQLArray(" test_table ", []*TestStruct{{ID: 1, Name: "test"}})
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "UPDATE `test_table` SET ")
+}
+
 // TestMysqlBatchUpdateToSQLArray_InvalidColumnIdentifier 验证非法列名会返回错误。
 func TestMysqlBatchUpdateToSQLArray_InvalidColumnIdentifier(t *testing.T) {
 	type BadStruct struct {
@@ -125,6 +138,19 @@ func TestMysqlBatchUpdateToSQLArray_SupportsCommonComplexTypes(t *testing.T) {
 	assert.Contains(t, sqlArray[0], `{"mode":"test"}`)
 }
 
+func TestMysqlBatchUpdateToSQLArray_SupportsPointerToSlice(t *testing.T) {
+	type TestStruct struct {
+		ID   int64  `gorm:"column:id"`
+		Name string `gorm:"column:name"`
+	}
+	data := []*TestStruct{{ID: 1, Name: "alice"}}
+
+	sqlArray, err := MysqlBatchUpdateToSQLArray("test_table", &data)
+	assert.NoError(t, err)
+	assert.Len(t, sqlArray, 1)
+	assert.Contains(t, sqlArray[0], "`name` = CASE `id` WHEN 1 THEN 'alice' END")
+}
+
 func TestMysqlBatchUpdateToSQLArray_UsesConfiguredIDColumn(t *testing.T) {
 	type TestStruct struct {
 		ID   int64  `gorm:"column:user_id"`
@@ -174,4 +200,15 @@ func TestMysqlBatchUpdateToSQLArray_RejectsNonPositiveNumericID(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "id value must be greater than 0 at index 0")
 	}
+}
+
+func TestMysqlBatchUpdateToSQLArray_RejectsInvalidFloatValues(t *testing.T) {
+	type TestStruct struct {
+		ID    int64   `gorm:"column:id"`
+		Score float64 `gorm:"column:score"`
+	}
+
+	_, err := MysqlBatchUpdateToSQLArray("test_table", []*TestStruct{{ID: 1, Score: math.NaN()}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported float value")
 }

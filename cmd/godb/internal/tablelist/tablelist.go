@@ -7,7 +7,7 @@ import (
 
 // ParseCSV trims and splits a comma-separated table list.
 // Blank input returns nil so callers can treat it as "no filter".
-// Inputs that contain only separators or whitespace return an error.
+// Empty entries inside a non-empty list return an error.
 func ParseCSV(raw string) ([]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
@@ -15,10 +15,10 @@ func ParseCSV(raw string) ([]string, error) {
 	parts := strings.Split(raw, ",")
 	tables := make([]string, 0, len(parts))
 	seen := make(map[string]struct{}, len(parts))
-	for _, part := range parts {
+	for i, part := range parts {
 		table := strings.TrimSpace(part)
 		if table == "" {
-			continue
+			return nil, fmt.Errorf("empty table name at position %d", i+1)
 		}
 		if _, ok := seen[table]; ok {
 			continue

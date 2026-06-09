@@ -63,7 +63,7 @@ func TestRunRejectsBlankTables(t *testing.T) {
 	outPutPath = t.TempDir()
 
 	err := Run(nil, nil)
-	if err == nil || !strings.Contains(err.Error(), "no table names found") {
+	if err == nil || !strings.Contains(err.Error(), "empty table name at position 1") {
 		t.Fatalf("expected table parsing error, got %v", err)
 	}
 }
