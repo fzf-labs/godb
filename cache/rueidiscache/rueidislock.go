@@ -69,7 +69,7 @@ func (l *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn
 	if err != nil {
 		return err
 	}
-	defer locker.Close()
+	// 不 Close：NewDefaultLockerOption 复用外部 client，Close 会关掉共享连接。
 	_, cancel, err := locker.TryWithContext(ctx, key)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func (l *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 	if err != nil {
 		return err
 	}
-	defer locker.Close()
+	// 不 Close：NewDefaultLockerOption 复用外部 client，Close 会关掉共享连接。
 	_, cancel, err := locker.WithContext(ctx, key)
 	if err != nil {
 		return err
@@ -112,8 +112,8 @@ func (l *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Du
 	if err != nil {
 		return err
 	}
-	defer locker.Close()
-	_, _, err = locker.WithContext(ctx, key)
+	// 不 Close：避免关掉共享 client；不 cancel：锁按 TTL 自然过期。
+	_, _, err = locker.TryWithContext(ctx, key)
 	if err != nil {
 		return err
 	}
