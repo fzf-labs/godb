@@ -154,7 +154,8 @@ func TestLockerMethodsUseRueidisLockClient(t *testing.T) {
 	option.ClientOption.DisableCache = true
 	option.FallbackSETPX = true
 	option.KeyMajority = 1
-	option.TryNextAfter = time.Millisecond
+	// TryNextAfter 同时是单次 acquire 超时；1ms 在 CI 负载下会偶发 DeadlineExceeded。
+	option.TryNextAfter = 100 * time.Millisecond
 	locker := NewLocker(option)
 	ctx := context.Background()
 
