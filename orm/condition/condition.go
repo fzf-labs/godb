@@ -4,15 +4,17 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"math"
 	"reflect"
 	"strings"
+	"sync"
 
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
 type Exp string // 操作
 
+// 查询表达式操作符。
 const (
 	RAW       Exp = "RAW" // 原始表达式
 	EQ        Exp = "="
@@ -31,6 +33,7 @@ const (
 
 type Logic string // 逻辑关系
 
+// 查询条件逻辑连接符。
 const (
 	AND Logic = "AND" // 逻辑关系 and
 	OR  Logic = "OR"  // 逻辑关系 or
@@ -38,6 +41,7 @@ const (
 
 type Order string // 排序
 
+// 排序方向。
 const (
 	ASC  Order = "ASC"  // 升序
 	DESC Order = "DESC" // 降序
@@ -77,6 +81,7 @@ type Reply struct {
 
 // ExpValidate 验证Exp是否合法
 func ExpValidate(s Exp) bool {
+	s = normalizeExp(s)
 	switch s {
 	case EQ, NEQ, GT, GTE, LT, LTE, IN, NOTIN, LIKE, NOTLIKE, ISNULL, ISNOTNULL, RAW:
 		return true
@@ -87,6 +92,7 @@ func ExpValidate(s Exp) bool {
 
 // LogicValidate 验证Logic是否合法
 func LogicValidate(s Logic) bool {
+	s = normalizeLogic(s)
 	switch s {
 	case AND, OR:
 		return true
@@ -97,6 +103,7 @@ func LogicValidate(s Logic) bool {
 
 // OrderValidate 验证Order是否合法
 func OrderValidate(s Order) bool {
+	s = normalizeOrder(s)
 	switch s {
 	case ASC, DESC:
 		return true
@@ -134,7 +141,7 @@ func (p *Req) ToInterfaceSlice(val interface{}) ([]interface{}, error) {
 
 // ConvertToCacheField 将 req 转换为缓存 hash 中的 field
 func (p *Req) ConvertToCacheField() string {
-	marshal, err := json.Marshal(p)
+	marshal, err := json.Marshal(p.canonicalCachePayload())
 	if err != nil {
 		return ""
 	}
@@ -142,6 +149,52 @@ func (p *Req) ConvertToCacheField() string {
 	hash := sha256.New()
 	hash.Write(marshal)
 	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+func (p *Req) canonicalCachePayload() any {
+	if p == nil {
+		return nil
+	}
+	query := make([]*QueryParam, len(p.Query))
+	for i, item := range p.Query {
+		if item == nil {
+			continue
+		}
+		exp := normalizeExp(item.Exp)
+		if exp == "" {
+			exp = EQ
+		}
+		logic := normalizeLogic(item.Logic)
+		if logic == "" {
+			logic = AND
+		}
+		query[i] = &QueryParam{
+			Field: strings.TrimSpace(item.Field),
+			Value: item.Value,
+			Exp:   exp,
+			Logic: logic,
+		}
+	}
+	order := make([]*OrderParam, len(p.Order))
+	for i, item := range p.Order {
+		if item == nil {
+			continue
+		}
+		direction := normalizeOrder(item.Order)
+		if direction == "" {
+			direction = ASC
+		}
+		order[i] = &OrderParam{
+			Field: strings.TrimSpace(item.Field),
+			Order: direction,
+		}
+	}
+	return &Req{
+		Page:     p.Page,
+		PageSize: p.PageSize,
+		Query:    query,
+		Order:    order,
+	}
 }
 
 // ConvertToGormExpression 根据SearchColumn参数转换为符合gorm where clause.Expression
@@ -157,27 +210,30 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if v == nil {
 				return whereExpressions, orderExpressions, fmt.Errorf("query cannot be nil")
 			}
-			if v.Field == "" {
+			queryField := strings.TrimSpace(v.Field)
+			if queryField == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
-			field, ok := column[strings.ToLower(v.Field)]
+			field, ok := column[strings.ToLower(queryField)]
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			if v.Exp == "" {
-				v.Exp = EQ
+			exp := normalizeExp(v.Exp)
+			if exp == "" {
+				exp = EQ
 			}
-			if !ExpValidate(v.Exp) {
-				return whereExpressions, orderExpressions, fmt.Errorf("unknown exp type '%s'", v.Exp)
+			if !ExpValidate(exp) {
+				return whereExpressions, orderExpressions, fmt.Errorf("unknown exp type '%s'", exp)
 			}
-			if v.Logic == "" {
-				v.Logic = AND
+			logic := normalizeLogic(v.Logic)
+			if logic == "" {
+				logic = AND
 			}
-			if !LogicValidate(v.Logic) {
-				return whereExpressions, orderExpressions, fmt.Errorf("unknown logic type '%s'", v.Logic)
+			if !LogicValidate(logic) {
+				return whereExpressions, orderExpressions, fmt.Errorf("unknown logic type '%s'", logic)
 			}
 			var expression clause.Expression
-			switch v.Exp {
+			switch exp {
 			case EQ:
 				expression = clause.Eq{Column: field, Value: v.Value}
 			case NEQ:
@@ -213,10 +269,10 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			case RAW:
 				expression, ok = v.Value.(clause.Expr)
 				if !ok {
-					return nil, nil, fmt.Errorf("CUSTOM value is not a clause.Expr")
+					return nil, nil, fmt.Errorf("RAW value is not a clause.Expr")
 				}
 			}
-			if v.Logic == AND {
+			if logic == AND {
 				whereExpressions = append(whereExpressions, clause.And(expression))
 			} else {
 				whereExpressions = append(whereExpressions, clause.Or(expression))
@@ -228,24 +284,26 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 			if v == nil {
 				return whereExpressions, orderExpressions, fmt.Errorf("order cannot be nil")
 			}
-			if v.Field == "" {
+			orderField := strings.TrimSpace(v.Field)
+			if orderField == "" {
 				return whereExpressions, orderExpressions, fmt.Errorf("field cannot be empty")
 			}
-			field, ok := column[strings.ToLower(v.Field)]
+			field, ok := column[strings.ToLower(orderField)]
 			if !ok {
 				return whereExpressions, orderExpressions, fmt.Errorf("field '%s' is not db column name", v.Field)
 			}
-			if v.Order == "" {
-				v.Order = ASC
+			order := normalizeOrder(v.Order)
+			if order == "" {
+				order = ASC
 			}
-			if !OrderValidate(v.Order) {
+			if !OrderValidate(order) {
 				return whereExpressions, orderExpressions, fmt.Errorf("order is err")
 			}
 			orderExpressions = append(orderExpressions, clause.OrderBy{
 				Columns: []clause.OrderByColumn{
 					{
 						Column:  clause.Column{Name: field},
-						Desc:    v.Order == DESC,
+						Desc:    order == DESC,
 						Reorder: false,
 					},
 				},
@@ -257,6 +315,9 @@ func (p *Req) ConvertToGormExpression(model interface{}) (whereExpressions, orde
 
 // ConvertToPage 转换为page
 func (p *Req) ConvertToPage(total int32) (*Reply, error) {
+	if total < 0 {
+		return &Reply{}, fmt.Errorf("total cannot be less than 0")
+	}
 	resp := &Reply{
 		Page:      0,
 		PageSize:  0,
@@ -264,6 +325,9 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 		PrevPage:  0,
 		NextPage:  0,
 		TotalPage: 0,
+	}
+	if p == nil {
+		return resp, nil
 	}
 	if p.Page < 0 {
 		return resp, fmt.Errorf("page cannot be less than 0")
@@ -279,12 +343,22 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 	}
 	resp.Page = p.Page
 	resp.PageSize = p.PageSize
-	resp.TotalPage = int32(math.Ceil(float64(total) / float64(p.PageSize)))
-	resp.NextPage = p.Page + 1
-	if resp.NextPage > resp.TotalPage {
-		resp.NextPage = resp.TotalPage
+	resp.TotalPage = int32((int64(total) + int64(p.PageSize) - 1) / int64(p.PageSize))
+	if resp.TotalPage == 0 {
+		return resp, nil
 	}
-	resp.PrevPage = p.Page - 1
+	if p.Page > resp.TotalPage {
+		resp.NextPage = resp.TotalPage
+		resp.PrevPage = resp.TotalPage
+		return resp, nil
+	}
+	currentPage := p.Page
+	if currentPage >= resp.TotalPage {
+		resp.NextPage = resp.TotalPage
+	} else {
+		resp.NextPage = currentPage + 1
+	}
+	resp.PrevPage = currentPage - 1
 	if resp.PrevPage <= 0 {
 		resp.PrevPage = 1
 	}
@@ -294,6 +368,17 @@ func (p *Req) ConvertToPage(total int32) (*Reply, error) {
 // fieldToColumn 将model的tag中gorm的tag的Column转换为map[string]string
 func fieldToColumn(model interface{}) map[string]string {
 	m := make(map[string]string)
+	if model == nil {
+		return m
+	}
+	if parsed, err := schema.Parse(model, &sync.Map{}, schema.NamingStrategy{}); err == nil {
+		for _, field := range parsed.Fields {
+			column := strings.TrimSpace(field.DBName)
+			if column != "" {
+				m[strings.ToLower(column)] = column
+			}
+		}
+	}
 	t := reflect.TypeOf(model)
 	if t == nil {
 		return m
@@ -304,20 +389,77 @@ func fieldToColumn(model interface{}) map[string]string {
 	if t.Kind() != reflect.Struct {
 		return m
 	}
+	collectFieldColumns(t, m)
+	return m
+}
+
+func collectFieldColumns(t reflect.Type, columns map[string]string) {
+	namer := schema.NamingStrategy{}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
+		fieldType := field.Type
+		for fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+		if field.Anonymous && fieldType.Kind() == reflect.Struct {
+			collectFieldColumns(fieldType, columns)
+			continue
+		}
+		if field.PkgPath != "" {
+			continue
+		}
 		gormTag := field.Tag.Get("gorm")
+		if gormTag == "-" {
+			continue
+		}
+		columnName := ""
 		if gormTag != "" {
 			gormTags := strings.Split(gormTag, ";")
 			for _, v := range gormTags {
-				if strings.HasPrefix(v, "column:") {
-					column := strings.SplitN(v, ":", 2)
+				tagPart := strings.TrimSpace(v)
+				if strings.HasPrefix(strings.ToLower(tagPart), "column:") {
+					column := strings.SplitN(tagPart, ":", 2)
 					if len(column) == 2 {
-						m[strings.ToLower(column[1])] = column[1]
+						columnName = strings.TrimSpace(column[1])
 					}
+					break
 				}
 			}
 		}
+		if columnName == "" {
+			if !isDefaultColumnCandidate(fieldType) {
+				continue
+			}
+			columnName = namer.ColumnName("", field.Name)
+		}
+		columns[strings.ToLower(columnName)] = columnName
 	}
-	return m
+}
+
+func isDefaultColumnCandidate(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	switch t.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.String:
+		return true
+	case reflect.Slice, reflect.Array:
+		return t.Elem().Kind() == reflect.Uint8
+	default:
+		return false
+	}
+}
+
+func normalizeExp(exp Exp) Exp {
+	return Exp(strings.ToUpper(strings.Join(strings.Fields(string(exp)), " ")))
+}
+
+func normalizeLogic(logic Logic) Logic {
+	return Logic(strings.ToUpper(strings.TrimSpace(string(logic))))
+}
+
+func normalizeOrder(order Order) Order {
+	return Order(strings.ToUpper(strings.TrimSpace(string(order))))
 }

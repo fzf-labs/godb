@@ -3,22 +3,29 @@ package proto
 import (
 	"fmt"
 	"go/token"
-	"os"
-	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/iancoleman/strcase"
+	"gorm.io/gorm"
 
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/fzf-labs/godb/orm/utils/template"
-	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 // GenerationPB 生成
 func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) error {
+	if strings.TrimSpace(table) == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+	if err := ValidateProtoPackageStr(packageStr); err != nil {
+		return err
+	}
+	if err := ValidateGoPackageStr(goPackageStr); err != nil {
+		return err
+	}
 	var f string
 	p := &Proto{
 		gorm:                 db,
@@ -33,19 +40,70 @@ func GenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr, table strin
 		columnNameToName:     columnNameToName,
 		columnNameToDataType: columnNameToDataType,
 	}
-	p.tableNameComment = p.getTableComment(table)
+	tableComment, err := p.getTableComment(table)
+	if err != nil {
+		return fmt.Errorf("get table comment: %w", err)
+	}
+	p.tableNameComment = tableComment
 	p.lowerTableName = p.lowerName(table)
 	p.upperTableName = p.upperName(table)
 	f += p.genSyntax()
 	f += p.genPackage()
 	f += p.genImport()
 	f += p.genOption()
-	f += p.genService()
-	f += p.genMessage()
-	outputFile := p.outPutPath + "/" + table + ".proto"
+	service, err := p.genService()
+	if err != nil {
+		return fmt.Errorf("generate service: %w", err)
+	}
+	f += service
+	message, err := p.genMessage()
+	if err != nil {
+		return fmt.Errorf("generate message: %w", err)
+	}
+	f += message
+	outputFile, err := fileutil.JoinOutputFilePath(p.outPutPath, table, ".proto")
+	if err != nil {
+		return err
+	}
 	return p.output(outputFile, f)
 }
 
+// ValidateProtoPackageStr 检查 proto package 是否由合法标识符组成。
+func ValidateProtoPackageStr(packageStr string) error {
+	packageStr = strings.TrimSpace(packageStr)
+	if packageStr == "" {
+		return fmt.Errorf("proto package cannot be empty")
+	}
+	parts := strings.Split(packageStr, ".")
+	for _, part := range parts {
+		if !token.IsIdentifier(part) {
+			return fmt.Errorf("invalid proto package: %q", packageStr)
+		}
+	}
+	return nil
+}
+
+// ValidateGoPackageStr 检查 go_package 是否包含合法的导入路径和可选别名。
+func ValidateGoPackageStr(goPackageStr string) error {
+	goPackageStr = strings.TrimSpace(goPackageStr)
+	if goPackageStr == "" {
+		return fmt.Errorf("go package cannot be empty")
+	}
+	importPath, alias, found := strings.Cut(goPackageStr, ";")
+	importPath = strings.TrimSpace(importPath)
+	if importPath == "" || strings.ContainsAny(importPath, " \t\r\n;") {
+		return fmt.Errorf("invalid go package: %q", goPackageStr)
+	}
+	if found {
+		alias = strings.TrimSpace(alias)
+		if !token.IsIdentifier(alias) {
+			return fmt.Errorf("invalid go package alias: %q", goPackageStr)
+		}
+	}
+	return nil
+}
+
+// Proto 保存单表 proto 文件生成过程中的模板上下文。
 type Proto struct {
 	gorm                 *gorm.DB          // 数据库
 	outPutPath           string            // 生成文件路径
@@ -62,35 +120,22 @@ type Proto struct {
 
 func (p *Proto) output(filePath, content string) error {
 	if fileutil.Exists(filePath) {
-		return errors.New(fmt.Sprintf("%s exist", filePath))
+		return fmt.Errorf("%s exist", filePath)
 	}
-	fileDir := filepath.Dir(filePath)
-	if err := os.MkdirAll(fileDir, 0775); err != nil {
-		return err
-	}
-	dstFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0775)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-	_, err = dstFile.WriteString(content)
-	if err != nil {
-		return err
-	}
-	return err
+	return fileutil.WriteContentCover(filePath, content)
 }
 
-func (p *Proto) getTableComment(table string) string {
+func (p *Proto) getTableComment(table string) (string, error) {
 	tableComments, err := gormx.GetTableComments(p.gorm)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	for k, v := range tableComments {
 		if k == table {
-			return v
+			return v, nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 func (p *Proto) genSyntax() string {
@@ -117,10 +162,10 @@ func (p *Proto) genOption() string {
 	return fmt.Sprintln(str.String())
 }
 
-func (p *Proto) genService() string {
+func (p *Proto) genService() (string, error) {
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	status := false
 	for _, v := range columnTypes {
@@ -137,10 +182,10 @@ func (p *Proto) genService() string {
 		"status":              status,
 		"urlPrefix":           urlPrefix,
 	})
-	return fmt.Sprintln(str.String())
+	return fmt.Sprintln(str.String()), nil
 }
 
-func (p *Proto) genMessage() string {
+func (p *Proto) genMessage() (string, error) {
 	var info string
 	var createReq string
 	var createReqRequired []string
@@ -156,12 +201,12 @@ func (p *Proto) genMessage() string {
 	var status bool
 	columnTypes, err := p.gorm.Migrator().ColumnTypes(p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	// 获取索引
 	indexes, err := gormx.GetIndexes(p.gorm, p.tableName)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	var primaryKeyColumn string
 	for _, index := range indexes {
@@ -250,7 +295,7 @@ func (p *Proto) genMessage() string {
 		"getReqRequired":          joinWithQuotes(getReqRequired),
 		"status":                  status,
 	})
-	return fmt.Sprintln(str.String())
+	return fmt.Sprintln(str.String()), nil
 }
 
 // upperName 大写
@@ -281,6 +326,9 @@ func (p *Proto) lowerName(s string) string {
 
 // lowerFieldName 字段名称小写
 func lowerFieldName(str string) string {
+	if str == "" {
+		return str
+	}
 	words := []string{"API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "IP", "JSON", "LHS", "QPS", "RAM", "RHS", "RPC", "SLA", "SMTP", "SSH", "TLS", "ttl", "UID", "UI", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XSRF", "XSS"}
 	// 如果第一个单词命中  则不处理
 	for _, v := range words {

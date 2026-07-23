@@ -20,9 +20,19 @@ const (
 )
 
 const (
-	MySQL    = "mysql"
+	// MySQL 表示 MySQL 数据库驱动名称。
+	MySQL = "mysql"
+	// Postgres 表示 PostgreSQL 数据库驱动名称。
 	Postgres = "postgres"
 )
+
+var sqlOpen = sql.Open
+var useTracingPlugin = func(db *gorm.DB) error {
+	return db.Use(tracing.NewPlugin())
+}
+var closeSQLDB = func(db *sql.DB) error {
+	return db.Close()
+}
 
 // ClientConfig 配置
 type ClientConfig struct {
@@ -72,7 +82,7 @@ func newDirectGormClient(driver, dsn string, logLevel logger.LogLevel) (*gorm.DB
 
 // NewGormClient 初始化gorm客户端
 // mysql: "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-// postgres: "host=localhost user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+// postgres: "host=127.0.0.1 user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 func NewGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("client config cannot be nil")
@@ -92,7 +102,7 @@ func NewMySQLGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("client config cannot be nil")
 	}
-	sqlDB, err := sql.Open("mysql", cfg.DataSourceName)
+	sqlDB, err := sqlOpen("mysql", cfg.DataSourceName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open mysql connection")
 	}
@@ -117,9 +127,8 @@ func NewMySQLGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	}
 	db.Set("gorm:table_options", "CHARSET=utf8mb4")
 	if cfg.Tracing {
-		if err := db.Use(tracing.NewPlugin()); err != nil {
-			_ = sqlDB.Close()
-			return nil, errors.Wrap(err, "failed to enable tracing")
+		if err := enableTracing(db, sqlDB); err != nil {
+			return nil, err
 		}
 	}
 	return db, nil
@@ -130,7 +139,7 @@ func NewPostgresGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("client config cannot be nil")
 	}
-	sqlDB, err := sql.Open("pgx", cfg.DataSourceName)
+	sqlDB, err := sqlOpen("pgx", cfg.DataSourceName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open postgres connection")
 	}
@@ -154,16 +163,26 @@ func NewPostgresGormClient(cfg *ClientConfig) (*gorm.DB, error) {
 		return nil, errors.Wrap(err, "failed to open postgres connection")
 	}
 	if cfg.Tracing {
-		if err := db.Use(tracing.NewPlugin()); err != nil {
-			_ = sqlDB.Close()
-			return nil, errors.Wrap(err, "failed to enable tracing")
+		if err := enableTracing(db, sqlDB); err != nil {
+			return nil, err
 		}
 	}
 	return db, nil
 }
 
+func enableTracing(db *gorm.DB, sqlDB *sql.DB) error {
+	if err := useTracingPlugin(db); err != nil {
+		_ = closeSQLDB(sqlDB)
+		return errors.Wrap(err, "failed to enable tracing")
+	}
+	return nil
+}
+
 // GetHealthStatus 检查链接是否健康
 func GetHealthStatus(gormDB *gorm.DB) string {
+	if gormDB == nil {
+		return unhealthy
+	}
 	sqlDB, err := gormDB.DB()
 	if err != nil {
 		return unhealthy
@@ -173,15 +192,23 @@ func GetHealthStatus(gormDB *gorm.DB) string {
 	if err != nil {
 		return unhealthy
 	}
-	err = gormDB.Raw(`select 1`).Error
+	err = runHealthCheckQuery(gormDB, `select 1`)
 	if err != nil {
 		return unhealthy
 	}
 	return health
 }
 
+func runHealthCheckQuery(gormDB *gorm.DB, query string) error {
+	var probe int
+	return gormDB.Raw(query).Scan(&probe).Error
+}
+
 // GetState 获取目前数据库状态参数
 func GetState(gormDB *gorm.DB) *sql.DBStats {
+	if gormDB == nil {
+		return nil
+	}
 	db, err := gormDB.DB()
 	if err != nil {
 		return nil

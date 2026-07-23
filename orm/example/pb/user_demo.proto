@@ -62,7 +62,7 @@ service UserDemo {
       }
     };
   }
-  //用户-删除多条数据
+  //用户-删除一条数据
   rpc DeleteUserDemo(DeleteUserDemoReq) returns (DeleteUserDemoReply) {
     option (google.api.http) = {
       post: "/api/gorm_gen/v1/user_demo/delete"
@@ -134,7 +134,7 @@ message UserDemoInfo {
 message CreateUserDemoReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      required: [UID,username,password,nickname,status,tenantId]
+      required: ["UID","username","password","nickname","status","tenantId"]
     }
   };
   string UID = 1 [(buf.validate.field).string={min_len: 1, max_len: 64}]; // uid
@@ -142,16 +142,16 @@ message CreateUserDemoReq {
 	string password = 3 [(buf.validate.field).string={min_len: 1, max_len: 100}]; // 密码
 	string nickname = 4 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户昵称
 	string remark = 5 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 500}]; // 备注
-	int32 deptId = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 部门ID
+	int32 deptId = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 部门ID
 	string postIds = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 岗位编号数组
 	string email = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户邮箱
 	string mobile = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 11}]; // 手机号码
-	int32 sex = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 用户性别
+	int32 sex = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 用户性别
 	string avatar = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 100}]; // 头像地址
-	int32 status = 12 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 帐号状态（0正常 -1停用）
+	int32 status = 12 ; // 帐号状态（0正常 -1停用）
 	string loginIP = 13 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 最后登录IP
 	string loginDate = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 64}]; // 最后登录时间
-	int32 tenantId = 15 [(buf.validate.field).int32={gt: 0, lte: 64}]; // 租户编号
+	int32 tenantId = 15 ; // 租户编号
 }
 
 //响应-用户-创建一条数据
@@ -163,7 +163,7 @@ message CreateUserDemoReply {
 message UpdateUserDemoReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      required: [id,UID,username,password,nickname,status,tenantId]
+      required: ["id","UID","username","password","nickname","status","tenantId"]
     }
   };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
@@ -172,16 +172,16 @@ message UpdateUserDemoReq {
 	string password = 4 [(buf.validate.field).string={min_len: 1, max_len: 100}]; // 密码
 	string nickname = 5 [(buf.validate.field).string={min_len: 1, max_len: 30}]; // 用户昵称
 	string remark = 6 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 500}]; // 备注
-	int32 deptId = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 64}]; // 部门ID
+	int32 deptId = 7 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 部门ID
 	string postIds = 8 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 255}]; // 岗位编号数组
 	string email = 9 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 用户邮箱
 	string mobile = 10 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 11}]; // 手机号码
-	int32 sex = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).int32={gt: 0, lte: 16}]; // 用户性别
+	int32 sex = 11 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED]; // 用户性别
 	string avatar = 12 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 100}]; // 头像地址
-	int32 status = 13 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 帐号状态（0正常 -1停用）
+	int32 status = 13 ; // 帐号状态（0正常 -1停用）
 	string loginIP = 14 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 50}]; // 最后登录IP
 	string loginDate = 15 [(buf.validate.field).ignore=IGNORE_IF_UNPOPULATED,(buf.validate.field).string={min_len: 1, max_len: 64}]; // 最后登录时间
-	int32 tenantId = 16 [(buf.validate.field).int32={gt: 0, lte: 64}]; // 租户编号
+	int32 tenantId = 16 ; // 租户编号
 }
 
 //响应-用户-更新一条数据
@@ -191,34 +191,34 @@ message UpdateUserDemoReply {}
 message UpdateUserDemoStatusReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      required: [id,status]
+      required: ["id","status"]
     }
   };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
-	int32 status = 2 [(buf.validate.field).int32={gt: 0, lte: 16}]; // 帐号状态（0正常 -1停用）
+	int32 status = 2 ; // 帐号状态（0正常 -1停用）
 }
 
 //响应-用户-更新状态
 message UpdateUserDemoStatusReply {}
 
-//请求-用户-删除多条数据
+//请求-用户-删除一条数据
 message DeleteUserDemoReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      required: [id]
+      required: ["id"]
     }
   };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
 }
 
-//响应-用户-删除多条数据
+//响应-用户-删除一条数据
 message DeleteUserDemoReply {}
 
 //请求-用户-单条数据查询
 message GetUserDemoInfoReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      required: [id]
+      required: ["id"]
     }
   };
   string id = 1 [(buf.validate.field).string={min_len: 1, max_len: 128}]; // ID
@@ -239,8 +239,8 @@ message GetUserDemoListReq {
       ]
     }
   };
-  int32 page = 1; //页码
-  int32 pageSize = 2; //页数
+  int32 page = 1[(buf.validate.field).int32={gte: 1}]; //页码
+  int32 pageSize = 2[(buf.validate.field).int32={gte: 1, lte: 1000}]; //页数
 }
 
 //响应-用户-列表数据查询

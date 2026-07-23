@@ -292,6 +292,9 @@ func (a *AdminToRoleDemoRepo) UpsertOneByFields(ctx context.Context, data *gorm_
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFields fields is empty")
 	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFields data is nil")
+	}
 	columns := make([]clause.Column, 0)
 	for _, item := range fields {
 		columns = append(columns, clause.Column{Name: item})
@@ -360,6 +363,9 @@ func (a *AdminToRoleDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *
 func (a *AdminToRoleDemoRepo) UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.AdminToRoleDemo, fields []string) error {
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFieldsTx fields is empty")
+	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFieldsTx data is nil")
 	}
 	columns := make([]clause.Column, 0)
 	for _, item := range fields {

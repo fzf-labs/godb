@@ -3,6 +3,7 @@ package gorediscache
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -10,6 +11,23 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var (
+	instrumentTracing = func(client redis.UniversalClient, opts ...redisotel.TracingOption) error {
+		return redisotel.InstrumentTracing(client, opts...)
+	}
+	instrumentMetrics = func(client redis.UniversalClient, opts ...redisotel.MetricsOption) error {
+		return redisotel.InstrumentMetrics(client, opts...)
+	}
+	pingRedisClient = func(client *redis.Client) error {
+		_, err := client.Ping(context.Background()).Result()
+		return err
+	}
+	closeRedisClient = func(client *redis.Client) error {
+		return client.Close()
+	}
+)
+
+// GoRedisConfig 定义 go-redis 客户端连接、超时和可观测性配置。
 type GoRedisConfig struct {
 	Addr         string        `json:"addr"`
 	Password     string        `json:"password"`
@@ -23,6 +41,9 @@ type GoRedisConfig struct {
 
 // NewGoRedis 初始化go-redis客户端
 func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
+	if strings.TrimSpace(cfg.Addr) == "" {
+		return nil, fmt.Errorf("redis addr cannot be empty")
+	}
 	client := redis.NewClient(&redis.Options{
 		Addr:         cfg.Addr,
 		Password:     cfg.Password,
@@ -33,22 +54,21 @@ func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
 	})
 	if cfg.Tracing {
 		// 启用跟踪工具。
-		if err := redisotel.InstrumentTracing(client); err != nil {
-			_ = client.Close()
+		if err := instrumentTracing(client); err != nil {
+			_ = closeRedisClient(client)
 			return nil, err
 		}
 	}
 	if cfg.Metrics {
 		// 启用度量工具。
-		if err := redisotel.InstrumentMetrics(client); err != nil {
-			_ = client.Close()
+		if err := instrumentMetrics(client); err != nil {
+			_ = closeRedisClient(client)
 			return nil, err
 		}
 	}
 	// ping 检测一下
-	_, err := client.Ping(context.Background()).Result()
-	if err != nil {
-		_ = client.Close()
+	if err := pingRedisClient(client); err != nil {
+		_ = closeRedisClient(client)
 		return nil, err
 	}
 	return client, nil
@@ -56,8 +76,11 @@ func NewGoRedis(cfg GoRedisConfig) (*redis.Client, error) {
 
 // RedisInfo Redis服务信息
 func RedisInfo(r *redis.Client, sections ...string) (res map[string]string) {
-	infoStr, err := r.Info(context.Background(), sections...).Result()
 	res = map[string]string{}
+	if r == nil {
+		return res
+	}
+	infoStr, err := r.Info(context.Background(), sections...).Result()
 	if err != nil {
 		return res
 	}
@@ -80,6 +103,7 @@ func RedisInfo(r *redis.Client, sections ...string) (res map[string]string) {
 // stringToLines string拆分多行
 func stringToLines(s string) (lines []string, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(s))
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
@@ -89,6 +113,9 @@ func stringToLines(s string) (lines []string, err error) {
 
 // DBSize 当前数据库key数量
 func DBSize(r *redis.Client) int64 {
+	if r == nil {
+		return 0
+	}
 	size, err := r.DBSize(context.Background()).Result()
 	if err != nil {
 		return 0
@@ -98,7 +125,7 @@ func DBSize(r *redis.Client) int64 {
 
 // stringToKV string拆分key和val
 func stringToKV(s string) (key, val string) {
-	ss := strings.Split(s, ":")
+	ss := strings.SplitN(s, ":", 2)
 	if len(ss) < 2 {
 		return s, ""
 	}

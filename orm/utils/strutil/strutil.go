@@ -20,19 +20,45 @@ func StrSliFind(collection []string, element string) bool {
 
 // SliRemove 删除字符串切片中的某个元素
 func SliRemove(collection, element []string) []string {
-	for _, s := range element {
-		for i, v := range collection {
-			if s == v {
-				collection = append(collection[:i], collection[i+1:]...)
-			}
-		}
+	if len(collection) == 0 {
+		return collection
 	}
-	return collection
+	if len(element) == 0 {
+		return append([]string(nil), collection...)
+	}
+	remove := make(map[string]struct{}, len(element))
+	for _, s := range element {
+		remove[s] = struct{}{}
+	}
+	result := make([]string, 0, len(collection))
+	for _, v := range collection {
+		if _, ok := remove[v]; ok {
+			continue
+		}
+		result = append(result, v)
+	}
+	return result
+}
+
+func isNilLikeValue(any any) bool {
+	if any == nil {
+		return true
+	}
+	rv := reflect.ValueOf(any)
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }
 
 // ConvToString 任意类型转字符串
 func ConvToString(any any) string {
-	if any == nil {
+	if isNilLikeValue(any) {
 		return ""
 	}
 	switch value := any.(type) {
@@ -72,7 +98,7 @@ func ConvToString(any any) string {
 		}
 		return value.String()
 	case *time.Time:
-		if value == nil {
+		if value == nil || value.IsZero() {
 			return ""
 		}
 		return value.String()

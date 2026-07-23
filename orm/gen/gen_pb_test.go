@@ -1,22 +1,255 @@
 package gen
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/gormx"
 )
 
 // TestNewGenerationPb 验证 proto 文件生成。
 func TestNewGenerationPb(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		return
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
-	NewGenerationPB(
+	testenv.CleanupGormDB(t, db)
+	err = NewGenerationPB(
 		db,
-		"../example/pb",
+		t.TempDir(),
 		"api.gorm_gen.v1",
 		"api/gorm_gen/v1;v1",
 		WithPBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("ul_")),
+		WithPBTables([]string{"user_demo"}),
 	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewGenerationPbRejectsNilDB(t *testing.T) {
+	err := NewGenerationPB(nil, t.TempDir(), "api.gorm_gen.v1", "api/gorm_gen/v1;v1").Do()
+	if err == nil || !strings.Contains(err.Error(), "db cannot be nil") {
+		t.Fatalf("expected nil db error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsNilReceiver(t *testing.T) {
+	var pb *GenerationPb
+
+	err := pb.Do()
+	if err == nil || !strings.Contains(err.Error(), "db cannot be nil") {
+		t.Fatalf("expected nil db error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsBlankOutputPath(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(db, " \t\n", "api.gorm_gen.v1", "api/gorm_gen/v1;v1").Do()
+	if err == nil || !strings.Contains(err.Error(), "output path cannot be empty") {
+		t.Fatalf("expected blank output path error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsBlankPackage(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(db, t.TempDir(), "", "api/gorm_gen/v1;v1").Do()
+	if err == nil || !strings.Contains(err.Error(), "package cannot be empty") {
+		t.Fatalf("expected blank package error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsBlankGoPackage(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(db, t.TempDir(), "api.gorm_gen.v1", " \t\n").Do()
+	if err == nil || !strings.Contains(err.Error(), "go package cannot be empty") {
+		t.Fatalf("expected blank go package error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbRejectsBlankTables(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.gorm_gen.v1",
+		"api/gorm_gen/v1;v1",
+		WithPBTables([]string{"users", " \t\n"}),
+	).Do()
+	if err == nil || !strings.Contains(err.Error(), "table name cannot be empty") {
+		t.Fatalf("expected empty table error, got %v", err)
+	}
+}
+
+func TestNewGenerationPbDoRejectsEmptyTableSet(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.gorm_gen.v1",
+		"api/gorm_gen/v1;v1",
+	).Do()
+	if err == nil || !strings.Contains(err.Error(), "no tables to generate") {
+		t.Fatalf("expected empty table set error, got %v", err)
+	}
+}
+
+func TestNewGenerationPb_ReturnsGenerationErrors(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type protoExample struct {
+		ID     uint `gorm:"primaryKey"`
+		Name   string
+		Status int
+	}
+	if err := db.AutoMigrate(&protoExample{}); err != nil {
+		t.Fatal(err)
+	}
+	tables, err := db.Migrator().GetTables()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tables) == 0 {
+		t.Fatal("expected at least one table")
+	}
+
+	outDir := t.TempDir()
+	outFile := filepath.Join(outDir, tables[0]+".proto")
+	if err := os.WriteFile(outFile, []byte("existing"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		outDir,
+		"api.gorm_gen.v1",
+		"api/gorm_gen/v1;v1",
+		WithPBTables([]string{tables[0]}),
+	).Do()
+	if err == nil {
+		t.Fatal("expected generation error, got nil")
+	}
+	if !strings.Contains(err.Error(), tables[0]) {
+		t.Fatalf("expected error to mention table %q, got %v", tables[0], err)
+	}
+}
+
+func TestNewGenerationPbWithSQLiteSuccess(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "proto-gen.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type protoSuccessExample struct {
+		ID   uint `gorm:"primaryKey"`
+		Name string
+	}
+	if err := db.AutoMigrate(&protoSuccessExample{}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.demo.v1",
+		"api/demo/v1;v1",
+		WithPBOpts(ModelOptionRemoveDefault()),
+		WithPBTables([]string{"proto_success_examples"}),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewGenerationPbPartitionError(t *testing.T) {
+	db, err := gorm.Open(generationNamedDialector{Dialector: sqlite.Open(":memory:"), name: gormx.Postgres}, &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type protoPartitionExample struct {
+		ID uint `gorm:"primaryKey"`
+	}
+	if err := db.AutoMigrate(&protoPartitionExample{}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = NewGenerationPB(
+		db,
+		t.TempDir(),
+		"api.demo.v1",
+		"api/demo/v1;v1",
+		WithPBTables([]string{"proto_partition_examples"}),
+	).Do()
+	if err == nil {
+		t.Fatal("expected partition query error")
+	}
+	if !strings.Contains(err.Error(), "get partition table children") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestJoinGenerationErrorsFallsBackToWaitError(t *testing.T) {
+	waitErr := errors.New("wait failed")
+
+	err := joinGenerationErrors(waitErr, nil)
+	if !errors.Is(err, waitErr) {
+		t.Fatalf("expected wait error fallback, got %v", err)
+	}
+}
+
+func TestJoinGenerationErrorsPreservesSliceOrder(t *testing.T) {
+	err := joinGenerationErrors(nil, []error{
+		errors.New("table a failed"),
+		nil,
+		errors.New("table c failed"),
+	})
+
+	if got := err.Error(); got != "table a failed\ntable c failed" {
+		t.Fatalf("unexpected joined error order: %q", got)
+	}
+}
+
+func TestRecordGenerationErrorStoresByIndex(t *testing.T) {
+	errs := make([]error, 3)
+	recordGenerationError(errs, 2, errors.New("third table failed"))
+	recordGenerationError(errs, 0, errors.New("first table failed"))
+
+	err := joinGenerationErrors(nil, errs)
+	if got := err.Error(); got != "first table failed\nthird table failed" {
+		t.Fatalf("unexpected indexed error order: %q", got)
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -12,6 +11,7 @@ import (
 // tableName: 表名
 // dataList: 需要更新的数据列表,必须是指向结构体的切片
 func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error) {
+	tableName = strings.TrimSpace(tableName)
 	if tableName == "" {
 		return nil, errors.New("tableName cannot be empty")
 	}
@@ -19,14 +19,9 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 		return nil, err
 	}
 
-	// 检查 dataList 是否为切片
-	rv := reflect.ValueOf(dataList)
-	if rv.Kind() != reflect.Slice {
-		return nil, errors.New("dataList must be a slice")
-	}
-
-	if rv.Len() == 0 {
-		return nil, errors.New("dataList cannot be empty")
+	rv, err := normalizeBatchSlice(dataList)
+	if err != nil {
+		return nil, err
 	}
 
 	// 获取元素类型
@@ -42,8 +37,12 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 	}
 
 	// 检查是否存在 "id" 字段
-	if _, ok := fields["id"]; !ok {
+	idColumn, idInfo, ok := findIDField(fields)
+	if !ok {
 		return nil, errors.New("struct must have a field with json tag 'id'")
+	}
+	if len(fields) == 1 {
+		return nil, errors.New("no update columns found")
 	}
 
 	// 准备数据
@@ -51,39 +50,26 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 	updateMap := make(map[string][]string)
 	for i := 0; i < rv.Len(); i++ {
 		// 获取每个结构体实例
-		structVal := rv.Index(i).Elem()
-		idField := structVal.FieldByName(fields["id"].name)
+		item := rv.Index(i)
+		if item.IsNil() {
+			return nil, fmt.Errorf("dataList[%d] cannot be nil", i)
+		}
+		structVal := item.Elem()
+		idField := structVal.FieldByName(idInfo.name)
 		if !idField.IsValid() {
 			return nil, fmt.Errorf("id field not found in struct at index %d", i)
 		}
 
-		// 根据字段类型格式化 ID 值
-		var idStr string
-		switch idField.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			idStr = strconv.FormatInt(idField.Int(), 10)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			idStr = strconv.FormatUint(idField.Uint(), 10)
-		case reflect.String:
-			idStr = idField.String()
-			// 对字符串类型的 ID 进行转义和引号处理
-			if idStr != "" {
-				idStr = fmt.Sprintf("'%s'", strings.ReplaceAll(idStr, "'", "\\'"))
-			}
-		default:
-			// 其他类型转为字符串处理
-			idStr = fmt.Sprintf("'%v'", idField.Interface())
-		}
-
-		if idStr == "" {
-			return nil, fmt.Errorf("empty id value at index %d", i)
+		idStr, err := formatBatchIDValue(idField, quoteMySQLString)
+		if err != nil {
+			return nil, fmt.Errorf("%w at index %d", err, i)
 		}
 
 		ids = append(ids, idStr)
 
 		// 处理其他字段
 		for fieldName, fieldInfo := range fields {
-			if fieldName == "id" {
+			if fieldName == idColumn {
 				continue
 			}
 			fieldValue := structVal.FieldByName(fieldInfo.name)
@@ -110,7 +96,7 @@ func MysqlBatchUpdateToSQLArray(tableName string, dataList any) ([]string, error
 		batchStart := i * batchSize
 		batchEnd := min((i+1)*batchSize, length)
 
-		sql, err := buildBatchUpdateSQL(tableName, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
+		sql, err := buildBatchUpdateSQLWithIDColumn(tableName, idColumn, updateMap, batchStart, batchEnd, ids[batchStart:batchEnd])
 		if err != nil {
 			return nil, fmt.Errorf("build batch update SQL error: %w", err)
 		}
@@ -138,6 +124,7 @@ func getStructFields(structType reflect.Type) (map[string]structField, error) {
 			}
 		}
 
+		columnName = strings.TrimSpace(columnName)
 		if columnName == "" {
 			return nil, fmt.Errorf("field %s must have column name in gorm tag", field.Name)
 		}
@@ -158,6 +145,18 @@ func getStructFields(structType reflect.Type) (map[string]structField, error) {
 	return fields, nil
 }
 
+func findIDField(fields map[string]structField) (string, structField, bool) {
+	if field, ok := fields["id"]; ok {
+		return "id", field, true
+	}
+	for column, field := range fields {
+		if field.name == "ID" {
+			return column, field, true
+		}
+	}
+	return "", structField{}, false
+}
+
 type structField struct {
 	name     string
 	typeKind reflect.Kind
@@ -166,26 +165,20 @@ type structField struct {
 
 // 辅助函数：格式化字段值
 func formatFieldValue(field reflect.Value) (string, error) {
-	switch field.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(field.Int(), 10), nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return strconv.FormatUint(field.Uint(), 10), nil
-	case reflect.String:
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(field.String(), "'", "\\'")), nil
-	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(field.Float(), 'f', -1, 64), nil
-	case reflect.Bool:
-		return strconv.FormatBool(field.Bool()), nil
-	default:
-		return "", fmt.Errorf("unsupported field type: %v", field.Kind())
-	}
+	return formatSQLValueWithBool(field, quoteMySQLString, mysqlBoolLiteral)
 }
 
 // 辅助函数：生成每批次的 SQL 语句
 func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
+	return buildBatchUpdateSQLWithIDColumn(tableName, "id", updateMap, batchStart, batchEnd, batchIDs)
+}
+
+func buildBatchUpdateSQLWithIDColumn(tableName, idColumn string, updateMap map[string][]string, batchStart, batchEnd int, batchIDs []string) (string, error) {
 	if len(batchIDs) == 0 {
 		return "", errors.New("batchIDs cannot be empty")
+	}
+	if len(updateMap) == 0 {
+		return "", errors.New("no update columns found")
 	}
 
 	var sqlBuilder strings.Builder
@@ -200,7 +193,7 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchS
 		if err != nil {
 			return "", err
 		}
-		clause := escapeIdentifier(fieldName) + " = CASE id"
+		clause := escapeIdentifier(fieldName) + " = CASE " + escapeIdentifier(idColumn)
 		for i, id := range batchIDs {
 			clause += " WHEN " + id + " THEN " + fieldValueList[i]
 		}
@@ -209,7 +202,7 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchS
 	}
 
 	sqlBuilder.WriteString(strings.Join(setClauses, ", "))
-	sqlBuilder.WriteString(" WHERE id IN (" + strings.Join(batchIDs, ",") + ")")
+	sqlBuilder.WriteString(" WHERE " + escapeIdentifier(idColumn) + " IN (" + strings.Join(batchIDs, ",") + ")")
 
 	return sqlBuilder.String(), nil
 }
@@ -217,4 +210,15 @@ func buildBatchUpdateSQL(tableName string, updateMap map[string][]string, batchS
 // escapeIdentifier 转义 MySQL 标识符。
 func escapeIdentifier(name string) string {
 	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
+}
+
+func quoteMySQLString(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+func mysqlBoolLiteral(value bool) string {
+	if value {
+		return "1"
+	}
+	return "0"
 }

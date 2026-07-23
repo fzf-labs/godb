@@ -649,6 +649,9 @@ func (u *UserDemoRepo) UpsertOneCacheByFields(ctx context.Context, data *gorm_ge
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFields fields is empty")
 	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFields data is nil")
+	}
 	fieldNameToValue := make(map[string]interface{})
 	typ := reflect.TypeOf(data).Elem()
 	val := reflect.ValueOf(data).Elem()
@@ -717,6 +720,9 @@ func (u *UserDemoRepo) UpsertOneByFieldsTx(ctx context.Context, tx *gorm_gen_dao
 func (u *UserDemoRepo) UpsertOneCacheByFieldsTx(ctx context.Context, tx *gorm_gen_dao.Query, data *gorm_gen_model.UserDemo, fields []string) error {
 	if len(fields) == 0 {
 		return errors.New("UpsertOneByFieldsTx fields is empty")
+	}
+	if data == nil {
+		return errors.New("UpsertOneCacheByFieldsTx data is nil")
 	}
 	fieldNameToValue := make(map[string]interface{})
 	typ := reflect.TypeOf(data).Elem()
@@ -2331,6 +2337,7 @@ func (u *UserDemoRepo) FindMultiUnscopedCacheByTenantIDS(ctx context.Context, te
 }
 
 // FindMultiByCondition 自定义查询数据(通用)
+// 非万能查询方法,请评估后谨慎使用
 func (u *UserDemoRepo) FindMultiByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.UserDemo, *condition.Reply, error) {
 	result := make([]*gorm_gen_model.UserDemo, 0)
 	conditionReply := &condition.Reply{}
@@ -2339,30 +2346,39 @@ func (u *UserDemoRepo) FindMultiByCondition(ctx context.Context, conditionReq *c
 	if err != nil {
 		return result, conditionReply, err
 	}
-	err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Select([]string{"*"}).Clauses(whereExpressions...).Count(&total).Error
-	if err != nil {
-		return result, conditionReply, err
-	}
-	if total == 0 {
-		return result, conditionReply, nil
-	}
-	conditionReply, err = conditionReq.ConvertToPage(int32(total))
-	if err != nil {
-		return result, conditionReply, err
-	}
-	query := u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Clauses(orderExpressions...)
-	if conditionReply.Page != 0 && conditionReply.PageSize != 0 {
-		query = query.Offset(int((conditionReply.Page - 1) * conditionReply.PageSize))
-		query = query.Limit(int(conditionReply.PageSize))
-	}
-	err = query.Find(&result).Error
-	if err != nil {
-		return result, conditionReply, err
+	if conditionReq.Page != 0 && conditionReq.PageSize != 0 {
+		err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Count(&total).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+		if total == 0 {
+			return result, conditionReply, nil
+		}
+		conditionReply, err = conditionReq.ConvertToPage(int32(total))
+		if err != nil {
+			return result, conditionReply, err
+		}
+		query := u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Clauses(orderExpressions...)
+		if conditionReply.Page != 0 && conditionReply.PageSize != 0 {
+			query = query.Offset(int((conditionReply.Page - 1) * conditionReply.PageSize))
+			query = query.Limit(int(conditionReply.PageSize))
+		}
+		err = query.Find(&result).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+	} else {
+		err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Clauses(whereExpressions...).Clauses(orderExpressions...).Find(&result).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+		conditionReply.Total = int32(len(result))
 	}
 	return result, conditionReply, err
 }
 
 // FindMultiUnscopedByCondition 自定义查询数据(通用)（包括软删除）
+// 非万能查询方法,请评估后谨慎使用
 func (u *UserDemoRepo) FindMultiUnscopedByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.UserDemo, *condition.Reply, error) {
 	result := make([]*gorm_gen_model.UserDemo, 0)
 	conditionReply := &condition.Reply{}
@@ -2371,30 +2387,39 @@ func (u *UserDemoRepo) FindMultiUnscopedByCondition(ctx context.Context, conditi
 	if err != nil {
 		return result, conditionReply, err
 	}
-	err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Unscoped().Select([]string{"*"}).Clauses(whereExpressions...).Count(&total).Error
-	if err != nil {
-		return result, conditionReply, err
-	}
-	if total == 0 {
-		return result, conditionReply, nil
-	}
-	conditionReply, err = conditionReq.ConvertToPage(int32(total))
-	if err != nil {
-		return result, conditionReply, err
-	}
-	query := u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Unscoped().Clauses(whereExpressions...).Clauses(orderExpressions...)
-	if conditionReply.Page != 0 && conditionReply.PageSize != 0 {
-		query = query.Offset(int((conditionReply.Page - 1) * conditionReply.PageSize))
-		query = query.Limit(int(conditionReply.PageSize))
-	}
-	err = query.Find(&result).Error
-	if err != nil {
-		return result, conditionReply, err
+	if conditionReq.Page != 0 && conditionReq.PageSize != 0 {
+		err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Unscoped().Clauses(whereExpressions...).Count(&total).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+		if total == 0 {
+			return result, conditionReply, nil
+		}
+		conditionReply, err = conditionReq.ConvertToPage(int32(total))
+		if err != nil {
+			return result, conditionReply, err
+		}
+		query := u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Unscoped().Clauses(whereExpressions...).Clauses(orderExpressions...)
+		if conditionReply.Page != 0 && conditionReply.PageSize != 0 {
+			query = query.Offset(int((conditionReply.Page - 1) * conditionReply.PageSize))
+			query = query.Limit(int(conditionReply.PageSize))
+		}
+		err = query.Find(&result).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+	} else {
+		err = u.db.WithContext(ctx).Model(&gorm_gen_model.UserDemo{}).Unscoped().Clauses(whereExpressions...).Clauses(orderExpressions...).Find(&result).Error
+		if err != nil {
+			return result, conditionReply, err
+		}
+		conditionReply.Total = int32(len(result))
 	}
 	return result, conditionReply, err
 }
 
 // FindMultiCacheByCondition 自定义查询数据(通用),并设置缓存
+// 非万能查询方法,缓存命中率低,请评估后谨慎使用
 func (u *UserDemoRepo) FindMultiCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.UserDemo, *condition.Reply, error) {
 	type Tmp struct {
 		Result         []*gorm_gen_model.UserDemo
@@ -2432,6 +2457,7 @@ func (u *UserDemoRepo) FindMultiCacheByCondition(ctx context.Context, conditionR
 }
 
 // FindMultiUnscopedCacheByCondition 自定义查询数据(通用)（包括软删除）,并设置缓存
+// 非万能查询方法,缓存命中率低,请评估后谨慎使用
 func (u *UserDemoRepo) FindMultiUnscopedCacheByCondition(ctx context.Context, conditionReq *condition.Req) ([]*gorm_gen_model.UserDemo, *condition.Reply, error) {
 	type Tmp struct {
 		Result         []*gorm_gen_model.UserDemo

@@ -1,32 +1,37 @@
 package gen
 
 import (
-	"errors"
 	"fmt"
+	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
+	"unicode"
 
-	"github.com/fzf-labs/godb/orm/gen/repo"
-	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/fzf-labs/godb/orm/utils/fileutil"
-	"github.com/fzf-labs/godb/orm/utils/strutil"
 	"github.com/iancoleman/strcase"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+
+	"github.com/fzf-labs/godb/orm/gen/repo"
+	"github.com/fzf-labs/godb/orm/gormx"
+	"github.com/fzf-labs/godb/orm/utils/fileutil"
+	"github.com/fzf-labs/godb/orm/utils/strutil"
 )
 
 // //////////////////////////////////////
 // NewGenerationDB SQL 生成 dao,model,repo
 // //////////////////////////////////////
 const (
+	// SQLNullTime 表示 database/sql 的可空时间类型。
 	SQLNullTime = "sql.NullTime"
-	TimeTime    = "time.Time"
+	// TimeTime 表示标准库 time.Time 类型。
+	TimeTime = "time.Time"
 )
 
+// GenerationDB 保存 ORM model、dao 和 repo 代码生成所需配置。
 type GenerationDB struct {
 	db               *gorm.DB                                                      // 数据库
 	outPutPath       string                                                        // 文件生成路径
@@ -39,6 +44,7 @@ type GenerationDB struct {
 	fieldNullable    bool                                                          // 字段是否可空
 }
 
+// NewGenerationDB 创建 ORM 代码生成器。
 func NewGenerationDB(db *gorm.DB, outPutPath string, opts ...OptionDB) *GenerationDB {
 	g := &GenerationDB{
 		db:         db,
@@ -56,6 +62,7 @@ func NewGenerationDB(db *gorm.DB, outPutPath string, opts ...OptionDB) *Generati
 	return g
 }
 
+// OptionDB 配置 ORM 代码生成器。
 type OptionDB func(gen *GenerationDB)
 
 // WithOutRepo 选项函数-不生成repo
@@ -109,6 +116,12 @@ func WithFieldNullable() OptionDB {
 
 // Do 生成
 func (g *GenerationDB) Do() (err error) {
+	if g == nil || g.db == nil {
+		return fmt.Errorf("db cannot be nil")
+	}
+	if strings.TrimSpace(g.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			// gorm/gen 的 Execute 通过 panic 暴露生成失败，这里转为 error 交给调用方处理。
@@ -118,10 +131,7 @@ func (g *GenerationDB) Do() (err error) {
 	// 获取数据库名
 	dbName := GetDBName(g.db, g.dbNameOpt)
 	// 文件夹目录
-	outPutPath := strings.Trim(g.outPutPath, "/")
-	daoPath := fmt.Sprintf("%s/%s_dao", outPutPath, dbName)
-	modelPath := fmt.Sprintf("%s/%s_model", outPutPath, dbName)
-	repoPath := fmt.Sprintf("%s/%s_repo", outPutPath, dbName)
+	daoPath, modelPath, repoPath := generationOutputPaths(g.outPutPath, dbName)
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{
 		OutPath:          daoPath,
@@ -154,6 +164,10 @@ func (g *GenerationDB) Do() (err error) {
 	if len(g.tables) > 0 {
 		tables = g.tables
 	}
+	tables, err = normalizeTableNames(tables)
+	if err != nil {
+		return err
+	}
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.db)
 	if err != nil {
@@ -165,6 +179,9 @@ func (g *GenerationDB) Do() (err error) {
 	}
 	// 去掉tables中的分区子表
 	tables = strutil.SliRemove(tables, partitionChildTables)
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to generate")
+	}
 	models := make(map[string]any, len(tables))
 	for _, tableName := range tables {
 		generateModel := generator.GenerateModel(tableName)
@@ -200,8 +217,9 @@ func (g *GenerationDB) Do() (err error) {
 	var group errgroup.Group
 	// errgroup 等待并发生成任务，repoErrs 保留每个失败表的上下文并最终汇总返回。
 	var repoErrMu sync.Mutex
-	repoErrs := make([]error, 0)
-	for _, v := range tables {
+	repoErrs := make([]error, len(tables))
+	for i, v := range tables {
+		idx := i
 		table := v
 		// 表字段对应的类型
 		columnNameToDataType := make(map[string]string)
@@ -220,7 +238,7 @@ func (g *GenerationDB) Do() (err error) {
 			if err := repo.GenerationTable(g.db, dbName, daoPath, modelPath, repoPath, table, partitionTableToChildTables[table], columnNameToDataType, columnNameToName, columnNameToFieldType); err != nil {
 				err = fmt.Errorf("generate repo for table %q: %w", table, err)
 				repoErrMu.Lock()
-				repoErrs = append(repoErrs, err)
+				recordGenerationError(repoErrs, idx, err)
 				repoErrMu.Unlock()
 				return err
 			}
@@ -228,10 +246,56 @@ func (g *GenerationDB) Do() (err error) {
 		})
 	}
 	err = group.Wait()
-	if len(repoErrs) > 0 {
-		return errors.Join(repoErrs...)
+	return joinGenerationErrors(err, repoErrs)
+}
+
+func generationOutputPaths(basePath, dbName string) (string, string, string) {
+	baseDir := filepath.Clean(basePath)
+	return filepath.Join(baseDir, dbName+"_dao"),
+		filepath.Join(baseDir, dbName+"_model"),
+		filepath.Join(baseDir, dbName+"_repo")
+}
+
+func normalizeTableNames(tables []string) ([]string, error) {
+	if len(tables) == 0 {
+		return nil, nil
 	}
-	return err
+	normalized := make([]string, 0, len(tables))
+	seen := make(map[string]struct{}, len(tables))
+	for _, table := range tables {
+		if err := validateTableName(table); err != nil {
+			return nil, err
+		}
+		table = strings.TrimSpace(table)
+		if _, ok := seen[table]; ok {
+			continue
+		}
+		seen[table] = struct{}{}
+		normalized = append(normalized, table)
+	}
+	return normalized, nil
+}
+
+// ValidateTableNames 检查表名列表是否包含空白或控制字符。
+func ValidateTableNames(tables []string) error {
+	for _, table := range tables {
+		if err := validateTableName(table); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateTableName(table string) error {
+	if strings.TrimSpace(table) == "" {
+		return fmt.Errorf("table name cannot be empty")
+	}
+	if strings.ContainsFunc(table, func(r rune) bool {
+		return unicode.IsSpace(r) || unicode.IsControl(r)
+	}) {
+		return fmt.Errorf("table name cannot contain whitespace or control characters: %q", table)
+	}
+	return nil
 }
 
 // GetDBName 获取数据库名
@@ -240,14 +304,32 @@ func GetDBName(db *gorm.DB, fn func(*gorm.DB) string) string {
 	if fn != nil {
 		tableName = fn(db)
 	}
-	tablePrefix := ""
-	if ns, ok := db.NamingStrategy.(schema.NamingStrategy); ok {
-		tablePrefix = ns.TablePrefix
-	}
+	tablePrefix := namingStrategyTablePrefix(db.NamingStrategy)
 	if !strings.HasPrefix(tableName, tablePrefix) {
 		tableName = tablePrefix + tableName
 	}
 	return tableName
+}
+
+func namingStrategyTablePrefix(strategy any) string {
+	if strategy == nil {
+		return ""
+	}
+	value := reflect.ValueOf(strategy)
+	for value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return ""
+		}
+		value = value.Elem()
+	}
+	if !value.IsValid() || value.Kind() != reflect.Struct {
+		return ""
+	}
+	field := value.FieldByName("TablePrefix")
+	if !field.IsValid() || field.Kind() != reflect.String {
+		return ""
+	}
+	return field.String()
 }
 
 // JSONTagNameStrategy json tag 命名

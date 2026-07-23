@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GODB_TEST_REDIS_ADDR: 127.0.0.1:6379
+      GODB_TEST_REDIS_PASSWORD: 123456
+      GOLANGCI_LINT_VERSION: v2.12.2
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: 123456
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install client tools
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools
+
+      - name: Bootstrap PostgreSQL
+        run: scripts/ci/bootstrap-postgres.sh
+
+      - name: Configure Redis password
+        run: redis-cli -h 127.0.0.1 -p 6379 CONFIG SET requirepass "$GODB_TEST_REDIS_PASSWORD"
+
+      - name: Run checks
+        run: make ci

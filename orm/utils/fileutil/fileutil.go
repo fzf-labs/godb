@@ -1,11 +1,18 @@
 package fileutil
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
+
+var writeContentOpenFile = os.OpenFile
+var writeContentCloseFile = func(file *os.File) error {
+	return file.Close()
+}
 
 // FillModelPkgPath 返回模型文件的包路径
 func FillModelPkgPath(dir string) string {
@@ -17,6 +24,9 @@ func FillModelPkgPath(dir string) string {
 		return ""
 	}
 	if len(pkg) > 0 {
+		if pkg[0].PkgPath == "." {
+			return ""
+		}
 		return pkg[0].PkgPath
 	}
 	return ""
@@ -25,12 +35,22 @@ func FillModelPkgPath(dir string) string {
 // Exists 判断文件是否存在
 func Exists(path string) bool {
 	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 // MkdirPath 生成文件夹
 func MkdirPath(relativePath string) error {
 	return os.MkdirAll(relativePath, os.ModePerm)
+}
+
+// JoinOutputFilePath returns a cleaned output path for a generated file.
+func JoinOutputFilePath(basePath, fileName, ext string) (string, error) {
+	fileName = strings.TrimSpace(fileName)
+	if fileName == "" || fileName == "." || fileName == ".." ||
+		filepath.IsAbs(fileName) || strings.ContainsAny(fileName, `/\`) {
+		return "", fmt.Errorf("unsafe output file name: %q", fileName)
+	}
+	return filepath.Join(filepath.Clean(basePath), fileName+ext), nil
 }
 
 // WriteContentCover 数据写入，不存在则创建
@@ -39,14 +59,14 @@ func WriteContentCover(filePath, content string) error {
 	if err := os.MkdirAll(fileDir, 0775); err != nil {
 		return err
 	}
-	dstFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0665)
+	dstFile, err := writeContentOpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0665)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
 	_, err = dstFile.WriteString(content)
+	closeErr := writeContentCloseFile(dstFile)
 	if err != nil {
 		return err
 	}
-	return err
+	return closeErr
 }

@@ -1,15 +1,18 @@
 package gen
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
+
+	"golang.org/x/sync/errgroup"
+	"gorm.io/gen"
+	"gorm.io/gorm"
 
 	"github.com/fzf-labs/godb/orm/gen/proto"
 	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/fzf-labs/godb/orm/utils/strutil"
-	"gorm.io/gen"
-	"gorm.io/gorm"
 )
 
 // NewGenerationPB SQL 生成 proto
@@ -29,6 +32,7 @@ func NewGenerationPB(db *gorm.DB, outPutPath, packageStr, goPackageStr string, o
 	return g
 }
 
+// GenerationPb 保存 SQL 生成 proto 文件所需配置。
 type GenerationPb struct {
 	gorm         *gorm.DB       // 数据库
 	tables       []string       // 指定表
@@ -38,6 +42,7 @@ type GenerationPb struct {
 	goPackageStr string         // 包路径
 }
 
+// OptionPB 配置 proto 文件生成器。
 type OptionPB func(gen *GenerationPb)
 
 // WithPBOpts 选项函数-自定义特殊设置
@@ -54,7 +59,26 @@ func WithPBTables(tables []string) OptionPB {
 	}
 }
 
-func (g *GenerationPb) Do() {
+// Do 执行 proto 文件生成。
+func (g *GenerationPb) Do() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// gorm/gen 的生成过程可能通过 panic 暴露失败，这里统一转为 error。
+			err = fmt.Errorf("generate pb code panic: %v", r)
+		}
+	}()
+	if g == nil || g.gorm == nil {
+		return fmt.Errorf("db cannot be nil")
+	}
+	if strings.TrimSpace(g.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
+	if strings.TrimSpace(g.packageStr) == "" {
+		return fmt.Errorf("package cannot be empty")
+	}
+	if strings.TrimSpace(g.goPackageStr) == "" {
+		return fmt.Errorf("go package cannot be empty")
+	}
 	// 初始化
 	generator := gen.NewGenerator(gen.Config{})
 	// 使用数据库
@@ -68,15 +92,19 @@ func (g *GenerationPb) Do() {
 	// 获取所有表
 	tables, err := g.gorm.Migrator().GetTables()
 	if err != nil {
-		return
+		return fmt.Errorf("get database tables: %w", err)
 	}
 	if len(g.tables) > 0 {
 		tables = g.tables
 	}
+	tables, err = normalizeTableNames(tables)
+	if err != nil {
+		return err
+	}
 	// 查询分区表父级到子表的映射
 	partitionTableToChildTables, err := gormx.GetPartitionTableToChildTables(g.gorm)
 	if err != nil {
-		return
+		return fmt.Errorf("get partition table children: %w", err)
 	}
 	partitionChildTables := make([]string, 0)
 	for _, v := range partitionTableToChildTables {
@@ -84,9 +112,14 @@ func (g *GenerationPb) Do() {
 	}
 	// 去掉tables中的partitionChildTables
 	tables = strutil.SliRemove(tables, partitionChildTables)
-	var wg sync.WaitGroup
-	wg.Add(len(tables))
-	for _, v := range tables {
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to generate")
+	}
+	var group errgroup.Group
+	var mu sync.Mutex
+	genErrs := make([]error, len(tables))
+	for i, v := range tables {
+		idx := i
 		table := v
 		// 表字段对应的名称
 		columnNameToName := make(map[string]string)
@@ -97,15 +130,28 @@ func (g *GenerationPb) Do() {
 			columnNameToName[vv.ColumnName] = vv.Name
 			columnNameToDataType[vv.ColumnName] = strings.TrimLeft(vv.Type, "*")
 		}
-		go func(db *gorm.DB, outPutPath, packageStr, goPackageStr, table string, columnNameToName map[string]string, columnNameToDataType map[string]string) {
-			defer wg.Done()
-			// 数据表repo代码生成
-			err := proto.GenerationPB(db, outPutPath, packageStr, goPackageStr, table, columnNameToName, columnNameToDataType)
-			if err != nil {
-				log.Println("repo GenerationTable err:", err)
-				return
+		group.Go(func() error {
+			if err := proto.GenerationPB(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType); err != nil {
+				err = fmt.Errorf("generate proto for table %q: %w", table, err)
+				mu.Lock()
+				recordGenerationError(genErrs, idx, err)
+				mu.Unlock()
+				return err
 			}
-		}(g.gorm, g.outPutPath, g.packageStr, g.goPackageStr, table, columnNameToName, columnNameToDataType)
+			return nil
+		})
 	}
-	wg.Wait()
+	err = group.Wait()
+	return joinGenerationErrors(err, genErrs)
+}
+
+func joinGenerationErrors(waitErr error, contextualErrs []error) error {
+	if err := errors.Join(contextualErrs...); err != nil {
+		return err
+	}
+	return waitErr
+}
+
+func recordGenerationError(errs []error, idx int, err error) {
+	errs[idx] = err
 }

@@ -2,78 +2,130 @@ package sqldump
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/fzf-labs/godb/orm/gormx"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
 	"github.com/fzf-labs/godb/orm/utils/fileutil"
+)
+
+var (
+	pgDumpTimeout     = 2 * time.Minute
+	execPgDumpCommand = runPgDumpCommand
 )
 
 // DumpPostgres 导出创建语句
 func (s *SQLDump) DumpPostgres() error {
-	// 查找命令的可执行文件
-	_, err := exec.LookPath("pg_dump")
-	if err != nil {
-		return fmt.Errorf("command pg_dump not found, please install: %w", err)
-	}
-	dbClient, err := gormx.NewSimpleGormClient(s.db, s.dsn)
+	tables, err := tablelist.ParseCSV(s.targetTables)
 	if err != nil {
 		return err
 	}
-	var tables []string
-	if s.targetTables != "" {
-		tables = strings.Split(s.targetTables, ",")
-	} else {
+	if len(tables) > 0 {
+		if err := validatePgDumpTablePatterns(tables); err != nil {
+			return err
+		}
+	}
+	// 查找命令的可执行文件
+	_, err = exec.LookPath("pg_dump")
+	if err != nil {
+		return fmt.Errorf("command pg_dump not found, please install: %w", err)
+	}
+	dbClient, err := newSimpleGormClient(s.db, s.dsn)
+	if err != nil {
+		return err
+	}
+	if dbClient == nil {
+		return fmt.Errorf("sqldump database client cannot be nil")
+	}
+	defer closeGormDB(dbClient)
+	if len(tables) == 0 {
 		tables, err = dbClient.Migrator().GetTables()
 		if err != nil {
 			return err
 		}
 	}
-	dsnParse := s.postgresDsnParse()
-	outPath := filepath.Join(strings.Trim(s.outPutPath, "/"), dsnParse.Dbname)
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables to dump")
+	}
+	if err := validatePgDumpTablePatterns(tables); err != nil {
+		return err
+	}
+	dsnParse, err := s.postgresDsnParse()
+	if err != nil {
+		return err
+	}
+	outPath := outputDir(s.outPutPath, dsnParse.Dbname)
 	err = os.MkdirAll(outPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("create output path: %w", err)
 	}
 	for _, v := range tables {
-		outFile := filepath.Join(outPath, fmt.Sprintf("%s.sql", v))
-		cmdArgs := []string{
-			"-h", dsnParse.Host,
-			"-p", strconv.Itoa(dsnParse.Port),
-			"-U", dsnParse.User,
-			"-s", dsnParse.Dbname,
-			"-t", v,
-		}
-		// 创建一个 Cmd 对象来表示将要执行的命令
-		cmd := exec.Command("pg_dump", cmdArgs...)
-		// 添加一个环境变量到命令中
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
-		// 执行命令，并捕获输出和错误信息
-		output, err := cmd.Output()
+		outFile, err := fileutil.JoinOutputFilePath(outPath, v, ".sql")
 		if err != nil {
-			return fmt.Errorf("pg_dump table %s: %w", v, err)
+			return err
 		}
 		if !s.fileOverwrite {
 			if fileutil.Exists(outFile) {
 				continue
 			}
 		}
+		ctx, cancel := context.WithTimeout(context.Background(), pgDumpTimeout)
+		output, stderr, err := execPgDumpCommand(ctx, dsnParse, v)
+		cancel()
+		if err != nil {
+			return formatPgDumpError(v, stderr, err)
+		}
 		tableContent := s.postgresRemove(string(output))
-		if tableContent != "" {
-			err := fileutil.WriteContentCover(outFile, tableContent)
-			if err != nil {
-				return fmt.Errorf("write %s: %w", outFile, err)
-			}
+		err = fileutil.WriteContentCover(outFile, tableContent)
+		if err != nil {
+			return fmt.Errorf("write %s: %w", outFile, err)
 		}
 	}
 	return nil
 }
 
+func runPgDumpCommand(ctx context.Context, dsnParse *PostgresDsn, table string) ([]byte, []byte, error) {
+	cmdArgs := buildPgDumpArgs(dsnParse, table)
+	// 创建一个 Cmd 对象来表示将要执行的命令
+	cmd := exec.CommandContext(ctx, "pg_dump", cmdArgs...)
+	// 添加一个环境变量到命令中
+	cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", dsnParse.Password))
+	output, err := cmd.Output()
+	if err == nil {
+		return output, nil, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return output, exitErr.Stderr, err
+	}
+	return output, nil, err
+}
+
+func formatPgDumpError(table string, stderr []byte, err error) error {
+	detail := strings.TrimSpace(string(stderr))
+	if errors.Is(err, context.DeadlineExceeded) {
+		if detail != "" {
+			return fmt.Errorf("pg_dump table %s timed out: %w: %s", table, err, detail)
+		}
+		return fmt.Errorf("pg_dump table %s timed out: %w", table, err)
+	}
+	if detail != "" {
+		return fmt.Errorf("pg_dump table %s: %w: %s", table, err, detail)
+	}
+	return fmt.Errorf("pg_dump table %s: %w", table, err)
+}
+
+// PostgresDsn 保存 pgconn 解析出的 PostgreSQL 连接参数。
 type PostgresDsn struct {
 	Host     string
 	Port     int
@@ -82,40 +134,63 @@ type PostgresDsn struct {
 	Dbname   string
 }
 
-// postgresDsnParse  数据库解析
-func (s *SQLDump) postgresDsnParse() *PostgresDsn {
-	result := new(PostgresDsn)
-	// 分割连接字符串
-	params := strings.Split(s.dsn, " ")
+// postgresDsnParse 数据库解析。
+func (s *SQLDump) postgresDsnParse() (*PostgresDsn, error) {
+	cfg, err := pgconn.ParseConfig(s.dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse postgres dsn: %w", err)
+	}
+	return &PostgresDsn{
+		Host:     cfg.Host,
+		Port:     int(cfg.Port),
+		User:     cfg.User,
+		Password: cfg.Password,
+		Dbname:   cfg.Database,
+	}, nil
+}
 
-	// 解析参数
-	for _, param := range params {
-		keyValue := strings.Split(param, "=")
-		if len(keyValue) != 2 {
-			continue
-		}
-		key := keyValue[0]
-		value := keyValue[1]
-		switch key {
-		case "host":
-			result.Host = value
-		case "port":
-			if p, err := strconv.Atoi(value); err == nil {
-				result.Port = p
-			}
-		case "user":
-			result.User = value
-		case "password":
-			result.Password = value
-		case "dbname":
-			result.Dbname = value
+func buildPgDumpArgs(dsnParse *PostgresDsn, table string) []string {
+	return []string{
+		"-h", dsnParse.Host,
+		"-p", strconv.Itoa(dsnParse.Port),
+		"-U", dsnParse.User,
+		"-d", dsnParse.Dbname,
+		"-s",
+		"-t", quotePgDumpTablePattern(table),
+	}
+}
+
+var pgDumpTableIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+
+func validatePgDumpTablePatterns(tables []string) error {
+	for _, table := range tables {
+		if err := validatePgDumpTablePattern(table); err != nil {
+			return err
 		}
 	}
-	return result
+	return nil
+}
+
+func validatePgDumpTablePattern(table string) error {
+	parts := strings.Split(table, ".")
+	for _, part := range parts {
+		if !pgDumpTableIdentifierPattern.MatchString(part) {
+			return fmt.Errorf("invalid postgres table pattern: %q", table)
+		}
+	}
+	return nil
+}
+
+func quotePgDumpTablePattern(table string) string {
+	parts := strings.Split(table, ".")
+	for i, part := range parts {
+		parts[i] = `"` + strings.ReplaceAll(part, `"`, `""`) + `"`
+	}
+	return strings.Join(parts, ".")
 }
 
 // 预编译正则表达式，避免重复编译
-var alterOwnerRegex = regexp.MustCompile(`ALTER TABLE .*? OWNER TO postgres`)
+var alterOwnerRegex = regexp.MustCompile(`^ALTER TABLE .*?\s+OWNER TO\s+.+;?$`)
 
 // remove 移除多余行
 func (s *SQLDump) postgresRemove(str string) string {
@@ -125,12 +200,14 @@ func (s *SQLDump) postgresRemove(str string) string {
 	var result strings.Builder
 	// 预估结果大小，减少内存重分配
 	result.Grow(len(str))
-	reader := strings.NewReader(str)
-	scanner := bufio.NewScanner(reader)
+	reader := bufio.NewReader(strings.NewReader(str))
 	var currentStatement strings.Builder
 	var inAlterStatement bool
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := readDumpLine(reader)
+		if err != nil {
+			break
+		}
 		// 跳过需要过滤的行 - 优化条件判断顺序
 		if s.shouldSkipLine(line) {
 			continue
@@ -148,8 +225,11 @@ func (s *SQLDump) postgresRemove(str string) string {
 		}
 		// 检测语句结束（以分号结尾）
 		if inAlterStatement && strings.HasSuffix(trimmedLine, ";") {
-			result.WriteString(currentStatement.String())
-			result.WriteByte('\n')
+			statement := currentStatement.String()
+			if !alterOwnerRegex.MatchString(statement) {
+				result.WriteString(statement)
+				result.WriteByte('\n')
+			}
 			inAlterStatement = false
 			currentStatement.Reset()
 		} else if !inAlterStatement {
@@ -159,6 +239,17 @@ func (s *SQLDump) postgresRemove(str string) string {
 		}
 	}
 	return result.String()
+}
+
+func readDumpLine(reader *bufio.Reader) (string, error) {
+	line, err := reader.ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
+	}
+	if err == io.EOF && line == "" {
+		return "", err
+	}
+	return strings.TrimSuffix(line, "\n"), nil
 }
 
 // shouldSkipLine 判断是否应该跳过该行

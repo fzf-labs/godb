@@ -7,7 +7,8 @@ CREATE TABLE public.admin_log_demo (
     header json,
     req json,
     resp json,
-    created_at timestamp with time zone NOT NULL
+    created_at timestamp with time zone NOT NULL,
+    status smallint DEFAULT 1 NOT NULL
 );
 COMMENT ON TABLE public.admin_log_demo IS '系统-日志';
 COMMENT ON COLUMN public.admin_log_demo.id IS '编号';
@@ -19,5 +20,6 @@ COMMENT ON COLUMN public.admin_log_demo.header IS 'header';
 COMMENT ON COLUMN public.admin_log_demo.req IS '请求数据';
 COMMENT ON COLUMN public.admin_log_demo.resp IS '响应数据';
 COMMENT ON COLUMN public.admin_log_demo.created_at IS '创建时间';
+COMMENT ON COLUMN public.admin_log_demo.status IS '0=禁用 1=开启';
 ALTER TABLE ONLY public.admin_log_demo
     ADD CONSTRAINT admin_log_demo_pkey PRIMARY KEY (id);

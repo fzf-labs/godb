@@ -2,9 +2,15 @@ package gorm
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/go-redis/redismock/v9"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/condition"
 	"github.com/fzf-labs/godb/orm/dbcache/goredisdbcache"
 	"github.com/fzf-labs/godb/orm/encoding"
@@ -13,27 +19,79 @@ import (
 	gorm_gen_repo2 "github.com/fzf-labs/godb/orm/example/gorm/postgres/gorm_gen_repo"
 	"github.com/fzf-labs/godb/orm/gen/config"
 	"github.com/fzf-labs/godb/orm/gormx"
-	"github.com/go-redis/redismock/v9"
-	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 // newDB 创建示例测试用 PostgreSQL 连接。
 func newDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gormx.NewDebugGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewDebugGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	return db
 }
 
+func seedUserDemoFixtures(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	require.NoError(t, db.Exec(`
+INSERT INTO public.user_demo (
+    id, uid, username, password, nickname, status, tenant_id, created_at, updated_at, deleted_at
+) VALUES
+    ('182a65a0-ee20-4fe0-a0e8-ba30edcf402b', 'user-1', 'a', 'password', 'user-a', 1, 1, NOW(), NOW(), NULL),
+    ('2cc31ef9-7d6b-438b-874c-01d84a332b57', 'user-2', 'b', 'password', 'user-b', 1, 2, NOW(), NOW(), NULL)
+ON CONFLICT (id) DO UPDATE SET
+    uid = EXCLUDED.uid,
+    username = EXCLUDED.username,
+    password = EXCLUDED.password,
+    nickname = EXCLUDED.nickname,
+    status = EXCLUDED.status,
+    tenant_id = EXCLUDED.tenant_id,
+    updated_at = NOW(),
+    deleted_at = NULL
+`).Error)
+}
+
+func seedAdminDemoFixture(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	require.NoError(t, db.Exec(`
+INSERT INTO public.admin_demo (
+    id, username, password, nickname, gender, salt, status, created_at, updated_at, deleted_at
+) VALUES (
+    'c8ddd930-339a-408b-8acb-fac22f5b43aa',
+    'admin',
+    'password',
+    'admin',
+    0,
+    '123',
+    1,
+    NOW(),
+    NOW(),
+    NULL
+)
+ON CONFLICT (id) DO UPDATE SET
+    username = EXCLUDED.username,
+    password = EXCLUDED.password,
+    nickname = EXCLUDED.nickname,
+    status = EXCLUDED.status,
+    updated_at = NOW(),
+    deleted_at = NULL
+`).Error)
+}
+
 // newRedis 创建示例测试用 Redis 客户端。
-func newRedis() *redis.Client {
+func newRedis(t *testing.T) *redis.Client {
+	t.Helper()
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "0.0.0.0:6379",
-		Password: "123456",
+		Addr:     testenv.RedisAddr(),
+		Password: testenv.RedisPassword(),
+	})
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		_ = redisClient.Close()
+		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = redisClient.Close()
 	})
 	return redisClient
 }
@@ -41,7 +99,7 @@ func newRedis() *redis.Client {
 // Test_DeepCopy 验证模型深拷贝逻辑。
 func Test_DeepCopy(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewAdminRoleDemoRepo(cfg)
@@ -61,69 +119,69 @@ func Test_DeepCopy(t *testing.T) {
 	data.Name = "admin2"
 	data.Admins[0].Username = "admin2"
 	data.Admins[0].Nickname = "admin2"
-	fmt.Println(copyData)
-	fmt.Println(data)
+	assert.Equal(t, "admin", copyData.Name)
+	require.Len(t, copyData.Admins, 1)
+	assert.Equal(t, "admin", copyData.Admins[0].Username)
+	assert.Equal(t, "admin", copyData.Admins[0].Nickname)
 }
 
 // Test_FindOneCacheByID 根据ID查询单条数据
 func Test_FindOneCacheByID(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindOneByID(ctx, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b")
-	if err != nil {
-		return
-	}
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b", result.ID)
+	assert.Equal(t, "user-1", result.UID)
+	assert.Equal(t, "a", result.Username)
+	assert.Equal(t, "user-a", result.Nickname)
 }
 
 // Test_FindMultiCacheByUsernames 验证按用户名批量查询缓存。
 func Test_FindMultiCacheByUsernames(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	result, err := repo.FindMultiCacheByUsernames(ctx, []string{"a", "b", "c", "d", "e", "f", "g"})
-	if err != nil {
-		fmt.Println(err)
-		return
+	require.NoError(t, err)
+	usernames := make([]string, 0, len(result))
+	for _, item := range result {
+		usernames = append(usernames, item.Username)
 	}
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	assert.ElementsMatch(t, []string{"a", "b"}, usernames)
 }
 
 // Test_UpdateOneCache 验证单条记录缓存更新。
 func Test_UpdateOneCache(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
 	data, err := repo.FindOneByID(ctx, "182a65a0-ee20-4fe0-a0e8-ba30edcf402b")
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 	oldData := repo.DeepCopy(data)
 	data.Remark = "123"
 	err = repo.UpdateOneCache(ctx, data, oldData)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpsertOneWithZeroCache 验证带零值字段的 upsert 缓存更新。
 func Test_UpsertOneWithZeroCache(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -132,17 +190,16 @@ func Test_UpsertOneWithZeroCache(t *testing.T) {
 	data.ID = "182a65a0-ee20-4fe0-a0e8-ba30edcf402b"
 	data.Remark = "123"
 	err := repo.UpsertOneCache(ctx, data)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpsertOneCacheByFieldsTx 验证事务内按字段 upsert 缓存。
 func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -157,13 +214,16 @@ func Test_UpsertOneCacheByFieldsTx(t *testing.T) {
 		}
 		return nil
 	})
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	updated, err := repo.FindOneByID(ctx, data.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "123", updated.Remark)
 }
 
 // Test_UpdateBatchByIDS 验证按 ID 批量更新。
 func Test_UpdateBatchByIDS(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -171,27 +231,31 @@ func Test_UpdateBatchByIDS(t *testing.T) {
 	err := repo.UpdateBatchByIDS(ctx, []string{"182a65a0-ee20-4fe0-a0e8-ba30edcf402b", "2cc31ef9-7d6b-438b-874c-01d84a332b57"}, map[string]interface{}{
 		"remark": "test",
 	})
-	if err != nil {
-		return
+	require.NoError(t, err)
+	for _, id := range []string{"182a65a0-ee20-4fe0-a0e8-ba30edcf402b", "2cc31ef9-7d6b-438b-874c-01d84a332b57"} {
+		updated, err := repo.FindOneByID(ctx, id)
+		require.NoError(t, err)
+		assert.Equal(t, "test", updated.Remark)
 	}
-	assert.Equal(t, nil, err)
 }
 
 // Test_FindMultiCacheByTenantIDS 验证按租户 ID 批量查询缓存。
 func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 	db := newDB(t)
-	redisClient := newRedis()
+	redisClient := newRedis(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(redisClient)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
+	require.NoError(t, redisClient.FlushDB(ctx).Err())
+	seedUserDemoFixtures(t, db)
 	result, err := repo.FindMultiCacheByTenantIDS(ctx, []int64{1, 2})
-	if err != nil {
-		fmt.Println(err)
-		return
+	require.NoError(t, err)
+	tenantIDs := make(map[int64]struct{}, len(result))
+	for _, item := range result {
+		tenantIDs[item.TenantID] = struct{}{}
 	}
-	fmt.Println(result)
-	assert.Equal(t, nil, err)
+	assert.Equal(t, map[int64]struct{}{1: {}, 2: {}}, tenantIDs)
 }
 
 // Test_FindMultiByCustom 自定义查询
@@ -202,6 +266,7 @@ func Test_FindMultiByCondition(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewAdminDemoRepo(cfg)
+	seedAdminDemoFixture(t, db)
 	result, p, err := repo.FindMultiByCondition(ctx, &condition.Req{
 		Page:     1,
 		PageSize: 10,
@@ -224,38 +289,34 @@ func Test_FindMultiByCondition(t *testing.T) {
 				Exp:   condition.IN,
 				Logic: "",
 			},
-			{
-				Field: "username",
-				Value: "123",
-				Exp:   condition.LIKE,
-				Logic: "",
-			},
 		},
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("%+v\n", result)
-	fmt.Printf("%+v\n", p)
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	assert.NotNil(t, p)
+	assert.Equal(t, int32(1), p.Page)
+	assert.Equal(t, int32(10), p.PageSize)
+	assert.LessOrEqual(t, len(result), 10)
+	assert.NotEmpty(t, result)
 }
 
 // Test_Tx 使用事务
 func Test_Tx(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, "host=0.0.0.0 port=5432 user=postgres password=123456 dbname=gorm_gen sslmode=disable TimeZone=Asia/Shanghai")
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
 	if err != nil {
-		t.Skipf("postgres unavailable: %v", err)
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
+	testenv.CleanupGormDB(t, db)
 	client, _ := redismock.NewClientMock()
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	adminDemoRepo := gorm_gen_repo2.NewAdminDemoRepo(cfg)
 	adminLogDemoRepo := gorm_gen_repo2.NewAdminLogDemoRepo(cfg)
+	adminID := "c8ddd930-339a-408b-8acb-fac22f5b43aa"
+	require.NoError(t, db.WithContext(ctx).Exec(`DELETE FROM admin_log_demo WHERE admin_id = ?`, adminID).Error)
 	err = gorm_gen_dao.Use(db).Transaction(func(tx *gorm_gen_dao.Query) error {
 		err2 := adminDemoRepo.UpsertOneByTx(ctx, tx, &gorm_gen_model2.AdminDemo{
-			ID:       "c8ddd930-339a-408b-8acb-fac22f5b43aa",
+			ID:       adminID,
 			Username: "admin",
 			Nickname: "admin",
 			Gender:   0,
@@ -267,7 +328,7 @@ func Test_Tx(t *testing.T) {
 			return err2
 		}
 		err2 = adminLogDemoRepo.CreateOneByTx(ctx, tx, &gorm_gen_model2.AdminLogDemo{
-			AdminID:   "c8ddd930-339a-408b-8acb-fac22f5b43aa",
+			AdminID:   adminID,
 			IP:        "0.0.0.0",
 			URI:       "www.baidu.com",
 			Useragent: "apifox",
@@ -280,5 +341,14 @@ func Test_Tx(t *testing.T) {
 		}
 		return nil
 	})
-	assert.Equal(t, nil, err)
+	require.NoError(t, err)
+	created, err := adminDemoRepo.FindOneByID(ctx, adminID)
+	require.NoError(t, err)
+	assert.Equal(t, "admin", created.Username)
+	assert.Equal(t, int16(1), created.Status)
+
+	var logCount int64
+	err = db.WithContext(ctx).Table("admin_log_demo").Where("admin_id = ?", adminID).Count(&logCount).Error
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), logCount)
 }

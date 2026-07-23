@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
+// IDBCache 定义数据库查询缓存需要实现的 key、读取和失效接口。
 type IDBCache interface {
 	// Key 返回给定字段的字符串键
 	Key(fields ...any) string
@@ -28,9 +30,45 @@ type IDBCache interface {
 	DelHash(ctx context.Context, key string, field string) error
 }
 
-// KeyFormat 将任意类型转换为字符串
-func KeyFormat(any any) string {
+var keyPartEscaper = strings.NewReplacer(`\`, `\\`, `:`, `\:`)
+
+// EscapeKeyPart 对单个 key 分段做转义，避免分隔符碰撞。
+func EscapeKeyPart(part string) string {
+	return keyPartEscaper.Replace(part)
+}
+
+// BuildKey 将多个 key 分段转换并拼接成最终 key。
+func BuildKey(parts ...any) string {
+	formatted := make([]string, 0, len(parts))
+	for _, part := range parts {
+		formatted = append(formatted, KeyFormat(part))
+	}
+	return strings.Join(formatted, ":")
+}
+
+func isNilLikeValue(any any) bool {
 	if any == nil {
+		return true
+	}
+	rv := reflect.ValueOf(any)
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
+// KeyFormat 将任意类型转换为字符串并转义为安全的 key 分段。
+func KeyFormat(any any) string {
+	return EscapeKeyPart(keyFormatRaw(any))
+}
+
+func keyFormatRaw(any any) string {
+	if isNilLikeValue(any) {
 		return ""
 	}
 	switch value := any.(type) {
@@ -70,7 +108,7 @@ func KeyFormat(any any) string {
 		}
 		return value.Format("2006-01-02 15:04:05") // 转换为字符串
 	case *time.Time:
-		if value == nil {
+		if value == nil || value.IsZero() {
 			return ""
 		}
 		return value.Format("2006-01-02 15:04:05") // 转换为字符串
@@ -99,7 +137,7 @@ func KeyFormat(any any) string {
 			return rv.String()
 		}
 		if kind == reflect.Ptr {
-			return KeyFormat(rv.Elem().Interface())
+			return keyFormatRaw(rv.Elem().Interface())
 		}
 		// Finally, we use json.Marshal to convert.
 		if jsonContent, err := json.Marshal(value); err != nil {

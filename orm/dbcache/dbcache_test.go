@@ -1,14 +1,22 @@
 package dbcache
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
 
+type typedNilStringer struct{}
+
+func (*typedNilStringer) String() string {
+	return "typed nil"
+}
+
 func TestKeyFormat(t *testing.T) {
 	nt := time.Now()
-	ntStr := nt.Format("2006-01-02 15:04:05")
+	ntStr := EscapeKeyPart(nt.Format("2006-01-02 15:04:05"))
 	var nilTime *time.Time
+	zeroTime := time.Time{}
 	type args struct {
 		any any
 	}
@@ -130,6 +138,20 @@ func TestKeyFormat(t *testing.T) {
 			want: "8",
 		},
 		{
+			name: "case string with colon",
+			args: args{
+				any: "a:b",
+			},
+			want: `a\:b`,
+		},
+		{
+			name: "case string with backslash",
+			args: args{
+				any: `a\b`,
+			},
+			want: `a\\b`,
+		},
+		{
 			name: "case []byte",
 			args: args{
 				any: "8",
@@ -165,9 +187,16 @@ func TestKeyFormat(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "case null time",
+			name: "case nil time pointer",
 			args: args{
 				any: nilTime,
+			},
+			want: "",
+		},
+		{
+			name: "case zero time pointer",
+			args: args{
+				any: &zeroTime,
 			},
 			want: "",
 		},
@@ -185,5 +214,51 @@ func TestKeyFormat(t *testing.T) {
 				t.Errorf("KeyFormat() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildKey_EscapesSegmentsToAvoidCollisions(t *testing.T) {
+	got1 := BuildKey("test", "a:b", "c")
+	got2 := BuildKey("test", "a", "b:c")
+	if got1 == got2 {
+		t.Fatalf("expected different keys, got identical values %q", got1)
+	}
+}
+
+func TestKeyFormatReflectBranches(t *testing.T) {
+	type namedString string
+
+	var nilMap map[string]string
+	var nilSlice []string
+	value := 7
+
+	tests := []struct {
+		name  string
+		value any
+		want  string
+	}{
+		{name: "nil map", value: nilMap, want: ""},
+		{name: "nil slice", value: nilSlice, want: ""},
+		{name: "pointer", value: &value, want: "7"},
+		{name: "named string", value: namedString("alias"), want: "alias"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := KeyFormat(tt.value); got != tt.want {
+				t.Fatalf("got %q want %q", got, tt.want)
+			}
+		})
+	}
+
+	if got := KeyFormat(make(chan int)); got == "" {
+		t.Fatal("json marshal fallback should return fmt string for unsupported values")
+	}
+}
+
+func TestKeyFormatReturnsEmptyForTypedNilInterface(t *testing.T) {
+	var stringer fmt.Stringer = (*typedNilStringer)(nil)
+	if got := KeyFormat(stringer); got != "" {
+		t.Fatalf("expected empty string for typed nil interface, got %q", got)
 	}
 }

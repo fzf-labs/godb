@@ -63,3 +63,13 @@ func TestDefaultTemplate_Execute(t1 *testing.T) {
 		})
 	}
 }
+
+func TestDefaultTemplateExecuteErrors(t *testing.T) {
+	if _, err := NewTemplate().Parse("{{").Execute(nil); err == nil {
+		t.Fatal("expected parse error")
+	}
+
+	if _, err := NewTemplate().Parse("{{call .}}").Execute("not a function"); err == nil {
+		t.Fatal("expected execute error")
+	}
+}

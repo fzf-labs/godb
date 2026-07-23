@@ -1,6 +1,7 @@
 package gormx
 
 import (
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -8,6 +9,9 @@ import (
 
 // GetPartitionTableToChildTables 获取分区表到子表的映射
 func GetPartitionTableToChildTables(db *gorm.DB) (resp map[string][]string, err error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	switch db.Dialector.Name() {
 	case Postgres:
 		resp, err = getPGPartitionTableToChildTables(db)
@@ -21,8 +25,10 @@ func GetPartitionTableToChildTables(db *gorm.DB) (resp map[string][]string, err 
 			return nil, err
 		}
 		return resp, nil
-	default:
+	case "sqlite":
 		return nil, nil
+	default:
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
 }
 
@@ -66,6 +72,9 @@ func getMySQLPartitionTableToChildTables(db *gorm.DB) (map[string][]string, erro
 
 // GetTableComments 获取数据库中所有表对应的 comment
 func GetTableComments(db *gorm.DB) (map[string]string, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db cannot be nil")
+	}
 	resp := make(map[string]string)
 	switch db.Dialector.Name() {
 	case MySQL:
@@ -83,13 +92,15 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 			resp[v.TableName] = v.TableComment
 		}
 		return resp, nil
+	case "sqlite":
+		return nil, nil
 	case Postgres:
 		type tmp struct {
 			TableName    string `gorm:"column:table_name"`
 			TableComment string `gorm:"column:table_comment"`
 		}
 		result := make([]tmp, 0)
-		sql := `SELECT c.relname AS table_name, obj_description(c.oid) AS table_comment FROM pg_class c WHERE c.relkind = 'r' AND c.relname NOT LIKE 'pg_%' AND c.relname NOT LIKE 'sql_%'`
+		sql := buildPostgresTableCommentsQuery()
 		err := db.Raw(sql).Scan(&result).Error
 		if err != nil {
 			return nil, err
@@ -99,6 +110,10 @@ func GetTableComments(db *gorm.DB) (map[string]string, error) {
 		}
 		return resp, nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("unsupported database driver: %s", db.Dialector.Name())
 	}
+}
+
+func buildPostgresTableCommentsQuery() string {
+	return `SELECT c.relname AS table_name, obj_description(c.oid) AS table_comment FROM pg_class c WHERE c.relkind IN ('r', 'p') AND c.relname NOT LIKE 'pg_%' AND c.relname NOT LIKE 'sql_%'`
 }

@@ -1,14 +1,19 @@
 package ormgen
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/fzf-labs/godb/orm/gen"
-	"github.com/fzf-labs/godb/orm/gormx"
 	"github.com/spf13/cobra"
 	gormGen "gorm.io/gen"
+	"gorm.io/gorm"
+
+	"github.com/fzf-labs/godb/cmd/godb/internal/tablelist"
+	"github.com/fzf-labs/godb/orm/gen"
+	"github.com/fzf-labs/godb/orm/gormx"
 )
 
+// CmdOrmGen 是生成 ORM model、dao 和 repo 代码的 cobra 子命令。
 var CmdOrmGen = &cobra.Command{
 	Use:   "ormgen",
 	Short: "Generate GORM model code",
@@ -27,6 +32,22 @@ var (
 	optionRemoveGormTypeTag bool   // 选项：移除gorm tag :type (默认是 false)
 )
 
+var (
+	newSimpleGormClient = gormx.NewSimpleGormClient
+	generateDBDo        = (*gen.GenerationDB).Do
+)
+
+type runOptions struct {
+	db                      string
+	dsn                     string
+	targetTables            string
+	outPutPath              string
+	optionUnderline         string
+	optionPgDefaultString   bool
+	optionRemoveDefault     bool
+	optionRemoveGormTypeTag bool
+}
+
 // init 注册 ormgen 命令行参数。
 func init() {
 	CmdOrmGen.Flags().StringVarP(&db, "db", "d", "", "db: mysql postgres")
@@ -41,33 +62,94 @@ func init() {
 
 // Run 执行 ORM 代码生成命令。
 func Run(_ *cobra.Command, _ []string) error {
-	dbOpts := make([]gormGen.ModelOpt, 0)
-	if optionUnderline != "" {
-		dbOpts = append(dbOpts, gen.ModelOptionUnderline(optionUnderline))
+	return runWithOptions(snapshotRunOptions())
+}
+
+func snapshotRunOptions() runOptions {
+	return runOptions{
+		db:                      db,
+		dsn:                     dsn,
+		targetTables:            targetTables,
+		outPutPath:              outPutPath,
+		optionUnderline:         optionUnderline,
+		optionPgDefaultString:   optionPgDefaultString,
+		optionRemoveDefault:     optionRemoveDefault,
+		optionRemoveGormTypeTag: optionRemoveGormTypeTag,
 	}
-	if optionPgDefaultString {
+}
+
+func runWithOptions(opts runOptions) error {
+	opts = opts.normalize()
+	if err := opts.validate(); err != nil {
+		return err
+	}
+	dbOpts := make([]gormGen.ModelOpt, 0)
+	if opts.optionUnderline != "" {
+		dbOpts = append(dbOpts, gen.ModelOptionUnderline(opts.optionUnderline))
+	}
+	if opts.optionPgDefaultString {
 		dbOpts = append(dbOpts, gen.ModelOptionPgDefaultString())
 	}
-	if optionRemoveDefault {
+	if opts.optionRemoveDefault {
 		dbOpts = append(dbOpts, gen.ModelOptionRemoveDefault())
 	}
-	if optionRemoveGormTypeTag {
+	if opts.optionRemoveGormTypeTag {
 		dbOpts = append(dbOpts, gen.ModelOptionRemoveGormTypeTag())
 	}
-	var tables []string
-	if targetTables != "" {
-		tables = strings.Split(targetTables, ",")
-	}
-	dbClient, err := gormx.NewSimpleGormClient(db, dsn)
+	tables, err := tablelist.ParseCSV(opts.targetTables)
 	if err != nil {
 		return err
 	}
-	return gen.NewGenerationDB(
+	if err := gen.ValidateTableNames(tables); err != nil {
+		return err
+	}
+	dbClient, err := newSimpleGormClient(opts.db, opts.dsn)
+	if err != nil {
+		return err
+	}
+	if dbClient == nil {
+		return fmt.Errorf("ormgen database client cannot be nil")
+	}
+	defer closeGormDB(dbClient)
+	return generateDBDo(gen.NewGenerationDB(
 		dbClient,
-		outPutPath,
+		opts.outPutPath,
 		gen.WithDataMap(gen.DataTypeMap()),
 		gen.WithTables(tables),
 		gen.WithDBNameOpts(gen.DBNameOpts()),
 		gen.WithDBOpts(dbOpts...),
-	).Do()
+	))
+}
+
+func (o runOptions) normalize() runOptions {
+	o.db = strings.ToLower(strings.TrimSpace(o.db))
+	o.dsn = strings.TrimSpace(o.dsn)
+	o.targetTables = strings.TrimSpace(o.targetTables)
+	o.outPutPath = strings.TrimSpace(o.outPutPath)
+	o.optionUnderline = strings.TrimSpace(o.optionUnderline)
+	return o
+}
+
+func (o runOptions) validate() error {
+	if strings.TrimSpace(o.db) == "" {
+		return fmt.Errorf("db cannot be empty")
+	}
+	if strings.TrimSpace(o.dsn) == "" {
+		return fmt.Errorf("dsn cannot be empty")
+	}
+	if strings.TrimSpace(o.outPutPath) == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
+	return nil
+}
+
+func closeGormDB(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return
+	}
+	_ = sqlDB.Close()
 }

@@ -2,10 +2,11 @@ package gorediscache
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -13,6 +14,20 @@ import (
 // 业务层使用errors.Is(err, NotObtained)判断是否未获取到锁，并抛出业务异常。
 var NotObtained = errors.New("lock not obtained")
 
+var errNilLockCallback = errors.New("lock callback cannot be nil")
+var errNilLocker = errors.New("redis locker cannot be nil")
+
+func classifyObtainErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, redislock.ErrNotObtained) {
+		return fmt.Errorf("%w: %v", NotObtained, err)
+	}
+	return err
+}
+
+// NewLocker 创建基于 go-redis 的分布式锁封装。
 func NewLocker(rd *redis.Client) *Locker {
 	return &Locker{
 		locker: redislock.New(rd),
@@ -24,12 +39,25 @@ type Locker struct {
 	locker *redislock.Client
 }
 
+func (r *Locker) ensureLocker() error {
+	if r == nil || r.locker == nil {
+		return errNilLocker
+	}
+	return nil
+}
+
 // LockOnce 自动锁-一次
 // 自动加锁与释放
 func (r *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
+	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
-		return errors.Wrapf(NotObtained, "origin error is: %v", err)
+		return classifyObtainErr(err)
 	}
 	defer func(lock *redislock.Lock, ctx context.Context) {
 		_ = lock.Release(ctx)
@@ -40,11 +68,17 @@ func (r *Locker) LockOnce(ctx context.Context, key string, ttl time.Duration, fn
 // LockRetry 自动锁-重试
 // 自动加锁与释放，间隔100ms 重试3次
 func (r *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
+	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(100*time.Millisecond), 3),
 	})
 	if err != nil {
-		return errors.Wrapf(NotObtained, "origin error is: %v", err)
+		return classifyObtainErr(err)
 	}
 	defer func(lock *redislock.Lock, ctx context.Context) {
 		_ = lock.Release(ctx)
@@ -55,11 +89,17 @@ func (r *Locker) LockRetry(ctx context.Context, key string, ttl time.Duration, f
 // LockWithCustom 自动锁-自定义
 // 自定义时间间隔和重试次数
 func (r *Locker) LockWithCustom(ctx context.Context, key string, ttl, retryDuration time.Duration, retryNum int, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
+	}
 	lock, err := r.locker.Obtain(ctx, key, ttl, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(retryDuration), retryNum),
 	})
 	if err != nil {
-		return errors.Wrapf(NotObtained, "origin error is: %v", err)
+		return classifyObtainErr(err)
 	}
 	defer func(lock *redislock.Lock, ctx context.Context) {
 		_ = lock.Release(ctx)
@@ -69,9 +109,15 @@ func (r *Locker) LockWithCustom(ctx context.Context, key string, ttl, retryDurat
 
 // LockOnceNotRelease 自动锁-一次-不释放
 func (r *Locker) LockOnceNotRelease(ctx context.Context, key string, ttl time.Duration, fn func() error) error {
+	if fn == nil {
+		return errNilLockCallback
+	}
+	if err := r.ensureLocker(); err != nil {
+		return err
+	}
 	_, err := r.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
-		return errors.Wrapf(NotObtained, "origin error is: %v", err)
+		return classifyObtainErr(err)
 	}
 	return fn()
 }
