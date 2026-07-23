@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -77,6 +78,9 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	defer sqlDB.Close()
+	if err := sqlDB.Ping(); err != nil {
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
+	}
 	gormConfig := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	}
@@ -85,10 +89,14 @@ func TestNewMonthShardingPlugin(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
-	db.Set("gorm:table_options", "CHARSET=utf8mb4")
+	require.NoError(t, db.Exec(`
+CREATE TABLE IF NOT EXISTS sys_admin_202301 (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
+)`).Error)
 	require.NoError(t, db.Use(NewMonthShardingPlugin("sys_admin", "created_at")))
-	// this record will insert to orders_03
-	err = db.Exec("SELECT * FROM sys_admin WHERE created_at in ('2023-01-13 20:58:35')  ").Error
+	// 按月分片仅支持等值条件
+	err = db.Exec("SELECT * FROM sys_admin WHERE created_at = ?", "2023-01-13 20:58:35").Error
 	require.NoError(t, err)
 }
 
@@ -99,6 +107,9 @@ func TestNewShardingPlugin(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	defer sqlDB.Close()
+	if err := sqlDB.Ping(); err != nil {
+		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
+	}
 	gormConfig := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	}
@@ -107,9 +118,14 @@ func TestNewShardingPlugin(t *testing.T) {
 	if err != nil {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
-	db.Set("gorm:table_options", "CHARSET=utf8mb4")
+	for i := 0; i < 64; i++ {
+		require.NoError(t, db.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS sys_admin_%02d (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
+)`, i)).Error)
+	}
 	require.NoError(t, db.Use(NewShardingPlugin("sys_admin", "created_at", 64)))
-	// this record will insert to orders_03
-	err = db.Exec("SELECT * FROM sys_admin WHERE created_at  ='2023-01-13 20:58:01'  ").Error
+	err = db.Exec("SELECT * FROM sys_admin WHERE created_at = ?", "2023-01-13 20:58:01").Error
 	require.NoError(t, err)
 }

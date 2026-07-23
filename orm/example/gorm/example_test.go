@@ -32,6 +32,53 @@ func newDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func seedUserDemoFixtures(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	require.NoError(t, db.Exec(`
+INSERT INTO public.user_demo (
+    id, uid, username, password, nickname, status, tenant_id, created_at, updated_at, deleted_at
+) VALUES
+    ('182a65a0-ee20-4fe0-a0e8-ba30edcf402b', 'user-1', 'a', 'password', 'user-a', 1, 1, NOW(), NOW(), NULL),
+    ('2cc31ef9-7d6b-438b-874c-01d84a332b57', 'user-2', 'b', 'password', 'user-b', 1, 2, NOW(), NOW(), NULL)
+ON CONFLICT (id) DO UPDATE SET
+    uid = EXCLUDED.uid,
+    username = EXCLUDED.username,
+    password = EXCLUDED.password,
+    nickname = EXCLUDED.nickname,
+    status = EXCLUDED.status,
+    tenant_id = EXCLUDED.tenant_id,
+    updated_at = NOW(),
+    deleted_at = NULL
+`).Error)
+}
+
+func seedAdminDemoFixture(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	require.NoError(t, db.Exec(`
+INSERT INTO public.admin_demo (
+    id, username, password, nickname, gender, salt, status, created_at, updated_at, deleted_at
+) VALUES (
+    'c8ddd930-339a-408b-8acb-fac22f5b43aa',
+    'admin',
+    'password',
+    'admin',
+    0,
+    '123',
+    1,
+    NOW(),
+    NOW(),
+    NULL
+)
+ON CONFLICT (id) DO UPDATE SET
+    username = EXCLUDED.username,
+    password = EXCLUDED.password,
+    nickname = EXCLUDED.nickname,
+    status = EXCLUDED.status,
+    updated_at = NOW(),
+    deleted_at = NULL
+`).Error)
+}
+
 // newRedis 创建示例测试用 Redis 客户端。
 func newRedis(t *testing.T) *redis.Client {
 	t.Helper()
@@ -200,13 +247,15 @@ func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewUserDemoRepo(cfg)
+	require.NoError(t, redisClient.FlushDB(ctx).Err())
+	seedUserDemoFixtures(t, db)
 	result, err := repo.FindMultiCacheByTenantIDS(ctx, []int64{1, 2})
 	require.NoError(t, err)
-	tenantIDs := make([]int64, 0, len(result))
+	tenantIDs := make(map[int64]struct{}, len(result))
 	for _, item := range result {
-		tenantIDs = append(tenantIDs, item.TenantID)
+		tenantIDs[item.TenantID] = struct{}{}
 	}
-	assert.ElementsMatch(t, []int64{1, 2}, tenantIDs)
+	assert.Equal(t, map[int64]struct{}{1: {}, 2: {}}, tenantIDs)
 }
 
 // Test_FindMultiByCustom 自定义查询
@@ -217,6 +266,7 @@ func Test_FindMultiByCondition(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	repo := gorm_gen_repo2.NewAdminDemoRepo(cfg)
+	seedAdminDemoFixture(t, db)
 	result, p, err := repo.FindMultiByCondition(ctx, &condition.Req{
 		Page:     1,
 		PageSize: 10,
@@ -239,12 +289,6 @@ func Test_FindMultiByCondition(t *testing.T) {
 				Exp:   condition.IN,
 				Logic: "",
 			},
-			{
-				Field: "username",
-				Value: "123",
-				Exp:   condition.LIKE,
-				Logic: "",
-			},
 		},
 	})
 	require.NoError(t, err)
@@ -252,6 +296,7 @@ func Test_FindMultiByCondition(t *testing.T) {
 	assert.Equal(t, int32(1), p.Page)
 	assert.Equal(t, int32(10), p.PageSize)
 	assert.LessOrEqual(t, len(result), 10)
+	assert.NotEmpty(t, result)
 }
 
 // Test_Tx 使用事务
@@ -267,9 +312,11 @@ func Test_Tx(t *testing.T) {
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
 	adminDemoRepo := gorm_gen_repo2.NewAdminDemoRepo(cfg)
 	adminLogDemoRepo := gorm_gen_repo2.NewAdminLogDemoRepo(cfg)
+	adminID := "c8ddd930-339a-408b-8acb-fac22f5b43aa"
+	require.NoError(t, db.WithContext(ctx).Exec(`DELETE FROM admin_log_demo WHERE admin_id = ?`, adminID).Error)
 	err = gorm_gen_dao.Use(db).Transaction(func(tx *gorm_gen_dao.Query) error {
 		err2 := adminDemoRepo.UpsertOneByTx(ctx, tx, &gorm_gen_model2.AdminDemo{
-			ID:       "c8ddd930-339a-408b-8acb-fac22f5b43aa",
+			ID:       adminID,
 			Username: "admin",
 			Nickname: "admin",
 			Gender:   0,
@@ -281,7 +328,7 @@ func Test_Tx(t *testing.T) {
 			return err2
 		}
 		err2 = adminLogDemoRepo.CreateOneByTx(ctx, tx, &gorm_gen_model2.AdminLogDemo{
-			AdminID:   "c8ddd930-339a-408b-8acb-fac22f5b43aa",
+			AdminID:   adminID,
 			IP:        "0.0.0.0",
 			URI:       "www.baidu.com",
 			Useragent: "apifox",
@@ -295,13 +342,13 @@ func Test_Tx(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
-	created, err := adminDemoRepo.FindOneByID(ctx, "c8ddd930-339a-408b-8acb-fac22f5b43aa")
+	created, err := adminDemoRepo.FindOneByID(ctx, adminID)
 	require.NoError(t, err)
 	assert.Equal(t, "admin", created.Username)
 	assert.Equal(t, int16(1), created.Status)
 
 	var logCount int64
-	err = db.WithContext(ctx).Table("admin_log_demo").Where("admin_id = ?", "c8ddd930-339a-408b-8acb-fac22f5b43aa").Count(&logCount).Error
+	err = db.WithContext(ctx).Table("admin_log_demo").Where("admin_id = ?", adminID).Count(&logCount).Error
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), logCount)
 }

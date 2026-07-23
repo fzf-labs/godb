@@ -573,10 +573,11 @@ func TestGenerationPostgresWithOutRepo(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	testenv.CleanupGormDB(t, db)
-	// 生成代码
+	outDir := newModuleDir(t)
+	// 生成代码（写入临时目录，避免污染仓库 example）
 	err = NewGenerationDB(
 		db,
-		"../example/gorm/postgres/",
+		outDir,
 		WithOutRepo(),
 		WithDBNameOpts(DBNameOpts()),
 		WithTables([]string{"admin_demo", "admin_log_demo", "admin_role_demo"}),
@@ -597,10 +598,11 @@ func TestGenerationPostgres(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	testenv.CleanupGormDB(t, db)
-	// 生成代码
+	outDir := newModuleDir(t)
+	// 生成代码（写入临时目录，避免污染仓库 example）
 	err = NewGenerationDB(
 		db,
-		"../example/gorm/postgres/",
+		outDir,
 		WithGenerateModel(func(g *gen.Generator) map[string]any { // 设置表关联关系(1对多,多对多...)
 			adminLogDemo := g.GenerateModel("admin_log_demo")
 			adminRoleDemo := g.GenerateModel("admin_role_demo",
@@ -650,10 +652,11 @@ func TestGenerationPostgresFieldNullable(t *testing.T) {
 		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
 	}
 	testenv.CleanupGormDB(t, db)
-	// 生成代码
+	outDir := newModuleDir(t)
+	// 生成代码（写入临时目录，避免污染仓库 example）
 	err = NewGenerationDB(
 		db,
-		"../example/gorm/postgres/",
+		outDir,
 		WithGenerateModel(func(g *gen.Generator) map[string]any { // 设置表关联关系(1对多,多对多...)
 			adminLogDemo := g.GenerateModel("admin_log_demo")
 			AdminRoleDemo := g.GenerateModel("admin_role_demo",

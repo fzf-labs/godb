@@ -23,10 +23,11 @@ func TestNewGenerationPb(t *testing.T) {
 	testenv.CleanupGormDB(t, db)
 	err = NewGenerationPB(
 		db,
-		"../example/pb",
+		t.TempDir(),
 		"api.gorm_gen.v1",
 		"api/gorm_gen/v1;v1",
 		WithPBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("ul_")),
+		WithPBTables([]string{"user_demo"}),
 	).Do()
 	if err != nil {
 		t.Fatal(err)
