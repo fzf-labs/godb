@@ -796,7 +796,6 @@ func TestGenerationTable(t *testing.T) {
 		dbname                string
 		daoPath               string
 		modelPath             string
-		repoPath              string
 		table                 string
 		partitionTable        []string
 		columnNameToDataType  map[string]string
