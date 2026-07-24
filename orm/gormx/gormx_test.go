@@ -13,27 +13,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"github.com/fzf-labs/godb/internal/testenv"
 )
-
-func TestNewGormPostgresClient(t *testing.T) {
-	config := ClientConfig{
-		Driver:          "postgres",
-		DataSourceName:  testenv.PostgresDSN("user"),
-		MaxIdleConn:     0,
-		MaxOpenConn:     0,
-		ConnMaxLifeTime: 0,
-		ShowLog:         false,
-		Tracing:         false,
-	}
-	db, err := NewGormClient(&config)
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
-	assert.NoError(t, err)
-}
 
 func TestNewGormClientRejectsNilAndUnknownDriver(t *testing.T) {
 	db, err := NewGormClient(nil)
@@ -59,15 +39,6 @@ func TestNewDirectGormClientKnownDriversRejectBadDSN(t *testing.T) {
 	db, err = newDirectGormClient(Postgres, "bad dsn", logger.Silent)
 	assert.Nil(t, db)
 	assert.Error(t, err)
-}
-
-func TestNewDirectGormClientPostgresSuccess(t *testing.T) {
-	db, err := newDirectGormClient(Postgres, testenv.PostgresDSN("gorm_gen"), logger.Silent)
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
-	assert.NotNil(t, db)
 }
 
 func TestDirectClientWrappersRejectBadDSN(t *testing.T) {

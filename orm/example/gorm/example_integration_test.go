@@ -1,7 +1,12 @@
+//go:build integration
+
 package gorm
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-redis/redismock/v9"
@@ -10,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/condition"
 	"github.com/fzf-labs/godb/orm/dbcache/goredisdbcache"
 	"github.com/fzf-labs/godb/orm/encoding"
@@ -21,14 +25,42 @@ import (
 	"github.com/fzf-labs/godb/orm/gormx"
 )
 
+func integrationPostgresDSN(database string) string {
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=1 TimeZone=Asia/Shanghai",
+		quotePostgresDSNValue(envOrDefault("PGHOST", "127.0.0.1")),
+		quotePostgresDSNValue(envOrDefault("PGPORT", "5432")),
+		quotePostgresDSNValue(envOrDefault("PGUSER", "postgres")),
+		quotePostgresDSNValue(envOrDefault("PGPASSWORD", "123456")),
+		quotePostgresDSNValue(database),
+	)
+}
+
+func envOrDefault(name, defaultValue string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func quotePostgresDSNValue(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, `'`, `\'`)
+	return "'" + value + "'"
+}
+
 // newDB 创建示例测试用 PostgreSQL 连接。
 func newDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gormx.NewDebugGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
+	db, err := gormx.NewDebugGormClient(gormx.Postgres, integrationPostgresDSN("gorm_gen"))
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("close PostgreSQL connection: %v", err)
+		}
+	})
 	return db
 }
 
@@ -83,15 +115,25 @@ ON CONFLICT (id) DO UPDATE SET
 func newRedis(t *testing.T) *redis.Client {
 	t.Helper()
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     testenv.RedisAddr(),
-		Password: testenv.RedisPassword(),
+		Addr:     envOrDefault("GODB_TEST_REDIS_ADDR", "127.0.0.1:6379"),
+		Password: envOrDefault("GODB_TEST_REDIS_PASSWORD", "123456"),
 	})
-	if err := redisClient.Ping(context.Background()).Err(); err != nil {
-		_ = redisClient.Close()
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
+	require.NoError(t, redisClient.Ping(context.Background()).Err())
 	t.Cleanup(func() {
-		_ = redisClient.Close()
+		if err := redisClient.Close(); err != nil {
+			t.Errorf("close Redis client: %v", err)
+		}
+	})
+	return redisClient
+}
+
+func newRedisMock(t *testing.T) *redis.Client {
+	t.Helper()
+	redisClient, _ := redismock.NewClientMock()
+	t.Cleanup(func() {
+		if err := redisClient.Close(); err != nil {
+			t.Errorf("close Redis mock client: %v", err)
+		}
 	})
 	return redisClient
 }
@@ -261,7 +303,7 @@ func Test_FindMultiCacheByTenantIDS(t *testing.T) {
 // Test_FindMultiByCustom 自定义查询
 func Test_FindMultiByCondition(t *testing.T) {
 	db := newDB(t)
-	client, _ := redismock.NewClientMock()
+	client := newRedisMock(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())
@@ -301,12 +343,16 @@ func Test_FindMultiByCondition(t *testing.T) {
 
 // Test_Tx 使用事务
 func Test_Tx(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
-	client, _ := redismock.NewClientMock()
+	db, err := gormx.NewSimpleGormClient(gormx.Postgres, integrationPostgresDSN("gorm_gen"))
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("close PostgreSQL connection: %v", err)
+		}
+	})
+	client := newRedisMock(t)
 	dbCache := goredisdbcache.NewGoRedisDBCache(client)
 	ctx := context.Background()
 	cfg := config.NewRepoConfig(db, dbCache, encoding.NewMsgPack())

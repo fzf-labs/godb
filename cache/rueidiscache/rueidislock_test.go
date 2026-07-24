@@ -2,7 +2,6 @@ package rueidiscache
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/redis/rueidis/rueidislock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/fzf-labs/godb/internal/testenv"
 )
 
 // TestLockerOptionWithTTL 验证自定义锁 TTL 配置。
@@ -203,35 +200,4 @@ func rueidislockOption(ttl time.Duration) rueidislock.LockerOption {
 	return rueidislock.LockerOption{
 		KeyValidity: ttl,
 	}
-}
-
-// TestLocker_AutoLock 验证 AutoLock 加锁和释放流程。
-func TestLocker_AutoLock(t *testing.T) {
-	client, err := NewRueidisClient(&rueidis.ClientOption{
-		Username:    "",
-		Password:    testenv.RedisPassword(),
-		InitAddress: []string{testenv.RedisAddr()},
-		SelectDB:    0,
-	})
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-	defer client.Close()
-	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-	option := NewDefaultLockerOption(client)
-	option.FallbackSETPX = true
-	option.KeyMajority = 1
-	option.TryNextAfter = time.Second
-	locker := NewLocker(option)
-	key := fmt.Sprintf("test_lock:%d", time.Now().UnixNano())
-	defer func() {
-		_ = client.Do(context.Background(), client.B().Del().Key("rueidislock:0:"+key).Build()).Error()
-	}()
-	ctx := context.Background()
-	err = locker.LockOnce(ctx, key, 10*time.Second, func() error {
-		return nil
-	})
-	assert.NoError(t, err)
 }

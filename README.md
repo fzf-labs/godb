@@ -374,8 +374,11 @@ make lint
 make comments
 make vet
 make test
+make test-integration
 make bootstrap-postgres
 make cover
+make ci-unit
+make ci-integration
 make ci
 ```
 
@@ -386,7 +389,9 @@ go install ./cmd/godb
 godb --help
 ```
 
-本仓库的 PostgreSQL/Redis 示例测试在 CI 中会自动准备服务和种子数据；本地可通过 `GODB_TEST_POSTGRES_DSN`、`GODB_TEST_REDIS_ADDR` 和 `GODB_TEST_REDIS_PASSWORD` 覆盖默认地址与凭据。如果本地 PostgreSQL 使用默认账号和密码，可运行 `make bootstrap-postgres` 重建 `gorm_gen`、`user` 和 `fkratos_sys` 测试数据库并导入示例 schema。该命令会删除并重建这些测试数据库，请勿指向生产实例。如果本机没有对应服务，相关测试会跳过或使用 mock；在 CI 环境中，服务不可用会让测试失败，避免误把集成测试跳过当成通过。
+`make test` 和 `make cover` 只运行不依赖外部服务的默认测试，使用 `sqlmock`、SQLite、`miniredis` 或 `redismock`，本地无需启动 PostgreSQL/Redis。真实服务测试使用 `integration` build tag，可通过 `make test-integration` 显式运行；服务不可用时测试会直接失败，不会跳过。
+
+本地 PostgreSQL 使用标准环境变量 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`，Redis 使用 `GODB_TEST_REDIS_ADDR` 和 `GODB_TEST_REDIS_PASSWORD`。如果 PostgreSQL 使用默认账号和密码，可运行 `make bootstrap-postgres` 重建 `gorm_gen`、`user` 和 `fkratos_sys` 测试数据库并导入示例 schema。该命令会删除并重建这些测试数据库，请勿指向生产实例。CI 将默认检查和真实服务测试拆分运行，并自动准备 PostgreSQL/Redis 与种子数据。
 
 发布流程：
 

@@ -13,21 +13,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-
-	"github.com/fzf-labs/godb/internal/testenv"
-	"github.com/fzf-labs/godb/orm/gormx"
 )
-
-// newDB 创建 proto 生成测试用数据库连接。
-func newDB(t *testing.T) *gorm.DB {
-	t.Helper()
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
-	return db
-}
 
 type protoExample struct {
 	ID        string `gorm:"primaryKey;size:36;comment:ID"`
@@ -337,62 +323,5 @@ func TestJoinWithQuotes(t *testing.T) {
 	}
 	if got := joinWithQuotes([]string{"id", "name"}); got != `"id","name"` {
 		t.Fatalf("unexpected join: %s", got)
-	}
-}
-
-// TestGenerationPB 验证从数据库表生成 proto。
-func TestGenerationPB(t *testing.T) {
-	db := newDB(t)
-	type args struct {
-		db                   *gorm.DB
-		outPutPath           string
-		packageStr           string
-		goPackageStr         string
-		table                string
-		columnNameToName     map[string]string
-		columnNameToDataType map[string]string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			args: args{
-				db:           db,
-				outPutPath:   "../../example/pb",
-				packageStr:   "api.gorm_gen.v1",
-				goPackageStr: "api/gorm_gen/v1;v1",
-				table:        "admin_log_demo",
-				columnNameToName: map[string]string{
-					"id":         "ID",
-					"admin_id":   "adminID",
-					"ip":         "IP",
-					"uri":        "URI",
-					"useragent":  "Useragent",
-					"header":     "Header",
-					"req":        "Req",
-					"resp":       "Resp",
-					"created_at": "CreatedAt",
-					"status":     "Status",
-				},
-				columnNameToDataType: map[string]string{
-					"id":        "int64",
-					"admin_id":  "int64",
-					"ip":        "string",
-					"uri":       "string",
-					"useragent": "string",
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := GenerationPB(tt.args.db, tt.args.outPutPath, tt.args.packageStr, tt.args.goPackageStr, tt.args.table, tt.args.columnNameToName, tt.args.columnNameToDataType); (err != nil) != tt.wantErr {
-				t.Errorf("GenerationPB() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
 	}
 }

@@ -26,12 +26,17 @@ vet:
 	@go vet ./...
 
 .PHONY: test
-# make test 运行全量测试
+# make test 运行不依赖外部服务的默认测试
 test:
 	@go test $(TEST_PKGS)
 
+.PHONY: test-integration
+# make test-integration 运行依赖 PostgreSQL/Redis 的集成测试
+test-integration:
+	@go test -tags=integration $(TEST_PKGS)
+
 .PHONY: cover
-# make cover 运行覆盖率并排除生成示例包
+# make cover 运行默认测试覆盖率并排除生成示例包
 cover:
 	@go test $(COVER_PKGS) -coverprofile=/tmp/godb.cover
 	@go tool cover -func=/tmp/godb.cover | tail -n 1
@@ -46,15 +51,24 @@ bootstrap-postgres:
 comments:
 	@go run ./scripts
 
-.PHONY: ci
-# make ci 运行格式检查、注释检查、vet、测试和覆盖率
-ci:
+.PHONY: ci-unit
+# make ci-unit 运行格式、静态检查和默认测试
+ci-unit:
 	@test -z "$$(gofmt -l .)"
 	@$(MAKE) lint
 	@$(MAKE) comments
 	@$(MAKE) vet
 	@$(MAKE) test
 	@$(MAKE) cover
+
+.PHONY: ci-integration
+# make ci-integration 运行真实服务集成测试
+ci-integration:
+	@$(MAKE) test-integration
+
+.PHONY: ci
+# make ci 运行默认检查和真实服务集成测试
+ci: ci-unit ci-integration
 
 .PHONY: release-snapshot
 # make release-snapshot 预览发布产物
@@ -84,7 +98,7 @@ release-tag:
 .PHONY: lint
 # make lint  golang使用最多的第三方静态程序分析工具
 lint:
-	@golangci-lint run ./... -v
+	@golangci-lint run --build-tags=integration ./... -v
 
 # 创建新的 tag
 git-new-tag: release-tag

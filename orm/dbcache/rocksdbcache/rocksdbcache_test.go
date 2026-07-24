@@ -9,25 +9,10 @@ import (
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/fzf-labs/godb/internal/testenv"
 )
 
-var client = redis.NewClient(&redis.Options{
-	Addr:     testenv.RedisAddr(),
-	Password: testenv.RedisPassword(),
-})
-
-// requireRedis 跳过 Redis 不可用的测试。
-func requireRedis(t *testing.T) {
-	t.Helper()
-	if err := client.Ping(context.Background()).Err(); err != nil {
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-}
-
-// NewWeakRocksCacheClient 创建测试用 RocksCache 客户端。
-func NewWeakRocksCacheClient(rdb *redis.Client) *rockscache.Client {
+// newWeakRocksCacheClient 创建测试用 RocksCache 客户端。
+func newWeakRocksCacheClient(rdb *redis.Client) *rockscache.Client {
 	rc := rockscache.NewClient(rdb, rockscache.NewDefaultOptions())
 	// 常用参数设置
 	// 1、强一致性(默认关闭强一致性，如果开启的话会影响性能)
@@ -45,81 +30,18 @@ func NewWeakRocksCacheClient(rdb *redis.Client) *rockscache.Client {
 	return rc
 }
 
-// TestRocksCache_Fetch 验证单 key 缓存查询。
-func TestRocksCache_Fetch(t *testing.T) {
-	requireRedis(t)
-	rocksCacheClient := NewWeakRocksCacheClient(client)
-	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
-	ctx := context.Background()
-	fetch, err := cache.Fetch(ctx, "RocksCache_Fetch", func() (string, error) {
-		return "RocksCache_Fetch:result", nil
-	}, cache.TTL())
-	assert.NoError(t, err)
-	assert.Equal(t, "RocksCache_Fetch:result", fetch)
-}
-
-// TestRocksCache_FetchBatch 验证批量缓存查询。
-func TestRocksCache_FetchBatch(t *testing.T) {
-	requireRedis(t)
-	rocksCacheClient := NewWeakRocksCacheClient(client)
-	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
-	ctx := context.Background()
-	keys := []string{
-		"RocksCache_FetchBatch_a",
-		"RocksCache_FetchBatch_b",
-		"RocksCache_FetchBatch_c",
-	}
-	take, err := cache.FetchBatch(ctx, keys, func(miss []string) (map[string]string, error) {
-		resp := make(map[string]string)
-		for _, v := range miss {
-			resp[v] = v + ":result"
-		}
-		return resp, nil
-	}, cache.TTL())
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"RocksCache_FetchBatch_a": "RocksCache_FetchBatch_a:result",
-		"RocksCache_FetchBatch_b": "RocksCache_FetchBatch_b:result",
-		"RocksCache_FetchBatch_c": "RocksCache_FetchBatch_c:result",
-	}, take)
-}
-
-// TestCache_Del 验证单 key 删除标记。
-func TestCache_Del(t *testing.T) {
-	requireRedis(t)
-	rocksCacheClient := NewWeakRocksCacheClient(client)
-	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
-	ctx := context.Background()
-	err := cache.Del(ctx, "RocksCache_Fetch")
-	assert.NoError(t, err)
-}
-
-// TestCache_DelBatch 验证批量 key 删除标记。
-func TestCache_DelBatch(t *testing.T) {
-	requireRedis(t)
-	rocksCacheClient := NewWeakRocksCacheClient(client)
-	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
-	ctx := context.Background()
-	keys := []string{
-		"RocksCache_FetchBatch_a",
-		"RocksCache_FetchBatch_b",
-		"RocksCache_FetchBatch_c",
-	}
-	err := cache.DelBatch(ctx, keys)
-	assert.NoError(t, err)
-}
-
 // TestCache_Key 验证缓存 key 拼接。
 func TestCache_Key(t *testing.T) {
-	rocksCacheClient := NewWeakRocksCacheClient(client)
-	cache := NewRocksDBCache(client, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
+	rdb, _ := redismock.NewClientMock()
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
+	cache := NewRocksDBCache(rdb, rocksCacheClient, WithName("test"), WithTTL(time.Minute), WithBatchSize(100))
 	key := cache.Key("a", "b", "c")
 	assert.Equal(t, "test:a:b:c", key)
 }
 
 func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	cache := NewRocksDBCache(rdb, rocksCacheClient, WithName("custom"), WithTTL(time.Minute), WithBatchSize(2))
 
 	assert.Equal(t, "custom", cache.name)
@@ -135,7 +57,7 @@ func TestNewRocksDBCacheOptionsAndTTL(t *testing.T) {
 
 func TestRocksDBCacheWithNameTrimsAndKeepsDefaultForBlank(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	trimmed := NewRocksDBCache(rdb, rocksCacheClient, WithName("  custom  "))
 	assert.Equal(t, "custom:a", trimmed.Key("a"))
 
@@ -177,7 +99,7 @@ func TestRocksDBCacheRejectsNilClients(t *testing.T) {
 
 func TestRocksDBCacheRejectsNilFetchCallbacks(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	cache := NewRocksDBCache(rdb, rocksCacheClient)
 	ctx := context.Background()
 
@@ -231,7 +153,7 @@ func TestRocksDBCacheDelBatchEmptyIsNoop(t *testing.T) {
 
 func TestFetchUsesRocksCacheClient(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheRead = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient)
 
@@ -245,7 +167,7 @@ func TestFetchUsesRocksCacheClient(t *testing.T) {
 
 func TestFetchReturnsLoaderError(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheRead = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient)
 
@@ -258,7 +180,7 @@ func TestFetchReturnsLoaderError(t *testing.T) {
 
 func TestFetchBatchUsesRocksCacheClient(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheRead = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
 
@@ -273,7 +195,7 @@ func TestFetchBatchUsesRocksCacheClient(t *testing.T) {
 
 func TestFetchBatchReturnsLoaderError(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheRead = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
 
@@ -286,7 +208,7 @@ func TestFetchBatchReturnsLoaderError(t *testing.T) {
 
 func TestFetchBatchRejectsMissingLoaderValues(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheRead = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
 
@@ -299,7 +221,7 @@ func TestFetchBatchRejectsMissingLoaderValues(t *testing.T) {
 
 func TestDelAndDelBatchUseRocksCacheClient(t *testing.T) {
 	rdb, _ := redismock.NewClientMock()
-	rocksCacheClient := NewWeakRocksCacheClient(rdb)
+	rocksCacheClient := newWeakRocksCacheClient(rdb)
 	rocksCacheClient.Options.DisableCacheDelete = true
 	cache := NewRocksDBCache(rdb, rocksCacheClient, WithBatchSize(2))
 

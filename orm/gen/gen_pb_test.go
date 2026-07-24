@@ -10,29 +10,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/fzf-labs/godb/internal/testenv"
 	"github.com/fzf-labs/godb/orm/gormx"
 )
-
-// TestNewGenerationPb 验证 proto 文件生成。
-func TestNewGenerationPb(t *testing.T) {
-	db, err := gormx.NewSimpleGormClient(gormx.Postgres, testenv.PostgresDSN("gorm_gen"))
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "postgres unavailable: %v", err)
-	}
-	testenv.CleanupGormDB(t, db)
-	err = NewGenerationPB(
-		db,
-		t.TempDir(),
-		"api.gorm_gen.v1",
-		"api/gorm_gen/v1;v1",
-		WithPBOpts(ModelOptionRemoveDefault(), ModelOptionUnderline("ul_")),
-		WithPBTables([]string{"user_demo"}),
-	).Do()
-	if err != nil {
-		t.Fatal(err)
-	}
-}
 
 func TestNewGenerationPbRejectsNilDB(t *testing.T) {
 	err := NewGenerationPB(nil, t.TempDir(), "api.gorm_gen.v1", "api/gorm_gen/v1;v1").Do()

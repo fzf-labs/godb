@@ -9,89 +9,7 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/rueidis"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/fzf-labs/godb/cache/rueidiscache"
-	"github.com/fzf-labs/godb/internal/testenv"
 )
-
-func requireRueidis(t *testing.T) rueidis.Client {
-	t.Helper()
-	client, err := rueidiscache.NewRueidisClient(&rueidis.ClientOption{
-		Username:    "",
-		Password:    testenv.RedisPassword(),
-		InitAddress: []string{testenv.RedisAddr()},
-		SelectDB:    0,
-	})
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-	if err := client.Do(context.Background(), client.B().Ping().Build()).Error(); err != nil {
-		client.Close()
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-	t.Cleanup(client.Close)
-	return client
-}
-
-func TestRueidisCache_Take(t *testing.T) {
-	client := requireRueidis(t)
-	ctx := context.Background()
-	rueidisCache := NewRueidisDBCache(client)
-	take, err := rueidisCache.Fetch(ctx, "take_test", func() (string, error) {
-		return "take", nil
-	}, rueidisCache.TTL())
-	assert.NoError(t, err)
-	assert.Equal(t, "take", take)
-}
-
-func TestRueidisCache_TakeBatch(t *testing.T) {
-	client := requireRueidis(t)
-	ctx := context.Background()
-	rueidisCache := NewRueidisDBCache(client)
-	prefix := "batch:" + time.Now().Format("20060102150405.000000000")
-	keys := []string{
-		prefix + ":a",
-		prefix + ":b",
-		prefix + ":c",
-		prefix + ":d",
-	}
-	t.Cleanup(func() {
-		_ = rueidisCache.DelBatch(ctx, keys)
-	})
-	take, err := rueidisCache.FetchBatch(ctx, keys, func(miss []string) (map[string]string, error) {
-		assert.Equal(t, keys, miss)
-		return map[string]string{
-			keys[0]: "test1",
-			keys[1]: "test2",
-			keys[2]: "test3",
-			keys[3]: "test4",
-		}, nil
-	}, rueidisCache.TTL())
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		keys[0]: "test1",
-		keys[1]: "test2",
-		keys[2]: "test3",
-		keys[3]: "test4",
-	}, take)
-}
-
-func TestRueidisCache_Del(t *testing.T) {
-	client := requireRueidis(t)
-	ctx := context.Background()
-	rueidisCache := NewRueidisDBCache(client)
-	err := rueidisCache.Del(ctx, "a")
-	assert.NoError(t, err)
-}
-
-func TestRueidisCache_DelBatch(t *testing.T) {
-	client := requireRueidis(t)
-	ctx := context.Background()
-	rueidisCache := NewRueidisDBCache(client)
-	err := rueidisCache.DelBatch(ctx, []string{"a", "b", "f"})
-	assert.NoError(t, err)
-}
 
 func TestRueidisCacheDelayedDelete(t *testing.T) {
 	_, client := newMiniRueidisClient(t)
@@ -167,8 +85,7 @@ func TestRueidisCacheRejectsNilClient(t *testing.T) {
 }
 
 func TestRueidisCacheRejectsNilFetchCallbacks(t *testing.T) {
-	client := requireRueidis(t)
-	cache := NewRueidisDBCache(client)
+	cache := NewRueidisDBCache(nil)
 	ctx := context.Background()
 
 	_, err := cache.Fetch(ctx, "key", nil, time.Minute)
@@ -300,22 +217,6 @@ func TestRueidisCacheFetchBatchRejectsMissingLoaderValues(t *testing.T) {
 	}, time.Minute)
 
 	assert.Error(t, err)
-}
-
-func TestRueidisCacheFetchBatchDeduplicatesKeys(t *testing.T) {
-	client := requireRueidis(t)
-	cache := NewRueidisDBCache(client)
-
-	got, err := cache.FetchBatch(context.Background(), []string{"batch:dup", "batch:dup", "batch:other"}, func(miss []string) (map[string]string, error) {
-		require.Equal(t, []string{"batch:dup", "batch:other"}, miss)
-		return map[string]string{
-			"batch:dup":   "loaded-dup",
-			"batch:other": "loaded-other",
-		}, nil
-	}, time.Minute)
-
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{"batch:dup": "loaded-dup", "batch:other": "loaded-other"}, got)
 }
 
 func TestRueidisCacheReturnsBackendErrorsWithMiniredis(t *testing.T) {

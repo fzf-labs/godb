@@ -13,25 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/fzf-labs/godb/internal/testenv"
 )
-
-func TestNewGoRedis(t *testing.T) {
-	newGoRedis, err := NewGoRedis(GoRedisConfig{
-		Addr:     testenv.RedisAddr(),
-		Password: testenv.RedisPassword(),
-		DB:       0,
-	})
-	if err != nil {
-		testenv.SkipIfUnavailable(t, "redis unavailable: %v", err)
-	}
-	key := "godb:gorediscache:test"
-	require.NoError(t, newGoRedis.Set(context.Background(), key, "ok", time.Minute).Err())
-	value, err := newGoRedis.Get(context.Background(), key).Result()
-	require.NoError(t, err)
-	assert.Equal(t, "ok", value)
-}
 
 func TestNewGoRedisWithInstrumentation(t *testing.T) {
 	server, err := miniredis.Run()

@@ -374,8 +374,11 @@ make lint
 make comments
 make vet
 make test
+make test-integration
 make bootstrap-postgres
 make cover
+make ci-unit
+make ci-integration
 make ci
 ```
 
@@ -386,7 +389,9 @@ go install ./cmd/godb
 godb --help
 ```
 
-This repository's PostgreSQL/Redis example tests are bootstrapped in CI with seeded databases and a password-protected Redis instance. Locally, you can override the defaults with `GODB_TEST_POSTGRES_DSN`, `GODB_TEST_REDIS_ADDR`, and `GODB_TEST_REDIS_PASSWORD`. If local PostgreSQL uses the default user and password, run `make bootstrap-postgres` to recreate the `gorm_gen`, `user`, and `fkratos_sys` test databases and import the example schema. This command drops and recreates those test databases, so do not point it at production. When the required service is unavailable locally, related tests skip or use mocks where available; in CI, unavailable services fail the tests so integration coverage is not silently skipped.
+`make test` and `make cover` run only the default tests that do not require external services. They use `sqlmock`, SQLite, `miniredis`, or `redismock`, so PostgreSQL and Redis do not need to be running locally. Real-service tests use the `integration` build tag and run explicitly through `make test-integration`; unavailable services fail those tests instead of skipping them.
+
+Local PostgreSQL configuration uses the standard `PGHOST`, `PGPORT`, `PGUSER`, and `PGPASSWORD` environment variables. Redis uses `GODB_TEST_REDIS_ADDR` and `GODB_TEST_REDIS_PASSWORD`. If PostgreSQL uses the default user and password, run `make bootstrap-postgres` to recreate the `gorm_gen`, `user`, and `fkratos_sys` test databases and import the example schema. This command drops and recreates those test databases, so do not point it at production. CI runs default checks and real-service tests separately and provisions PostgreSQL, Redis, and seed data automatically.
 
 Release flow:
 
