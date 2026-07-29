@@ -46,6 +46,16 @@ func TestRootCommandStateIsRestoredBetweenRuns(t *testing.T) {
 	}
 }
 
+func TestRootCommandRegistersSQLBackup(t *testing.T) {
+	command, _, err := rootCmd.Find([]string{"sqlbackup"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if command == nil || command.Name() != "sqlbackup" {
+		t.Fatalf("sqlbackup command = %#v", command)
+	}
+}
+
 func TestRunMainReportsExecuteError(t *testing.T) {
 	oldFatal := logFatal
 	defer func() { logFatal = oldFatal }()

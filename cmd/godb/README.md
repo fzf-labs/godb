@@ -1,23 +1,16 @@
-# 工具安装
+# godb CLI
 
 ```sh
 go install github.com/fzf-labs/godb/cmd/godb@latest
 ```
 
-# 数据库备份
+`godb` provides four commands:
 
 ```sh
-godb sqldump -d postgres -s "host=127.0.0.1 user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai" -o "./orm/example/sql"
+godb ormgen     # Generate GORM model/dao/repo code
+godb sqldump    # Export table schema SQL only
+godb sqlbackup  # Export one database's schema and data
+godb sqltopb    # Generate proto files from table schemas
 ```
 
-# 数据库恢复
-
-```sh
-godb sqltopb -d postgres -s "host=127.0.0.1 user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai" -o "./orm/example/pb"
-```
-
-# 数据库代码生成器
-
-```sh
-godb ormgen -d postgres -s "host=127.0.0.1 user=postgres password=123456 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai" -o "./orm/example/gorm"
-```
+`sqlbackup` creates a PostgreSQL custom archive or a MySQL SQL dump. It is not a restore command; use `pg_restore` or `mysql` to restore the artifact. See the repository [README](../../README.md) for command flags, examples, prerequisites, and restore instructions.

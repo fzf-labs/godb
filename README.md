@@ -7,7 +7,7 @@
 
 语言: 简体中文 | [English](README_EN.md)
 
-godb 是一个面向 Go 服务端项目的数据库工程工具箱。它并不试图替代 GORM，而是围绕 GORM 补齐真实业务项目里反复出现的工程化能力：数据库连接、代码生成、Repository 层、查询缓存、动态条件查询、批量更新、表结构导出和 proto 文件生成。
+godb 是一个面向 Go 服务端项目的数据库工程工具箱。它并不试图替代 GORM，而是围绕 GORM 补齐真实业务项目里反复出现的工程化能力：数据库连接、代码生成、Repository 层、查询缓存、动态条件查询、批量更新、表结构导出、逻辑备份和 proto 文件生成。
 
 如果你的项目里经常需要根据表结构写重复的 DAO、Repo、缓存 Key、按索引查询、事务方法和分页条件查询，godb 可以把这些样板代码稳定地生成出来，让你把注意力放回业务规则。
 
@@ -19,7 +19,7 @@ godb 是一个面向 Go 服务端项目的数据库工程工具箱。它并不�
 - **Cache-ready repository**: 生成带缓存读写和失效逻辑的 Repo 方法，缓存实现通过接口解耦。
 - **Multiple cache backends**: 提供 go-redis、rueidis、RocksCache、Ristretto 等缓存相关封装。
 - **Dynamic conditions**: 把结构化查询参数转换为 GORM clause，支持比较、IN、LIKE、NULL、RAW、排序和分页。
-- **Operational CLI**: 一个 `godb` 命令覆盖 ORM 代码生成、SQL 结构导出、proto 文件生成。
+- **Operational CLI**: 一个 `godb` 命令覆盖 ORM 代码生成、SQL 结构导出、逻辑备份、proto 文件生成。
 - **Production-oriented helpers**: 连接池、健康检查、OpenTelemetry tracing、批量 CASE WHEN 更新、分表插件辅助。
 
 ## Packages
@@ -35,7 +35,7 @@ godb 是一个面向 Go 服务端项目的数据库工程工具箱。它并不�
 | `orm/encoding` | JSON、Sonic、MsgPack、Zlib 编解码适配 |
 | `orm/plugin` | GORM sharding 插件辅助构造 |
 | `cache/*` | Redis、Rueidis、Ristretto、RocksCache、锁等缓存基础设施封装 |
-| `cmd/godb` | CLI：`ormgen`、`sqldump`、`sqltopb` |
+| `cmd/godb` | CLI：`ormgen`、`sqldump`、`sqlbackup`、`sqltopb` |
 
 ## Installation
 
@@ -56,7 +56,8 @@ go install github.com/fzf-labs/godb/cmd/godb@latest
 - Go 1.24+
 - MySQL 或 PostgreSQL
 - Redis 可选，仅在使用缓存实现或缓存 Repo 时需要
-- `pg_dump` 可选，仅在导出 PostgreSQL 表结构时需要
+- `pg_dump`：导出 PostgreSQL 表结构或执行 PostgreSQL `sqlbackup` 时需要
+- `mysqldump`：执行 MySQL `sqlbackup` 时需要
 
 ## Quick Start
 
@@ -174,11 +175,12 @@ func main() {
 
 ## CLI
 
-`godb` 提供三个子命令：
+`godb` 提供四个子命令：
 
 ```bash
 godb ormgen   # 生成 GORM model/dao/repo
 godb sqldump  # 导出数据库表结构 SQL
+godb sqlbackup # 导出数据库结构和数据
 godb sqltopb  # 根据表结构生成 proto 文件
 ```
 
@@ -223,6 +225,48 @@ godb sqldump \
 | `-f, --fileOverwrite` | `false` | 是否覆盖已存在文件 |
 
 MySQL 使用 `SHOW CREATE TABLE`；PostgreSQL 使用本机 `pg_dump -s -t` 并清理部分环境相关语句。
+
+### `sqlbackup`
+
+`sqlbackup` 导出 DSN 指向的单个数据库的结构和数据。输出必须是目标文件；默认不会覆盖已有备份，使用 `--force` 才会替换。命令先在同一目录写入临时文件，成功后才生成最终备份文件。
+
+```bash
+godb sqlbackup \
+  -d postgres \
+  -s "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable" \
+  -o ./backup/app.dump
+
+godb sqlbackup \
+  -d mysql \
+  -s "backup:password@tcp(127.0.0.1:3306)/app?parseTime=true" \
+  -o ./backup/app.sql
+```
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-d, --db` | | 数据库类型：`mysql`、`postgres` |
+| `-s, --dsn` | | 数据库连接字符串 |
+| `-o, --output` | | 备份目标文件；建议 PostgreSQL 使用 `.dump`、MySQL 使用 `.sql` |
+| `-f, --force` | `false` | 成功完成后替换已有目标文件 |
+
+PostgreSQL 使用 `pg_dump` custom archive；恢复前先创建目标数据库，再使用本机 `pg_restore`：
+
+```bash
+createdb -h 127.0.0.1 -p 5432 -U postgres app_restore
+PGPASSWORD=123456 pg_restore \
+  --no-owner --no-privileges --no-tablespaces \
+  -h 127.0.0.1 -p 5432 -U postgres -d app_restore \
+  ./backup/app.dump
+```
+
+MySQL 使用 `mysqldump` 生成 SQL；恢复到新建数据库时使用本机 `mysql` 客户端：
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u backup -p -e "CREATE DATABASE app_restore;"
+mysql -h 127.0.0.1 -P 3306 -u backup -p app_restore < ./backup/app.sql
+```
+
+备份不包含 PostgreSQL roles/tablespaces、MySQL 用户账户等实例级对象。MySQL 默认使用单事务快照；只有事务型表（例如 InnoDB）能保证一致性。首版只支持标准单端点 TCP/Unix socket 连接；多主机、service 和 Go 驱动专用的命名 TLS 配置会报错。
 
 ### `sqltopb`
 

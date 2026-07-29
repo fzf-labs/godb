@@ -7,7 +7,7 @@
 
 Language: English | [Simplified Chinese](README.md)
 
-godb is a database engineering toolkit for Go backend services. It does not try to replace GORM. Instead, it builds around GORM and fills in the pieces that appear again and again in production projects: database clients, code generation, repository layers, query caching, dynamic conditions, batch updates, schema dumping, and proto generation.
+godb is a database engineering toolkit for Go backend services. It does not try to replace GORM. Instead, it builds around GORM and fills in the pieces that appear again and again in production projects: database clients, code generation, repository layers, query caching, dynamic conditions, batch updates, schema dumping, logical backups, and proto generation.
 
 If your project repeatedly needs DAO code, repository methods, cache keys, index-based queries, transaction helpers, and paginated condition queries from database schemas, godb turns that boilerplate into generated, repeatable code so you can focus on business logic.
 
@@ -19,7 +19,7 @@ If your project repeatedly needs DAO code, repository methods, cache keys, index
 - **Cache-ready repositories**: Generate repository methods with cache reads, writes, and invalidation logic behind a replaceable cache interface.
 - **Multiple cache backends**: Provides wrappers for go-redis, rueidis, RocksCache, Ristretto, and related cache infrastructure.
 - **Dynamic conditions**: Convert structured API query parameters into GORM clauses with comparisons, IN, LIKE, NULL checks, RAW expressions, ordering, and pagination.
-- **Operational CLI**: One `godb` command for ORM code generation, SQL schema dumping, and proto generation.
+- **Operational CLI**: One `godb` command for ORM code generation, SQL schema dumping, logical backups, and proto generation.
 - **Production-oriented helpers**: Connection pools, health checks, OpenTelemetry tracing, CASE WHEN batch updates, and sharding plugin helpers.
 
 ## Packages
@@ -35,7 +35,7 @@ If your project repeatedly needs DAO code, repository methods, cache keys, index
 | `orm/encoding` | JSON, Sonic, MsgPack, and Zlib codec adapters |
 | `orm/plugin` | GORM sharding plugin helpers |
 | `cache/*` | Redis, Rueidis, Ristretto, RocksCache, and lock helpers |
-| `cmd/godb` | CLI commands: `ormgen`, `sqldump`, and `sqltopb` |
+| `cmd/godb` | CLI commands: `ormgen`, `sqldump`, `sqlbackup`, and `sqltopb` |
 
 ## Installation
 
@@ -56,7 +56,8 @@ Requirements:
 - Go 1.24+
 - MySQL or PostgreSQL
 - Redis is optional and only required when using cache implementations or generated cache repositories
-- `pg_dump` is optional and only required when dumping PostgreSQL schemas
+- `pg_dump` is required to dump PostgreSQL schemas or create PostgreSQL `sqlbackup` artifacts
+- `mysqldump` is required to create MySQL `sqlbackup` artifacts
 
 ## Quick Start
 
@@ -174,11 +175,12 @@ func main() {
 
 ## CLI
 
-`godb` provides three subcommands:
+`godb` provides four subcommands:
 
 ```bash
 godb ormgen   # Generate GORM model/dao/repo code
 godb sqldump  # Export database table schema SQL
+godb sqlbackup # Export database schema and data
 godb sqltopb  # Generate proto files from database tables
 ```
 
@@ -223,6 +225,48 @@ godb sqldump \
 | `-f, --fileOverwrite` | `false` | Overwrite existing files |
 
 MySQL uses `SHOW CREATE TABLE`. PostgreSQL uses local `pg_dump -s -t` and removes some environment-specific statements.
+
+### `sqlbackup`
+
+`sqlbackup` exports the schema and data of the single database selected by the DSN. The output must be a target file. Existing artifacts are protected unless `--force` is supplied, and the command writes a temporary file in the same directory before publishing the final backup.
+
+```bash
+godb sqlbackup \
+  -d postgres \
+  -s "host=127.0.0.1 port=5432 user=postgres password=123456 dbname=app sslmode=disable" \
+  -o ./backup/app.dump
+
+godb sqlbackup \
+  -d mysql \
+  -s "backup:password@tcp(127.0.0.1:3306)/app?parseTime=true" \
+  -o ./backup/app.sql
+```
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-d, --db` | | Database type: `mysql` or `postgres` |
+| `-s, --dsn` | | Database connection string |
+| `-o, --output` | | Backup target file; `.dump` is recommended for PostgreSQL and `.sql` for MySQL |
+| `-f, --force` | `false` | Replace an existing target after the backup completes successfully |
+
+PostgreSQL uses a `pg_dump` custom archive. Create a target database first, then restore it with local `pg_restore`:
+
+```bash
+createdb -h 127.0.0.1 -p 5432 -U postgres app_restore
+PGPASSWORD=123456 pg_restore \
+  --no-owner --no-privileges --no-tablespaces \
+  -h 127.0.0.1 -p 5432 -U postgres -d app_restore \
+  ./backup/app.dump
+```
+
+MySQL uses `mysqldump` to produce SQL. Restore into a newly created database with the local `mysql` client:
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u backup -p -e "CREATE DATABASE app_restore;"
+mysql -h 127.0.0.1 -P 3306 -u backup -p app_restore < ./backup/app.sql
+```
+
+Backups do not include PostgreSQL roles/tablespaces, MySQL user accounts, or other instance-level objects. MySQL uses a single-transaction snapshot by default, which is consistent only for transactional tables such as InnoDB. The first release supports standard single-endpoint TCP/Unix socket connections; multi-host, service, and named Go-driver TLS configurations return an error.
 
 ### `sqltopb`
 

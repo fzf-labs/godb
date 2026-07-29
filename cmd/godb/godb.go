@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/fzf-labs/godb/cmd/godb/ormgen"
+	"github.com/fzf-labs/godb/cmd/godb/sqlbackup"
 	"github.com/fzf-labs/godb/cmd/godb/sqldump"
 	"github.com/fzf-labs/godb/cmd/godb/sqltopb"
 )
@@ -25,6 +26,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(ormgen.CmdOrmGen)
+	rootCmd.AddCommand(sqlbackup.CmdSQLBackup)
 	rootCmd.AddCommand(sqldump.CmdSQLDump)
 	rootCmd.AddCommand(sqltopb.CmdSQLToPb)
 }
