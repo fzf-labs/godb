@@ -10,19 +10,21 @@ import (
 	mysqlDriver "github.com/go-sql-driver/mysql"
 )
 
+// mysqlConnection 保存解析后的 MySQL 连接信息，用于组装 mysqldump 参数。
 type mysqlConnection struct {
 	user     string
 	password string
-	network  string
+	network  string // tcp / unix
 	host     string
 	port     string
 	socket   string
-	sslMode  string
+	sslMode  string // mysqldump --ssl-mode 取值
 	database string
 }
 
-func (b *sqlBackup) runMySQL(ctx context.Context) error {
-	connection, err := parseMySQLConnection(b.dsn)
+// runMySQL 调用 mysqldump 创建包含 schema 与数据的逻辑备份。
+func (o runOptions) runMySQL(ctx context.Context) error {
+	connection, err := parseMySQLConnection(o.dsn)
 	if err != nil {
 		return err
 	}
@@ -31,25 +33,21 @@ func (b *sqlBackup) runMySQL(ctx context.Context) error {
 		return fmt.Errorf("command mysqldump not found, please install it: %w", err)
 	}
 
-	output, err := prepareAtomicOutput(b.output, b.force)
+	output, err := prepareAtomicOutput(o.output, o.force)
 	if err != nil {
 		return err
 	}
 	defer output.abort()
-	writer, err := output.writer()
-	if err != nil {
-		return err
-	}
 
 	stderr, err := runExternalCommand(
 		ctx,
 		executable,
 		buildMySQLDumpArgs(connection),
 		commandEnvironment(os.Environ(), "MYSQL_PWD", connection.password),
-		writer,
+		output.file,
 	)
 	if err != nil {
-		return formatCommandError(ctx, "mysqldump", stderr, err, b.dsn, connection.password)
+		return formatCommandError(ctx, "mysqldump", stderr, err, o.dsn, connection.password)
 	}
 	if err := output.commit(); err != nil {
 		return err
@@ -57,6 +55,7 @@ func (b *sqlBackup) runMySQL(ctx context.Context) error {
 	return nil
 }
 
+// parseMySQLConnection 解析 go-sql-driver 风格的 MySQL DSN。
 func parseMySQLConnection(dsn string) (*mysqlConnection, error) {
 	config, err := mysqlDriver.ParseDSN(dsn)
 	if err != nil {
@@ -99,6 +98,7 @@ func parseMySQLConnection(dsn string) (*mysqlConnection, error) {
 	return connection, nil
 }
 
+// mysqlSSLMode 将 go-sql-driver 的 TLSConfig 映射为 mysqldump --ssl-mode。
 func mysqlSSLMode(tlsConfig string) (string, error) {
 	switch tlsConfig {
 	case "":
@@ -114,6 +114,8 @@ func mysqlSSLMode(tlsConfig string) (string, error) {
 	}
 }
 
+// buildMySQLDumpArgs 组装 mysqldump 命令行参数。
+// 密码通过 MYSQL_PWD 环境变量传递，避免出现在进程参数中。
 func buildMySQLDumpArgs(connection *mysqlConnection) []string {
 	args := []string{
 		"--user=" + connection.user,

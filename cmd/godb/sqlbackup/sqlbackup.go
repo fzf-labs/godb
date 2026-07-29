@@ -19,49 +19,22 @@ const (
 	databasePostgres = "postgres"
 )
 
+// 以下变量便于单测替换可执行文件查找与外部命令执行。
 var (
 	lookupExecutable   = exec.LookPath
 	execCommandContext = exec.CommandContext
 )
 
-type sqlBackup struct {
-	db     string
-	dsn    string
-	output string
-	force  bool
-}
-
+// atomicOutput 以临时文件写入备份内容，成功后再原子落到最终路径。
 type atomicOutput struct {
-	finalPath string
-	tempPath  string
-	file      *os.File
-	force     bool
-	committed bool
+	finalPath string   // 最终输出文件路径
+	tempPath  string   // 同目录下的临时文件路径
+	file      *os.File // 临时文件句柄
+	force     bool     // 是否允许覆盖已存在文件
+	committed bool     // 是否已成功提交到最终路径
 }
 
-func newSQLBackup(opts runOptions) *sqlBackup {
-	return &sqlBackup{
-		db:     opts.db,
-		dsn:    opts.dsn,
-		output: filepath.Clean(opts.output),
-		force:  opts.force,
-	}
-}
-
-func (b *sqlBackup) run(ctx context.Context) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	switch b.db {
-	case databasePostgres:
-		return b.runPostgres(ctx)
-	case databaseMySQL:
-		return b.runMySQL(ctx)
-	default:
-		return fmt.Errorf("unknown database type: %s", b.db)
-	}
-}
-
+// prepareAtomicOutput 创建同目录临时文件用于写入备份；目标已存在且未指定 force 时返回错误。
 func prepareAtomicOutput(outputPath string, force bool) (*atomicOutput, error) {
 	info, err := os.Lstat(outputPath)
 	switch {
@@ -73,7 +46,7 @@ func prepareAtomicOutput(outputPath string, force bool) (*atomicOutput, error) {
 			return nil, fmt.Errorf("output file already exists: %s (use --force to replace it)", outputPath)
 		}
 	case errors.Is(err, fs.ErrNotExist):
-		// The parent directory is created below.
+		// 目标不存在，后续创建父目录即可。
 	case err != nil:
 		return nil, fmt.Errorf("inspect output path: %w", err)
 	}
@@ -101,13 +74,7 @@ func prepareAtomicOutput(outputPath string, force bool) (*atomicOutput, error) {
 	}, nil
 }
 
-func (o *atomicOutput) writer() (*os.File, error) {
-	if o.file == nil {
-		return nil, fmt.Errorf("temporary backup file is closed")
-	}
-	return o.file, nil
-}
-
+// close 关闭临时文件句柄。
 func (o *atomicOutput) close() error {
 	if o.file == nil {
 		return nil
@@ -117,6 +84,8 @@ func (o *atomicOutput) close() error {
 	return err
 }
 
+// commit 将临时文件原子落到最终路径。
+// force 时使用 Rename（Windows 上必要时先删除目标再重试）；非 force 时用 Link 避免覆盖竞态。
 func (o *atomicOutput) commit() error {
 	if err := o.close(); err != nil {
 		return fmt.Errorf("close temporary backup file: %w", err)
@@ -151,6 +120,7 @@ func (o *atomicOutput) commit() error {
 	return nil
 }
 
+// abort 在未提交时清理临时文件；已提交则忽略。
 func (o *atomicOutput) abort() {
 	if o == nil || o.committed {
 		return
@@ -159,6 +129,7 @@ func (o *atomicOutput) abort() {
 	_ = os.Remove(o.tempPath)
 }
 
+// runExternalCommand 执行外部备份工具，将 stdout 写入指定 Writer，并返回 stderr 文本。
 func runExternalCommand(ctx context.Context, executable string, args []string, env []string, stdout io.Writer) (string, error) {
 	cmd := execCommandContext(ctx, executable, args...)
 	cmd.Env = env
@@ -170,6 +141,7 @@ func runExternalCommand(ctx context.Context, executable string, args []string, e
 	return stderr.String(), err
 }
 
+// formatCommandError 将外部命令失败包装为可读错误，并脱敏 stderr 中的敏感信息。
 func formatCommandError(ctx context.Context, tool string, stderr string, err error, secrets ...string) error {
 	if ctx != nil && ctx.Err() != nil {
 		err = ctx.Err()
@@ -181,6 +153,7 @@ func formatCommandError(ctx context.Context, tool string, stderr string, err err
 	return fmt.Errorf("%s failed: %w", tool, err)
 }
 
+// redactSensitive 将文本中的敏感片段替换为 [REDACTED]。
 func redactSensitive(value string, secrets ...string) string {
 	for _, secret := range secrets {
 		if secret != "" {
@@ -190,6 +163,7 @@ func redactSensitive(value string, secrets ...string) string {
 	return value
 }
 
+// commandEnvironment 基于环境变量副本设置或覆盖指定 key。
 func commandEnvironment(base []string, key, value string) []string {
 	prefix := key + "="
 	env := make([]string, 0, len(base)+1)

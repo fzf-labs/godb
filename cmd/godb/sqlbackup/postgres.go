@@ -10,18 +10,22 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// postgresConnection 保存传给 pg_dump 的连接信息。
+// dsn 中密码已剥离，实际密码通过 PGPASSWORD 环境变量传递。
 type postgresConnection struct {
-	dsn      string
+	dsn      string // 已脱敏的连接串（无 password）
 	password string
 }
 
+// postgresOption 表示 keyword/value 形式 DSN 中的一对键值。
 type postgresOption struct {
 	key   string
 	value string
 }
 
-func (b *sqlBackup) runPostgres(ctx context.Context) error {
-	connection, err := parsePostgresConnection(b.dsn)
+// runPostgres 调用 pg_dump 创建 custom 格式的逻辑备份。
+func (o runOptions) runPostgres(ctx context.Context) error {
+	connection, err := parsePostgresConnection(o.dsn)
 	if err != nil {
 		return err
 	}
@@ -30,11 +34,12 @@ func (b *sqlBackup) runPostgres(ctx context.Context) error {
 		return fmt.Errorf("command pg_dump not found, please install it: %w", err)
 	}
 
-	output, err := prepareAtomicOutput(b.output, b.force)
+	output, err := prepareAtomicOutput(o.output, o.force)
 	if err != nil {
 		return err
 	}
 	defer output.abort()
+	// pg_dump 直接写入 --file，需先关闭临时文件句柄再交给外部进程。
 	if err := output.close(); err != nil {
 		return fmt.Errorf("close temporary backup file: %w", err)
 	}
@@ -47,7 +52,7 @@ func (b *sqlBackup) runPostgres(ctx context.Context) error {
 		nil,
 	)
 	if err != nil {
-		return formatCommandError(ctx, "pg_dump", stderr, err, b.dsn, connection.password)
+		return formatCommandError(ctx, "pg_dump", stderr, err, o.dsn, connection.password)
 	}
 	if err := output.commit(); err != nil {
 		return err
@@ -55,6 +60,7 @@ func (b *sqlBackup) runPostgres(ctx context.Context) error {
 	return nil
 }
 
+// parsePostgresConnection 解析 PostgreSQL DSN，并剥离密码供环境变量传递。
 func parsePostgresConnection(dsn string) (*postgresConnection, error) {
 	sanitizedDSN, settings, err := sanitizePostgresDSN(dsn)
 	if err != nil {
@@ -78,6 +84,7 @@ func parsePostgresConnection(dsn string) (*postgresConnection, error) {
 	}, nil
 }
 
+// buildPgDumpArgs 组装 pg_dump 命令行参数，输出 custom 格式备份文件。
 func buildPgDumpArgs(connection *postgresConnection, outputPath string) []string {
 	return []string{
 		"--dbname", connection.dsn,
@@ -88,6 +95,7 @@ func buildPgDumpArgs(connection *postgresConnection, outputPath string) []string
 	}
 }
 
+// sanitizePostgresDSN 从 URL 或 keyword/value DSN 中移除 password，并提取连接设置。
 func sanitizePostgresDSN(dsn string) (string, map[string]string, error) {
 	trimmedDSN := strings.TrimSpace(dsn)
 	if strings.HasPrefix(strings.ToLower(trimmedDSN), "postgres://") || strings.HasPrefix(strings.ToLower(trimmedDSN), "postgresql://") {
@@ -96,6 +104,7 @@ func sanitizePostgresDSN(dsn string) (string, map[string]string, error) {
 	return sanitizePostgresKeywordDSN(trimmedDSN)
 }
 
+// sanitizePostgresURL 处理 postgres:// / postgresql:// 形式的 DSN。
 func sanitizePostgresURL(dsn string) (string, map[string]string, error) {
 	parsed, err := url.Parse(dsn)
 	if err != nil {
@@ -133,6 +142,7 @@ func sanitizePostgresURL(dsn string) (string, map[string]string, error) {
 	return parsed.String(), settings, nil
 }
 
+// sanitizePostgresKeywordDSN 处理 host=... dbname=... 形式的 keyword/value DSN。
 func sanitizePostgresKeywordDSN(dsn string) (string, map[string]string, error) {
 	options, err := parsePostgresKeywordOptions(dsn)
 	if err != nil {
@@ -150,6 +160,7 @@ func sanitizePostgresKeywordDSN(dsn string) (string, map[string]string, error) {
 	return formatPostgresKeywordOptions(filtered), settings, nil
 }
 
+// validatePostgresBackupSettings 拒绝备份场景不支持的连接配置。
 func validatePostgresBackupSettings(settings map[string]string) error {
 	host := settings["host"]
 	if strings.Contains(host, ",") || strings.Contains(settings["port"], ",") {
@@ -164,6 +175,7 @@ func validatePostgresBackupSettings(settings map[string]string) error {
 	return nil
 }
 
+// parsePostgresKeywordOptions 解析 libpq keyword/value 连接串。
 func parsePostgresKeywordOptions(dsn string) ([]postgresOption, error) {
 	const whitespace = " \t\n\r\v\f"
 
@@ -202,6 +214,7 @@ func parsePostgresKeywordOptions(dsn string) ([]postgresOption, error) {
 	return options, nil
 }
 
+// readQuotedPostgresKeywordValue 读取单引号包裹的 keyword 值。
 func readQuotedPostgresKeywordValue(value string) (string, string, error) {
 	for index := 0; index < len(value); index++ {
 		switch value[index] {
@@ -217,6 +230,7 @@ func readQuotedPostgresKeywordValue(value string) (string, string, error) {
 	return "", "", fmt.Errorf("unterminated quoted value in postgres dsn")
 }
 
+// readUnquotedPostgresKeywordValue 读取未加引号的 keyword 值，直到空白分隔。
 func readUnquotedPostgresKeywordValue(value, whitespace string) (string, string, error) {
 	index := 0
 	for index < len(value) {
@@ -234,11 +248,13 @@ func readUnquotedPostgresKeywordValue(value, whitespace string) (string, string,
 	return unescapePostgresKeywordValue(value[:index]), value[index:], nil
 }
 
+// unescapePostgresKeywordValue 还原 keyword 值中的转义字符。
 func unescapePostgresKeywordValue(value string) string {
 	value = strings.ReplaceAll(value, "\\\\", "\\")
 	return strings.ReplaceAll(value, "\\'", "'")
 }
 
+// formatPostgresKeywordOptions 将选项重新格式化为 keyword/value DSN。
 func formatPostgresKeywordOptions(options []postgresOption) string {
 	parts := make([]string, 0, len(options))
 	for _, option := range options {
@@ -247,6 +263,7 @@ func formatPostgresKeywordOptions(options []postgresOption) string {
 	return strings.Join(parts, " ")
 }
 
+// escapePostgresKeywordValue 转义 keyword 值中的反斜杠与单引号。
 func escapePostgresKeywordValue(value string) string {
 	value = strings.ReplaceAll(value, "\\", "\\\\")
 	return strings.ReplaceAll(value, "'", "\\'")
